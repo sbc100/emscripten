@@ -8273,8 +8273,8 @@ int main() {
     expected_basename = test_file('other/metadce', self.id().split('.')[-1])
 
     # Run once without closure and parse output to find wasmImports
-    build_cmd = [compiler_for(filename), filename, '--output_eol=linux'] + args + self.get_emcc_args()
-    self.run_process(build_cmd + ['-g2'])
+    args.append('--output_eol=linux')
+    self.build(filename, args + ['-g2'], output_basename='a.out')
     # find the imports we send from JS
     # TODO(sbc): Find a way to do that that doesn't depend on internal details of
     # the generated code.
@@ -8293,7 +8293,7 @@ int main() {
     sent = [x for x in sent if x]
     sent.sort()
 
-    self.run_process(build_cmd + ['--profiling-funcs', '--closure=1'])
+    self.build(filename, args + ['--profiling-funcs', '--closure=1'], output_basename='a.out')
 
     for exists in expected_exists:
       self.assertIn(exists, sent)
@@ -8408,8 +8408,7 @@ int main() {
     'export_nothing':
           (['-Os', '-sEXPORTED_FUNCTIONS=[]'],    [], []), # noqa
     # we don't metadce with linkable code! other modules may want stuff
-    # TODO(sbc): Investivate why the number of exports is order of magnitude
-    # larger for wasm backend.
+    'dylink_all': (['-O3', '-sMAIN_MODULE=1'], [], []), # noqa
     'dylink': (['-O3', '-sMAIN_MODULE=2'], [], []), # noqa
     # WasmFS should not be fully linked into a hello world program.
     'wasmfs': (['-O3', '-sWASMFS'],        [], []), # noqa
