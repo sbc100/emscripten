@@ -53,40 +53,42 @@ void __do_cleanup_pop(struct __ptcb *cb) {
   __pthread_self()->cancelbuf = cb->__next;
 }
 
-int __pthread_create(pthread_t *restrict res, const pthread_attr_t *restrict attrp, void *(*entry)(void *), void *restrict arg) {
-  // Note on LSAN: lsan intercepts/wraps calls to pthread_create so any
-  // allocation we we do here should be considered leaks.
-  // See: lsan_interceptors.cpp.
-  if (!res) {
-    return EINVAL;
+static int tl_lock_count;
+static int tl_lock_waiters;
+
+volatile int __thread_list_lock;
+
+void __tl_lock(void) {
+  int tid = __pthread_self()->tid;
+  int val = __thread_list_lock;
+  if (val == tid) {
+    tl_lock_count++;
+    return;
   }
+  while ((val = a_cas(&__thread_list_lock, 0, tid)))
+    __wait(&__thread_list_lock, &tl_lock_waiters, val, 0);
+}
 
-  // Allocate thread block (pthread_t structure).
-  struct pthread *new = malloc(sizeof(struct pthread));
-  // zero-initialize thread structure.
-  memset(new, 0, sizeof(struct pthread));
-
-  // The pthread struct has a field that points to itself - this is used as a
-  // magic ID to detect whether the pthread_t structure is 'alive'.
-  new->self = new;
-  new->tid = (uintptr_t)new;
-
-  // pthread struct robust_list head should point to itself.
-  new->robust_list.head = &new->robust_list.head;
-
-  new->locale = &libc.global_locale;
-
-  // Allocate memory for thread-local storage and initialize it to zero.
-  new->tsd = malloc(PTHREAD_KEYS_MAX * sizeof(void*));
-  memset(new->tsd, 0, PTHREAD_KEYS_MAX * sizeof(void*));
-
-  *res = new;
-  return __pthread_create_js(new, attrp, entry, arg);
+void __tl_unlock(void) {
+  if (tl_lock_count) {
+    tl_lock_count--;
+    return;
+  }
+  a_store(&__thread_list_lock, 0);
+  if (tl_lock_waiters) __wake(&__thread_list_lock, 1, 0);
 }
 
 void _emscripten_thread_exit(void* result) {
   struct pthread *self = __pthread_self();
   assert(self);
+
+  __tl_lock();
+
+  self->next->prev = self->prev;
+  self->prev->next = self->next;
+  self->prev = self->next = self;
+
+  __tl_unlock();
 
   self->canceldisable = PTHREAD_CANCEL_DISABLE;
   self->cancelasync = PTHREAD_CANCEL_DEFERRED;
@@ -111,9 +113,13 @@ void _emscripten_thread_exit(void* result) {
 
   // Mark the thread as no longer running.
   // When we publish this, the main thread is free to deallocate the thread object and we are done.
-  self->threadStatus = 1;
-
-  emscripten_futex_wake(&self->threadStatus, INT_MAX); // wake all threads
+  if (self->detach_state == DT_DETACHED) {
+    self->detach_state = DT_EXITED;
+  } else {
+    self->detach_state = DT_EXITING;
+    // wake any threads that might be waiting for us to exit
+    emscripten_futex_wake(&self->detach_state, INT_MAX);
+  }
 
   // Not hosting a pthread anymore in this worker, reset the info structures to null.
   _emscripten_thread_init(0, 0, 0); // Unregister the thread block inside the wasm module.
@@ -128,6 +134,53 @@ __attribute__((no_sanitize("address")))
 _Noreturn void __pthread_exit(void* retval) {
   _emscripten_thread_exit(retval);
   emscripten_unwind_to_js_event_loop();
+}
+
+int __pthread_create(pthread_t *restrict res, const pthread_attr_t *restrict attrp, void *(*entry)(void *), void *restrict arg) {
+  // Note on LSAN: lsan intercepts/wraps calls to pthread_create so any
+  // allocation we we do here should be considered leaks.
+  // See: lsan_interceptors.cpp.
+  if (!res) {
+    return EINVAL;
+  }
+  struct pthread *self = __pthread_self();
+
+  // Allocate thread block (pthread_t structure).
+  struct pthread *new = malloc(sizeof(struct pthread));
+  // zero-initialize thread structure.
+  memset(new, 0, sizeof(struct pthread));
+
+  // The pthread struct has a field that points to itself - this is used as a
+  // magic ID to detect whether the pthread_t structure is 'alive'.
+  new->self = new;
+  new->tid = (uintptr_t)new;
+
+  // pthread struct robust_list head should point to itself.
+  new->robust_list.head = &new->robust_list.head;
+
+  new->locale = &libc.global_locale;
+
+  // Allocate memory for thread-local storage and initialize it to zero.
+  new->tsd = malloc(PTHREAD_KEYS_MAX * sizeof(void*));
+  memset(new->tsd, 0, PTHREAD_KEYS_MAX * sizeof(void*));
+
+  //printf("start __pthread_create: %p\n", self);
+  int rtn = __pthread_create_js(new, attrp, entry, arg);
+  if (rtn != 0)
+    return rtn;
+
+  __tl_lock();
+
+  new->next = self->next;
+  new->prev = self;
+  new->next->prev = new;
+  new->prev->next = new;
+
+  __tl_unlock();
+
+  *res = new;
+  //printf("done __pthread_create self=%p next=%p prev=%p new=%p\n", self, self->next, self->prev, new);
+  return 0;
 }
 
 weak_alias(__pthread_create, emscripten_builtin_pthread_create);

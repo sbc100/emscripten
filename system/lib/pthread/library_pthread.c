@@ -873,10 +873,15 @@ EM_JS(void, initPthreadsJS, (void* tb), {
   PThread.initRuntime(tb);
 })
 
+static void *dummy_tsd[1] = { 0 };
+weak_alias(dummy_tsd, __pthread_tsd_main);
+
 // See system/lib/README.md for static constructor ordering.
 __attribute__((constructor(48)))
 void __emscripten_pthread_data_constructor(void) {
   initPthreadsJS(&__main_pthread);
+  //printf("__emscripten_pthread_data_constructor %p\n", __main_pthread);
+
   // The pthread struct has a field that points to itself - this is used as
   // a magic ID to detect whether the pthread_t structure is 'alive'.
   __main_pthread.self = &__main_pthread;
@@ -887,4 +892,7 @@ void __emscripten_pthread_data_constructor(void) {
   __main_pthread.tid = (long)&__main_pthread;
 
   __main_pthread.locale = &libc.global_locale;
+  __main_pthread.next = __main_pthread.prev = &__main_pthread;
+
+  __main_pthread.tsd = (void **)__pthread_tsd_main;
 }
