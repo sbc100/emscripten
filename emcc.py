@@ -2531,12 +2531,8 @@ def phase_linker_setup(options, state, newargs, user_settings):
     # always does.
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$callRuntimeCallbacks']
 
-  if settings.EXIT_RUNTIME and not settings.STANDALONE_WASM:
-    # Internal function implemented in musl that calls any functions registered
-    # via `atexit` et al.  With STANDALONE_WASM this is all taken care of via
-    # _start and exit handling in musl, but with the normal emscripten ABI we
-    # need to be able to call these explicitly.
-    settings.REQUIRED_EXPORTS += ['__funcs_on_exit']
+  if not settings.STANDALONE_WASM:
+    settings.EXPORTED_FUNCTIONS += ['_exit']
 
   # various settings require malloc/free support from JS
   if settings.RELOCATABLE or \

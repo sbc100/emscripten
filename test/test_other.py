@@ -11334,7 +11334,7 @@ exec "$@"
     exports = self.parse_wasm('out.wasm')[1]
     exports_linkable = self.parse_wasm('out_linkable.wasm')[1]
 
-    self.assertLess(len(exports), 20)
+    self.assertLess(len(exports), 30)
     self.assertGreater(len(exports_linkable), 1000)
     self.assertIn('sendmsg', exports_linkable)
     self.assertNotIn('sendmsg', exports)

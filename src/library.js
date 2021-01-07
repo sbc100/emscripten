@@ -116,15 +116,6 @@ mergeInto(LibraryManager.library, {
   },
 #endif
 
-  exit__sig: 'vi',
-#if MINIMAL_RUNTIME
-  // minimal runtime doesn't do any exit cleanup handling so just
-  // map exit directly to the lower-level proc_exit syscall.
-  exit: 'proc_exit',
-#else
-  exit: '$exitJS',
-#endif
-
   // Returns a pointer ('p'), which means an i32 on wasm32 and an i64 wasm64
   // We have a separate JS version `getHeapMax()` which can be called directly
   // avoiding any wrapper added for wasm64.
@@ -3526,7 +3517,13 @@ mergeInto(LibraryManager.library, {
         if (ENVIRONMENT_IS_PTHREAD) __emscripten_thread_exit(EXITSTATUS);
         else
 #endif
+#if EXIT_RUNTIME
+        //console.error("calling C exit");
         _exit(EXITSTATUS);
+#else
+        //console.error("bypassing C exit");
+        procExit(EXITSTATUS);
+#endif
       } catch (e) {
         handleException(e);
       }

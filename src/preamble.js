@@ -298,10 +298,9 @@ function exitRuntime() {
 #if USE_PTHREADS
   if (ENVIRONMENT_IS_PTHREAD) return; // PThreads reuse the runtime from the main thread.
 #endif
-#if !STANDALONE_WASM
-  ___funcs_on_exit(); // Native atexit() functions
-#endif
+  //console.error(__ATEXIT__);
   callRuntimeCallbacks(__ATEXIT__);
+  //console.error('done exit callbacks');
   <<< ATEXITS >>>
 #if USE_PTHREADS
   PThread.terminateAllThreads();

@@ -30,7 +30,6 @@ mergeInto(LibraryManager.library, {
       Normal: 0,
       Unwinding: 1,
       Rewinding: 2,
-      Disabled: 3,
     },
     state: 0,
     StackSize: {{{ ASYNCIFY_STACK_SIZE }}},
@@ -311,9 +310,6 @@ mergeInto(LibraryManager.library, {
     // handles everything else for the user of this API. See emscripten_sleep()
     // and other async methods for simple examples of usage.
     handleSleep: function(startAsync) {
-#if ASSERTIONS
-      assert(Asyncify.state !== Asyncify.State.Disabled, 'Asyncify cannot be done during or after the runtime exits');
-#endif
       if (ABORT) return;
 #if ASYNCIFY_DEBUG
       err('ASYNCIFY: handleSleep ' + Asyncify.state);

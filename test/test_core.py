@@ -7941,11 +7941,15 @@ void* operator new(size_t size) {
       #include <stdlib.h>
       #include <unistd.h>
 
+      #include <emscripten/emscripten.h>
       static void cleanup() {
         #ifndef NORMAL_EXIT
         assert(0 && "cleanup should only be called from normal exit()");
         #endif
         printf("cleanup\n");
+        #ifdef CAPITAL_EXIT
+        abort();
+        #endif
       }
 
       int main() {
@@ -7955,22 +7959,24 @@ void* operator new(size_t size) {
         #ifdef CAPITAL_EXIT
           _Exit(118);
         #elif defined(UNDER_EXIT)
-          _exit(118);
+          _exit(119);
         #elif defined(NORMAL_EXIT)
-          exit(118);
+          exit(120);
         #endif
       }
     ''')
     create_file('pre.js', '''
+      var cleanedUp = false;
       Module.onExit = function() {
         out('I see exit status: ' + EXITSTATUS);
+        out('cleanedUp: ' + cleanedUp);
       }
     ''')
     self.emcc_args += ['--pre-js', 'pre.js']
     print('.. exit')
-    self.do_runf('exit.c', 'hello, world!\ncleanup\nI see exit status: 118', assert_returncode=118, emcc_args=['-DNORMAL_EXIT'])
+    self.do_runf('exit.c', 'hello, world!\ncleanup\nI see exit status: 118', assert_returncode=120, emcc_args=['-DNORMAL_EXIT'])
     print('.. _exit')
-    self.do_runf('exit.c', 'hello, world!\nI see exit status: 118', assert_returncode=118, emcc_args=['-DUNDER_EXIT'])
+    self.do_runf('exit.c', 'hello, world!\nI see exit status: 118', assert_returncode=119, emcc_args=['-DUNDER_EXIT'])
     print('.. _Exit')
     self.do_runf('exit.c', 'hello, world!\nI see exit status: 118', assert_returncode=118, emcc_args=['-DCAPITAL_EXIT'])
 
@@ -7984,11 +7990,14 @@ void* operator new(size_t size) {
           printf("in Global()\n");
           if (testPre) { EM_ASM(noExitRuntime = true;); }
         }
-        ~Global() { printf("ERROR: in ~Global()\n"); }
+        ~Global() {
+          printf("ERROR: in ~Global()\n");
+        }
       } global;
       int main() {
         if (!testPre) { EM_ASM(noExitRuntime = true;); }
         printf("in main()\n");
+        return 0;
       }
     '''
     self.do_run(src.replace('TEST_PRE', '0'), 'in Global()\nin main()')
@@ -8261,9 +8270,7 @@ Module['onRuntimeInitialized'] = function() {
     self.set_setting('ASYNCIFY')
     self.set_setting('ASSERTIONS')
     self.set_setting('EXIT_RUNTIME', 1)
-    self.do_core_test('test_asyncify_during_exit.cpp', assert_returncode=NON_ZERO)
-    print('NO_ASYNC')
-    self.do_core_test('test_asyncify_during_exit.cpp', emcc_args=['-DNO_ASYNC'], out_suffix='_no_async')
+    self.do_core_test('test_asyncify_during_exit.cpp')
 
   @no_asan('asyncify stack operations confuse asan')
   @no_lsan('undefined symbol __global_base')

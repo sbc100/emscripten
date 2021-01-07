@@ -801,7 +801,7 @@ class libc(MuslInternalLibrary,
     # musl modules
     ignore = [
         'ipc', 'passwd', 'signal', 'sched', 'time', 'linux',
-        'aio', 'exit', 'legacy', 'mq', 'setjmp', 'env',
+        'aio', 'legacy', 'mq', 'setjmp', 'env',
         'ldso', 'malloc'
     ]
 
@@ -811,7 +811,7 @@ class libc(MuslInternalLibrary,
         'res_query.c', 'res_querydomain.c',
         'proto.c', 'gethostbyaddr.c', 'gethostbyaddr_r.c', 'gethostbyname.c',
         'gethostbyname2_r.c', 'gethostbyname_r.c', 'gethostbyname2.c',
-        'alarm.c', 'syscall.c', 'popen.c', 'pclose.c',
+        'alarm.c', 'syscall.c', 'popen.c', 'pclose.c', 'abort.c',
         'getgrouplist.c', 'initgroups.c', 'wordexp.c', 'timer_create.c',
         'getentropy.c',
         'getauxval.c',
@@ -936,10 +936,6 @@ class libc(MuslInternalLibrary,
     libc_files += files_in_path(
         path='system/lib/libc/musl/src/sched',
         filenames=['sched_yield.c'])
-
-    libc_files += files_in_path(
-        path='system/lib/libc/musl/src/exit',
-        filenames=['_Exit.c', 'atexit.c'])
 
     libc_files += files_in_path(
         path='system/lib/libc/musl/src/ldso',
