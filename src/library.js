@@ -3648,7 +3648,9 @@ LibraryManager.library = {
 #endif
       return;
     }
-    // For synchronous calls, let any exceptions propagate, and don't let the runtime exit.
+    if (!func) return;
+    // For synchronous calls, let any exceptions propagate, and don't let the
+    // runtime exit.
     if (synchronous) {
       func();
       return;
@@ -3679,11 +3681,11 @@ LibraryManager.library = {
 #if RUNTIME_DEBUG
       err('maybeExit: calling exit() implicitly after user callback completed: ' + EXITSTATUS);
 #endif
-      try {
 #if USE_PTHREADS
         if (ENVIRONMENT_IS_PTHREAD) __emscripten_thread_exit(EXITSTATUS);
         else
 #endif
+      try {
         _exit(EXITSTATUS);
       } catch (e) {
         handleException(e);

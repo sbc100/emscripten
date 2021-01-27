@@ -733,11 +733,12 @@ mergeInto(LibraryManager.library, {
    * will deregister the callback registered for that Event.
    */
 #if !MINIMAL_RUNTIME
-  $_setNetworkCallback__deps: ['$runtimeKeepalivePush'],
+  $_setNetworkCallback__deps: ['$runtimeKeepalivePush', '$runtimeKeepalivePop', '$callUserCallback'],
 #endif
   $_setNetworkCallback: function(event, userData, callback) {
     function _callback(data) {
-      try {
+      {{{ runtimeKeepalivePop() }}}
+      callUserCallback(function() {
         if (event === 'error') {
           var sp = stackSave();
           var msg = allocate(intArrayFromString(data[2]), ALLOC_STACK);
@@ -746,14 +747,7 @@ mergeInto(LibraryManager.library, {
         } else {
           {{{ makeDynCall('vii', 'callback') }}}(data, userData);
         }
-      } catch (e) {
-        if (e instanceof ExitStatus) {
-          return;
-        } else {
-          if (e && typeof e === 'object' && e.stack) err('exception thrown: ' + [e, e.stack]);
-          throw e;
-        }
-      }
+      });
     };
 
     // FIXME(sbc): This has no corresponding Pop so will currently keep the
