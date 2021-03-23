@@ -6460,6 +6460,55 @@ high = 1234
     err = self.expect_fail([EMXX, test_file('hello_world.cpp'), '-sEXPORTED_FUNCTIONS=foo'])
     self.assertContained('error: undefined exported symbol: "foo"', err)
 
+  def test_dash_s_list_parsing(self):
+    create_file('src.c', r'''
+        #include <stdio.h>
+        void a() { printf("a\n"); }
+        void b() { printf("b\n"); }
+        void c() { printf("c\n"); }
+        void d() { printf("d\n"); }
+      ''')
+    create_file('response', r'''[
+"_a",
+"_b",
+"_c",
+"_d"
+]
+''')
+
+    for export_arg, expected in [
+      # No quotes needed
+      ('EXPORTED_FUNCTIONS=[_a,_b,_c,_d]', ''),
+      # No quotes with spaces
+      ('EXPORTED_FUNCTIONS=[_a, _b, _c, _d]', ''),
+      # No brackets needed either
+      ('EXPORTED_FUNCTIONS=_a,_b,_c,_d', ''),
+      # No brackets with spaced
+      ('EXPORTED_FUNCTIONS=_a, _b, _c, _d', ''),
+      # extra space at end - should be ignored
+      ("EXPORTED_FUNCTIONS=['_a', '_b', '_c', '_d' ]", ''),
+      # extra newline in response file - should be ignored
+      ("EXPORTED_FUNCTIONS=@response", ''),
+      # stray slash
+      ("EXPORTED_FUNCTIONS=['_a', '_b', \\'_c', '_d']", '''undefined exported symbol: "\\\\'_c'"'''),
+      # stray slash
+      ("EXPORTED_FUNCTIONS=['_a', '_b',\\ '_c', '_d']", '''undefined exported symbol: "\\\\ '_c'"'''),
+      # stray slash
+      ('EXPORTED_FUNCTIONS=["_a", "_b", \\"_c", "_d"]', 'undefined exported symbol: "\\\\"_c""'),
+      # stray slash
+      ('EXPORTED_FUNCTIONS=["_a", "_b",\\ "_c", "_d"]', 'undefined exported symbol: "\\\\ "_c"'),
+      # missing comma
+      ('EXPORTED_FUNCTIONS=["_a", "_b" "_c", "_d"]', 'undefined exported symbol: "_b" "_c"'),
+    ]:
+      print(export_arg)
+      proc = self.run_process([EMCC, 'src.c', '-s', export_arg], stdout=PIPE, stderr=PIPE, check=not expected)
+      print(proc.stderr)
+      if not expected:
+        self.assertFalse(proc.stderr)
+      else:
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertContained(expected, proc.stderr)
+
   def test_zeroinit(self):
     create_file('src.c', r'''
 #include <stdio.h>
@@ -8314,67 +8363,6 @@ test_module().then((test_module_instance) => {
     with open(fname, 'wb') as f:
       f.write(b'!<arch>\n')
     self.assertTrue(building.is_ar(fname))
-
-  def test_dash_s_list_parsing(self):
-    create_file('src.c', r'''
-        #include <stdio.h>
-        void a() { printf("a\n"); }
-        void b() { printf("b\n"); }
-        void c() { printf("c\n"); }
-        void d() { printf("d\n"); }
-      ''')
-    create_file('response.json', '''\
-[
-"_a",
-"_b",
-"_c",
-"_d"
-]
-''')
-    create_file('response.txt', '''\
-_a
-_b
-_c
-_d
-''')
-
-    for export_arg, expected in [
-      # No quotes needed
-      ('EXPORTED_FUNCTIONS=[_a,_b,_c,_d]', ''),
-      # No quotes with spaces
-      ('EXPORTED_FUNCTIONS=[_a, _b, _c, _d]', ''),
-      # No brackets needed either
-      ('EXPORTED_FUNCTIONS=_a,_b,_c,_d', ''),
-      # No brackets with spaced
-      ('EXPORTED_FUNCTIONS=_a, _b, _c, _d', ''),
-      # extra space at end - should be ignored
-      ("EXPORTED_FUNCTIONS=['_a', '_b', '_c', '_d' ]", ''),
-      # extra newline in response file - should be ignored
-      ("EXPORTED_FUNCTIONS=@response.json", ''),
-      # Simple one-per-line response file format
-      ("EXPORTED_FUNCTIONS=@response.txt", ''),
-      # stray slash
-      ("EXPORTED_FUNCTIONS=['_a', '_b', \\'_c', '_d']", '''undefined exported symbol: "\\\\'_c'"'''),
-      # stray slash
-      ("EXPORTED_FUNCTIONS=['_a', '_b',\\ '_c', '_d']", '''undefined exported symbol: "\\\\ '_c'"'''),
-      # stray slash
-      ('EXPORTED_FUNCTIONS=["_a", "_b", \\"_c", "_d"]', 'undefined exported symbol: "\\\\"_c""'),
-      # stray slash
-      ('EXPORTED_FUNCTIONS=["_a", "_b",\\ "_c", "_d"]', 'undefined exported symbol: "\\\\ "_c"'),
-      # missing comma
-      ('EXPORTED_FUNCTIONS=["_a", "_b" "_c", "_d"]', 'undefined exported symbol: "_b" "_c"'),
-    ]:
-      print(export_arg)
-      proc = self.run_process([EMCC, 'src.c', '-s', export_arg], stdout=PIPE, stderr=PIPE, check=not expected)
-      print(proc.stderr)
-      if not expected:
-        self.assertFalse(proc.stderr)
-        js = open('a.out.js').read()
-        for sym in ('_a', '_b', '_c', '_d'):
-          self.assertContained(f'var {sym} = ', js)
-      else:
-        self.assertNotEqual(proc.returncode, 0)
-        self.assertContained(expected, proc.stderr)
 
   def test_asyncify_escaping(self):
     proc = self.run_process([EMCC, test_file('hello_world.c'), '-s', 'ASYNCIFY', '-s', "ASYNCIFY_ONLY=[DOS_ReadFile(unsigned short, unsigned char*, unsigned short*, bool)]"], stdout=PIPE, stderr=PIPE)
