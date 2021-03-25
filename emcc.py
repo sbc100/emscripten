@@ -747,8 +747,11 @@ def emsdk_ldflags(user_args):
   if os.environ.get('EMMAKEN_NO_SDK'):
     return []
 
+  sysroot = shared.Cache.get_sysroot_dir()
   library_paths = [
-     shared.Cache.get_lib_dir(absolute=True)
+     os.path.join(sysroot, 'local', 'lib'),
+     os.path.join(shared.Cache.dirname, shared.Cache.get_lib_dir()),
+     os.path.join(sysroot, 'lib'),
   ]
   ldflags = ['-L' + l for l in library_paths]
 
@@ -792,7 +795,14 @@ def emsdk_cflags(user_args):
   if array_contains_any_of(user_args, SIMD_NEON_FLAGS):
     cflags += ['-D__ARM_NEON__=1']
 
-  return cflags + ['-Xclang', '-iwithsysroot' + os.path.join('/include', 'compat')]
+  include_paths = [
+    '/local/include',
+    '/include/compat',
+  ]
+  for p in include_paths:
+    cflags += ['-Xclang', '-iwithsysroot' + p]
+
+  return cflags
 
 
 def get_clang_flags():

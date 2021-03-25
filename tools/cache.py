@@ -120,7 +120,7 @@ class Cache:
     return path
 
   def get_lib_name(self, name):
-    return os.path.join(self.get_lib_dir(absolute=False), name)
+    return os.path.join(self.get_lib_dir(), name)
 
   def erase_lib(self, name):
     self.erase_file(self.get_lib_name(name))

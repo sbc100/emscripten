@@ -47,6 +47,14 @@ variables so that emcc etc. are used. Typical usage:
   # compilation with emcc, but instead do builds natively with Clang. This
   # is a heuristic emulation that may or may not work.
   env['EMMAKEN_JUST_CONFIGURE'] = '1'
+
+  # Impliclty pass a `--prefix` to configure, if none is specified.
+  # This means the `make install` will "just work" for users of emconfigure
+  # and install direclyt into the emscripten sysrot.
+  if not any(a.startswith('--prefix') for a in args):
+    sysroot = shared.Cache.get_sysroot_dir()
+    args.append('--prefix=' + os.path.join(sysroot, 'local'))
+
   print('configure: ' + shared.shlex_join(args), file=sys.stderr)
   try:
     shared.check_call(args, env=env)
