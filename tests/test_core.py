@@ -3592,35 +3592,39 @@ ok
       if os.path.exists(outfile):
         expected = open(outfile).read()
 
-    # side settings
-    self.clear_setting('MAIN_MODULE')
-    self.set_setting('SIDE_MODULE')
-    side_suffix = 'wasm' if self.is_wasm() else 'js'
-    if isinstance(side, list):
-      out_file = 'liblib.' + side_suffix
-      # side is just a library
-      self.run_process([EMCC] + side + self.get_emcc_args() + ['-o', out_file])
-    else:
-      out_file = self.build(side, js_outfile=(side_suffix == 'js'))
-    shutil.move(out_file, 'liblib.so')
+    if not isinstance(main, list):
+      main = [main]
 
-    # main settings
-    self.set_setting('MAIN_MODULE', main_module)
-    self.clear_setting('SIDE_MODULE')
-    if auto_load:
-      self.emcc_args += main_emcc_args
-      self.emcc_args.append('liblib.so')
-      if force_c:
-        self.emcc_args.append('-nostdlib++')
+    def compile_side():
+      # side settings
+      self.clear_setting('MAIN_MODULE')
+      self.set_setting('SIDE_MODULE')
+      side_suffix = 'wasm' if self.is_wasm() else 'js'
+      if isinstance(side, list):
+        out_file = 'liblib.' + side_suffix
+        # side is just a library
+        self.run_process([EMCC] + side + self.get_emcc_args() + ['-o', out_file])
+      else:
+        out_file = self.build(side, js_outfile=(side_suffix == 'js'))
+      shutil.move(out_file, 'liblib.so')
 
-    if isinstance(main, list):
-      # main is just a library
+    def compile_main():
+      # main settings
+      self.set_setting('MAIN_MODULE', main_module)
+      self.clear_setting('SIDE_MODULE')
+      if auto_load:
+        self.emcc_args.append('liblib.so')
+        self.emcc_args += main_emcc_args
+        if force_c:
+          self.emcc_args.append('-nostdlib++')
+
       try_delete('main.js')
       self.run_process([EMCC] + main + self.get_emcc_args() + ['-o', 'main.js'])
-      self.do_run('main.js', expected, no_build=True, **kwargs)
-    else:
-      self.do_runf(main, expected, force_c=force_c, **kwargs)
 
+    compile_main()
+    compile_side()
+
+    self.do_run('main.js', expected, no_build=True, **kwargs)
     self.emcc_args = old_args
 
     if need_reverse:

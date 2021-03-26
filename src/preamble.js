@@ -929,6 +929,14 @@ function createWasm() {
   function receiveInstance(instance, module) {
     var exports = instance.exports;
 
+#if MAIN_MODULE
+    var metadata = getDylinkMetadata(module);
+    err(metadata);
+    if (metadata.neededDynlibs) {
+      dynamicLibraries = metadata.neededDynlibs.concat(dynamicLibraries);
+    }
+#endif
+
 #if RELOCATABLE
     exports = relocateExports(exports, {{{ GLOBAL_BASE }}});
 #endif
@@ -942,13 +950,6 @@ function createWasm() {
 #endif
 
     Module['asm'] = exports;
-
-#if MAIN_MODULE
-    var metadata = getDylinkMetadata(module);
-    if (metadata.neededDynlibs) {
-      dynamicLibraries = metadata.neededDynlibs.concat(dynamicLibraries);
-    }
-#endif
 
 #if !IMPORTED_MEMORY
     wasmMemory = Module['asm']['memory'];
