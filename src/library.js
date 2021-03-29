@@ -3257,7 +3257,7 @@ LibraryManager.library = {
   emscripten_asm_const_int__deps: ['$readAsmConstArgs'],
   emscripten_asm_const_int: function(code, sigPtr, argbuf) {
 #if RELOCATABLE
-    code -= {{{ GLOBAL_BASE }}};
+    code -= memoryBase;
 #endif
     var args = readAsmConstArgs(sigPtr, argbuf);
 #if ASSERTIONS
@@ -3270,7 +3270,7 @@ LibraryManager.library = {
   $mainThreadEM_ASM__deps: ['$readAsmConstArgs'],
   $mainThreadEM_ASM: function(code, sigPtr, argbuf, sync) {
 #if RELOCATABLE
-    code -= {{{ GLOBAL_BASE }}};
+    code -= memoryBase;
 #endif
     var args = readAsmConstArgs(sigPtr, argbuf);
 #if USE_PTHREADS

@@ -1427,6 +1427,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
           '$relocateExports',
           '$GOTHandler',
           '$getDylinkMetadata',
+          '$allocateDylibMemory',
           '__heap_base',
           '__stack_pointer',
       ]

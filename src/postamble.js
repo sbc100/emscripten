@@ -9,7 +9,7 @@
 {{{ exportRuntime() }}}
 
 #if !MEM_INIT_IN_WASM
-function runMemoryInitializer() {
+function runMemoryInitializer(memoryBase) {
 #if USE_PTHREADS
   if (!memoryInitializer || ENVIRONMENT_IS_PTHREAD) return;
 #else
@@ -20,17 +20,17 @@ function runMemoryInitializer() {
   }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
     var data = readBinary(memoryInitializer);
-    HEAPU8.set(data, {{{ GLOBAL_BASE }}});
+    HEAPU8.set(data, memoryBase);
   } else {
     addRunDependency('memory initializer');
     var applyMemoryInitializer = function(data) {
       if (data.byteLength) data = new Uint8Array(data);
 #if ASSERTIONS
       for (var i = 0; i < data.length; i++) {
-        assert(HEAPU8[{{{ GLOBAL_BASE }}} + i] === 0, "area for memory initializer should not have been touched before it's loaded");
+        assert(HEAPU8[memoryBase + i] === 0, "area for memory initializer should not have been touched before it's loaded");
       }
 #endif
-      HEAPU8.set(data, {{{ GLOBAL_BASE }}});
+      HEAPU8.set(data, memoryBase);
       // Delete the typed array that contains the large blob of the memory initializer request response so that
       // we won't keep unnecessary memory lying around. However, keep the XHR object itself alive so that e.g.
       // its .status field can still be accessed later.

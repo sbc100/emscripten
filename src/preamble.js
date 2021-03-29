@@ -21,6 +21,7 @@ out = err = function(){};
 
 #if RELOCATABLE
 {{{ makeModuleReceiveWithVar('dynamicLibraries', undefined, '[]', true) }}}
+var memoryBase;
 #endif
 
 {{{ makeModuleReceiveWithVar('wasmBinary') }}}
@@ -938,7 +939,8 @@ function createWasm() {
 #endif
 
 #if RELOCATABLE
-    exports = relocateExports(exports, {{{ GLOBAL_BASE }}});
+    memoryBase = allocateDylibMemory(metadata);
+    exports = relocateExports(exports, memoryBase);
 #endif
 
 #if ASYNCIFY
@@ -963,7 +965,7 @@ function createWasm() {
     updateGlobalBufferAndViews(wasmMemory.buffer);
 #endif
 #if !MEM_INIT_IN_WASM
-    runMemoryInitializer();
+    runMemoryInitializer({{{ GLOBAL_BASE }}});
 #endif
 
 #if !RELOCATABLE
