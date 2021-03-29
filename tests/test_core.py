@@ -3780,7 +3780,7 @@ ok
       header='typedef float (*floatfunc)(float);', force_c=True)
 
   @needs_dylink
-  def test_missing_signatures(self):
+  def test_dylink_missing_signatures(self):
     create_file('test_sig.c', r'''#include <emscripten.h>
                                        int main() {
                                          return 0 == ( (long)&emscripten_run_script_string +
@@ -4567,7 +4567,6 @@ res64 - external 64\n''', header='''
       expected='3 hello world!',
       need_reverse=False)
 
-  @disabled('https://github.com/emscripten-core/emscripten/issues/13773')
   def test_dylink_weak(self):
     # Verify that weakly symbols can be defined in both side module and main
     # module
