@@ -230,6 +230,8 @@ See docs/process.md for more on how version tagging works.
 - In order to behave more like clang and gcc, emscripten no longer
   supports some nonstandard methods of library lookup (that worked
   unintentionally and were untested and not documented):
+- Refactoring of the library search algorithm means that emscripten no longer
+  supports some (unintented) methods of library lookup:
     1. Linking with `-llibc` rather than `-lc` will no longer work.
     2. Linking a library called `foo.a` via `-lfoo` will no longer work.
        (libraries found via `-l` have to start with `lib`)
