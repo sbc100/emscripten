@@ -168,6 +168,8 @@ See docs/process.md for more on how version tagging works.
 - Specifying `EM_CONFIG` inline (python code in the environment variable itself)
   is no longer supported (#13855).  This has been long deprecated but finally
   completely removed.
+- Remove `-s INITIAL_TABLE` setting that was briefly added to support wasm-split
+  but is no longer needed.
 - Deprecate `-g4`, which is a little confusing as it does not do more than `-g3`
   but instead emits source maps instead of DWARF. `-g4` will now warn. A new
   flag `-gsource-map` enables source maps without warning.
