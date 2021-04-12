@@ -295,6 +295,10 @@ function updateGlobalBufferAndViews(buf) {
 #endif
 }
 
+#if RELOCATABLE
+var symTab = {};
+#endif // RELOCATABLE
+
 var TOTAL_STACK = {{{ TOTAL_STACK }}};
 #if ASSERTIONS
 if (Module['TOTAL_STACK']) assert(TOTAL_STACK === Module['TOTAL_STACK'], 'the stack size can no longer be determined at runtime')
@@ -948,6 +952,8 @@ function createWasm() {
     if (metadata.neededDynlibs) {
       dynamicLibraries = metadata.neededDynlibs.concat(dynamicLibraries);
     }
+    mergeLibSymbols(asmLibraryArg, 'jslib');
+    mergeLibSymbols(exports, 'main');
 #endif
 
 #if !IMPORTED_MEMORY

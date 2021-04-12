@@ -144,7 +144,7 @@ function JSify(functionsOnly) {
       // Note: We don't return the dependencies here. Be careful not to end up where this matters
       if (finalName in Functions.implementedFunctions) return '';
 
-      var noExport = false;
+      var isStub = false;
 
       if (!LibraryManager.library.hasOwnProperty(ident)) {
         if (!(finalName in IMPLEMENTED_FUNCTIONS) && !LINKABLE) {
@@ -172,7 +172,7 @@ function JSify(functionsOnly) {
           // (not useful to warn/error multiple times)
           LibraryManager.library[ident + '__docs'] = '/** @type {function(...*):?} */';
         } else {
-          var target = "Module['" + finalName + "']";
+          var target = "symTab['" + ident + "']";
           var assertion = '';
           if (ASSERTIONS) {
             var what = 'function';
@@ -181,7 +181,7 @@ function JSify(functionsOnly) {
           }
           var functionBody = assertion + "return " + target + ".apply(null, arguments);";
           LibraryManager.library[ident] = new Function(functionBody);
-          noExport = true;
+          isStub = true;
         }
       }
 
@@ -309,11 +309,23 @@ function JSify(functionsOnly) {
       var sig = LibraryManager.library[ident + '__sig'];
       // asm module exports are done in emscripten.py, after the asm module is ready. Here
       // we also export library methods as necessary.
-      if ((EXPORT_ALL || (finalName in EXPORTED_FUNCTIONS)) && !noExport) {
-        contentText += '\nModule["' + finalName + '"] = ' + finalName + ';';
+      if (!isStub) {
+        if ((EXPORT_ALL || (finalName in EXPORTED_FUNCTIONS))) {
+          contentText += '\nModule["' + finalName + '"] = ' + finalName + ';';
+        }
+        if (RELOCATABLE) {
+          contentText += '\nsymTab["' + ident + '"] = ' + finalName + ';';
+        }
       }
-      if (MAIN_MODULE && sig) {
-        contentText += '\n' + finalName + '.sig = \'' + sig + '\';';
+      if (MAIN_MODULE) {
+        // When building MAIN_MODULE attach some extra metadata to JS functions
+        // that the dynamic linker consumes.
+        if (sig) {
+          contentText += '\n' + finalName + '.sig = \'' + sig + '\';';
+        }
+        if (isStub) {
+          contentText += '\n' + finalName + '.stub = 1;';
+        }
       }
 
       var commentText = '';
