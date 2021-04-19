@@ -123,19 +123,19 @@ def update_settings_glue(metadata, DEBUG):
   # -s DECLARE_ASM_MODULE_EXPORTS=0 builds.
   settings.WASM_FUNCTION_EXPORTS = metadata['exports']
 
-  # start with the MVP features, and add any detected features.
-  settings.BINARYEN_FEATURES = ['--mvp-features'] + metadata['features']
-  if settings.USE_PTHREADS:
-    assert '--enable-threads' in settings.BINARYEN_FEATURES
-  if settings.MEMORY64:
-    assert '--enable-memory64' in settings.BINARYEN_FEATURES
+  if 'features' in metadata:
+    # start with the MVP features, and add any detected features.
+    settings.BINARYEN_FEATURES = ['--mvp-features'] + metadata['features']
+    if settings.USE_PTHREADS:
+      assert '--enable-threads' in settings.BINARYEN_FEATURES
+    if settings.MEMORY64:
+      assert '--enable-memory64' in settings.BINARYEN_FEATURES
 
-  if settings.RELOCATABLE:
+  if settings.RELOCATABLE and settings.INITIAL_TABLE == -1:
     # When building relocatable output (e.g. MAIN_MODULE) the reported table
     # size does not include the reserved slot at zero for the null pointer.
     # Instead we use __table_base to offset the elements by 1.
-    if settings.INITIAL_TABLE == -1:
-      settings.INITIAL_TABLE = metadata['tableSize'] + 1
+    settings.INITIAL_TABLE = metadata['tableSize'] + 1
 
   settings.HAS_MAIN = settings.MAIN_MODULE or settings.STANDALONE_WASM or 'main' in settings.WASM_EXPORTS
 
@@ -380,6 +380,99 @@ def remove_trailing_zeros(memfile):
     f.write(mem_data[:end])
 
 
+def read_metadata(wasm_file):
+  module = webassembly.Module(wasm_file)
+  imports = module.imports()
+  exports = module.exports()
+  globals_ = module.globals()
+  num_global_imports = len([i for i in imports if i.kind == webassembly.ExternType.GLOBAL])
+
+  metadata = {
+    'exports': [],
+    'declares': [],
+    'invokeFuncs': [],
+    'namedGlobals': {},
+    'emJsFuncs': {},
+    'asmConsts': {},
+  }
+
+  em_asm_start = None
+  em_asm_stop = None
+
+  for export in exports:
+    if export.kind == webassembly.ExternType.FUNC:
+      metadata['exports'].append(export.name)
+    elif export.kind == webassembly.ExternType.GLOBAL:
+      assert export.index >= num_global_imports
+      glob = globals_[export.index - num_global_imports]
+      if export.name == '__start_em_asm':
+        em_asm_start = glob
+      elif export.name == '__stop_em_asm':
+        em_asm_stop = glob
+      else:
+        metadata['namedGlobals'][export.name] = glob.init[1]
+
+  if em_asm_start and em_asm_stop:
+    asm_start = em_asm_start.init[1]
+    asm_stop = em_asm_stop.init[1]
+
+    def read_asm_strings(seg_data):
+      str_start = 0
+      while str_start < len(seg_data):
+        str_end = seg_data.find(b'\0', str_start)
+        string = seg_data[str_start:str_end].decode('utf-8')
+        address = asm_start + str_start
+        metadata['asmConsts'][address] = string
+        str_start = str_end + 1
+
+    asm_len = asm_stop - asm_start
+    total_offset = 1024
+    for seg in module.data_segments():
+      if seg.init and seg.init[1] == asm_start and seg.init[1] + len(seg.data) == asm_stop:
+        read_asm_strings(seg.data)
+        break
+      elif total_offset == asm_start and len(seg.data) == asm_len:
+        print("FOUND")
+        read_asm_strings(seg.data)
+        break
+      total_offset += len(seg.data)
+    if not metadata['asmConsts']:
+      exit_with_error('em_asm section not found (%s - %s) %d' % (asm_start, asm_stop, asm_len))
+
+  for imp in imports:
+    if imp.kind == webassembly.ExternType.FUNC:
+      if imp.field.startswith('invoke_'):
+        metadata['invokeFuncs'].append(imp.field)
+      else:
+        metadata['declares'].append(imp.field)
+
+  for sec in module.sections():
+    if sec.type == webassembly.SecType.CUSTOM:
+      sec_name = module.readString()
+      if sec_name == 'target_features':
+        metadata['features'] = []
+        while module.tell() < sec.offset + sec.size:
+          state = module.readString()
+          name = module.readString()
+          if state == '+':
+            metadata['features'].append('--enable-' + name)
+          else:
+            assert False
+        break
+
+  metadata['globalImports'] = [i.field for i in imports if i.kind == webassembly.ExternType.GLOBAL]
+  metadata['mainReadsParams'] = 1
+
+  tables = [i for i in imports if i.kind == webassembly.ExternType.TABLE]
+  if tables:
+    assert len(tables) == 1
+    metadata['tableSize'] = tables[0].info[1].initial
+  else:
+    metadata['tableSize'] = 0
+
+  return metadata
+
+
 def finalize_wasm(infile, outfile, memfile, DEBUG):
   building.save_intermediate(infile, 'base.wasm')
   # tell binaryen to look at the features section, and if there isn't one, to use MVP
@@ -435,26 +528,33 @@ def finalize_wasm(infile, outfile, memfile, DEBUG):
 
   if settings.DEBUG_LEVEL >= 3:
     args.append('--dwarf')
-  stdout = building.run_binaryen_command('wasm-emscripten-finalize',
-                                         infile=infile,
-                                         outfile=outfile if modify_wasm else None,
-                                         args=args,
-                                         stdout=subprocess.PIPE)
-  if modify_wasm:
-    building.save_intermediate(infile, 'post_finalize.wasm')
-  elif infile != outfile:
-    shutil.copy(infile, outfile)
-  if settings.GENERATE_SOURCE_MAP:
-    building.save_intermediate(infile + '.map', 'post_finalize.map')
 
-  if memfile:
-    # we have a separate .mem file. binaryen did not strip any trailing zeros,
-    # because it's an ABI question as to whether it is valid to do so or not.
-    # we can do so here, since we make sure to zero out that memory (even in
-    # the dynamic linking case, our loader zeros it out)
-    remove_trailing_zeros(memfile)
+  if modify_wasm or settings.GENERATE_SOURCE_MAP or memfile:
+    stdout = building.run_binaryen_command('wasm-emscripten-finalize',
+                                           infile=infile,
+                                           outfile=outfile if modify_wasm else None,
+                                           args=args,
+                                           stdout=subprocess.PIPE)
+    if modify_wasm:
+      building.save_intermediate(infile, 'post_finalize.wasm')
+    elif infile != outfile:
+      shutil.copy(infile, outfile)
+    if settings.GENERATE_SOURCE_MAP:
+      building.save_intermediate(infile + '.map', 'post_finalize.map')
 
-  return load_metadata_wasm(stdout, DEBUG)
+    if memfile:
+      # we have a separate .mem file. binaryen did not strip any trailing zeros,
+      # because it's an ABI question as to whether it is valid to do so or not.
+      # we can do so here, since we make sure to zero out that memory (even in
+      # the dynamic linking case, our loader zeros it out)
+      remove_trailing_zeros(memfile)
+
+    metadata = load_metadata_wasm(stdout, DEBUG)
+  else:
+    metadata = read_metadata(infile)
+
+  logger.debug("Metadata parsed: " + pprint.pformat(metadata))
+  return metadata
 
 
 def create_asm_consts(metadata):
@@ -758,7 +858,6 @@ def load_metadata_wasm(metadata_raw, DEBUG):
   metadata = {
     'declares': [],
     'globalImports': [],
-    'staticBump': 0,
     'tableSize': 0,
     'exports': [],
     'namedGlobals': {},
@@ -782,9 +881,6 @@ def load_metadata_wasm(metadata_raw, DEBUG):
   # nowadays
   # TODO(sbc): remove this once binaryen has been changed to only emit the single element
   metadata['asmConsts'] = {k: v[0] if type(v) is list else v for k, v in metadata['asmConsts'].items()}
-
-  if DEBUG:
-    logger.debug("Metadata parsed: " + pprint.pformat(metadata))
 
   # Calculate the subset of exports that were explicitly marked with llvm.used.
   # These are any exports that were not requested on the command line and are

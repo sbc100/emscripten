@@ -49,6 +49,8 @@ HEADER_SIZE = 8
 
 LIMITS_HAS_MAX = 0x1
 
+SEG_IS_PASSIVE = 0x1
+
 
 def toLEB(num):
   return leb128.u.encode(num)
@@ -91,7 +93,6 @@ def add_emscripten_metadata(wasm_file):
 
     # tempDoublePtr, always 0 in wasm backend
     toLEB(0) +
-
     toLEB(int(settings.STANDALONE_WASM))
 
     # NB: more data can be appended here as long as you increase
@@ -136,11 +137,28 @@ class ExternType(IntEnum):
   EVENT = 4
 
 
+class ValueType(IntEnum):
+  I32 = -0x01,
+  I64 = -0x02,
+  F32 = -0x03,
+  F64 = -0x04,
+
+
+class OpCode(IntEnum):
+  GLOBAL_GET = 0x23
+  I32_CONST = 0x41
+  I64_CONST = 0x42
+  END = 0x0b
+
+
 Section = namedtuple('Section', ['type', 'size', 'offset'])
 Limits = namedtuple('Limits', ['flags', 'initial', 'maximum'])
-Import = namedtuple('Import', ['kind', 'module', 'field'])
+Import = namedtuple('Import', ['kind', 'module', 'field', 'info'])
 Export = namedtuple('Export', ['name', 'kind', 'index'])
 Dylink = namedtuple('Dylink', ['mem_size', 'mem_align', 'table_size', 'table_align', 'needed'])
+Table = namedtuple('Table', ['type', 'limits'])
+Global = namedtuple('Global', ['type', 'mutable', 'init'])
+Segment = namedtuple('Segment', ['flags', 'init', 'data'])
 
 
 class Module:
@@ -178,8 +196,18 @@ class Module:
       maximum = self.readULEB()
     return Limits(flags, initial, maximum)
 
+  def readInitExpr(self):
+    opcode = OpCode(self.readByte())
+    value = self.readSLEB()
+    end = OpCode(self.readByte())
+    assert end == OpCode.END
+    return (opcode, value)
+
   def seek(self, offset):
     self.buf.seek(offset)
+
+  def tell(self):
+    return self.buf.tell()
 
   def sections(self):
     """Generator that lazily returns sections from the wasm file."""
@@ -188,9 +216,108 @@ class Module:
       self.seek(offset)
       section_type = SecType(self.readByte())
       section_size = self.readULEB()
-      section_offset = self.buf.tell()
+      section_offset = self.tell()
       yield Section(section_type, section_size, section_offset)
       offset = section_offset + section_size
+
+  def tables(self):
+    sec = next((s for s in self.sections() if s.type == SecType.TABLE), None)
+    if not sec:
+      return []
+
+    self.seek(sec.offset)
+    num_tables = self.readULEB()
+    tables = []
+    for i in range(num_tables):
+      kind = self.readByte()
+      limits = self.readLimits()
+      tables.append(Table(kind, limits))
+
+    return tables
+
+  def exports(self):
+    sec = next((s for s in self.sections() if s.type == SecType.EXPORT), None)
+    if not sec:
+      return []
+
+    self.seek(sec.offset)
+    num_exports = self.readULEB()
+    exports = []
+    for i in range(num_exports):
+      name = self.readString()
+      kind = ExternType(self.readByte())
+      index = self.readULEB()
+      exports.append(Export(name, kind, index))
+
+    return exports
+
+  def imports(self):
+    sec = next((s for s in self.sections() if s.type == SecType.IMPORT), None)
+    if not sec:
+      return []
+
+    self.seek(sec.offset)
+    num_imports = self.readULEB()
+    imports = []
+    for i in range(num_imports):
+      mod = self.readString()
+      field = self.readString()
+      kind = ExternType(self.readByte())
+      if kind == ExternType.FUNC:
+        info = self.readULEB()  # sig
+      elif kind == ExternType.GLOBAL:
+        info = (
+          self.readSLEB(),  # global type
+          self.readByte()   # mutable
+        )
+      elif kind == ExternType.MEMORY:
+        info = self.readLimits()  # limits
+      elif kind == ExternType.TABLE:
+        info = (
+          self.readSLEB(),   # table type
+          self.readLimits()  # limits
+        )
+      else:
+        assert False
+      imports.append(Import(kind, mod, field, info))
+
+    return imports
+
+  def globals(self):
+    sec = next((s for s in self.sections() if s.type == SecType.GLOBAL), None)
+    if not sec:
+      return []
+
+    self.seek(sec.offset)
+    num_globals = self.readULEB()
+    globals_ = []
+    for i in range(num_globals):
+      t = ValueType(self.readSLEB())
+      mutable = self.readByte()
+      init = self.readInitExpr()
+      g = Global(t, mutable, init)
+      globals_.append(g)
+    return globals_
+
+  def data_segments(self):
+    sec = next((s for s in self.sections() if s.type == SecType.DATA), None)
+    if not sec:
+      return []
+
+    self.seek(sec.offset)
+    num_segments = self.readULEB()
+    segments = []
+    for i in range(num_segments):
+      flags = self.readULEB()
+      if flags & SEG_IS_PASSIVE:
+        init = None
+      else:
+        init = self.readInitExpr()
+      data_size = self.readULEB()
+      data = self.buf.read(data_size)
+      segments.append(Segment(flags, init, data))
+
+    return segments
 
 
 def parse_dylink_section(wasm_file):
@@ -218,46 +345,9 @@ def parse_dylink_section(wasm_file):
 
 
 def get_exports(wasm_file):
-  module = Module(wasm_file)
-  export_section = next((s for s in module.sections() if s.type == SecType.EXPORT), None)
-
-  module.seek(export_section.offset)
-  num_exports = module.readULEB()
-  exports = []
-  for i in range(num_exports):
-    name = module.readString()
-    kind = ExternType(module.readByte())
-    index = module.readULEB()
-    exports.append(Export(name, kind, index))
-
-  return exports
+  return Module(wasm_file).exports()
 
 
 def get_imports(wasm_file):
-  module = Module(wasm_file)
-  import_section = next((s for s in module.sections() if s.type == SecType.IMPORT), None)
-  if not import_section:
-    return []
+  return Module(wasm_file).imports()
 
-  module.seek(import_section.offset)
-  num_imports = module.readULEB()
-  imports = []
-  for i in range(num_imports):
-    mod = module.readString()
-    field = module.readString()
-    kind = ExternType(module.readByte())
-    imports.append(Import(kind, mod, field))
-    if kind == ExternType.FUNC:
-      module.readULEB()  # sig
-    elif kind == ExternType.GLOBAL:
-      module.readSLEB()  # global type
-      module.readByte()  # mutable
-    elif kind == ExternType.MEMORY:
-      module.readLimits()  # limits
-    elif kind == ExternType.TABLE:
-      module.readSLEB()  # table type
-      module.readLimits()  # limits
-    else:
-      assert False
-
-  return imports
