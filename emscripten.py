@@ -194,7 +194,7 @@ def report_missing_symbols(js_library_funcs):
   # Report any symbol that was explicitly exported but is present neither
   # as a native function nor as a JS library function.
   defined_symbols = set(asmjs_mangle(e) for e in settings.WASM_EXPORTS).union(js_library_funcs)
-  missing = set(settings.USER_EXPORTED_FUNCTIONS) - defined_symbols
+  missing = set(settings.REQUIRED_EXPORTS) - defined_symbols
   for symbol in sorted(missing):
     diagnostics.warning('undefined', f'undefined exported symbol: "{symbol}"')
 
@@ -792,8 +792,7 @@ def load_metadata_wasm(metadata_raw, DEBUG):
   unexpected_exports = [e for e in metadata['exports'] if treat_as_user_function(e)]
   unexpected_exports = [asmjs_mangle(e) for e in unexpected_exports]
   unexpected_exports = [e for e in unexpected_exports if e not in settings.EXPORTED_FUNCTIONS]
-  building.user_requested_exports.update(unexpected_exports)
-  settings.EXPORTED_FUNCTIONS.extend(unexpected_exports)
+  settings.REQUIRED_EXPORTS.extend(unexpected_exports)
 
   return metadata
 

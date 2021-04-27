@@ -228,7 +228,7 @@ function ${name}(${args}) {
           }
           // In asm, we need to know about library functions. If there is a target, though, then no
           // need to consider this a library function - we will call directly to it anyhow
-          if (!redirectedIdent && (typeof target == 'function')) {
+          if (!redirectedIdent) {
             libraryFunctions.push(finalName);
           }
         }

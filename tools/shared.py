@@ -561,15 +561,19 @@ def print_compiler_stage(cmd):
 
 
 def mangle_c_symbol_name(name):
+  if name in settings.WASM_SYSTEM_EXPORTS:
+    return name
   return '_' + name if not name.startswith('$') else name[1:]
 
 
 def demangle_c_symbol_name(name):
+  if name in settings.WASM_SYSTEM_EXPORTS:
+    return name
   return name[1:] if name.startswith('_') else '$' + name
 
 
 def is_c_symbol(name):
-  return name.startswith('_')
+  return name.startswith('_') or name in settings.WASM_SYSTEM_EXPORTS
 
 
 def treat_as_user_function(name):

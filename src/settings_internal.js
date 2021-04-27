@@ -117,8 +117,10 @@ var PROFILING_FUNCS = 0;
 // Whether we are emitting a symbol map. You should not modify this.
 var EMIT_SYMBOL_MAP = 0;
 
-// List of function explicitly exported by user on the command line.
-var USER_EXPORTED_FUNCTIONS = [];
+// List of functions that are required to exist at link time.  These
+// can either come from EXPORTED_FUNCTIONS on the commandline or
+// internal mandatory symbols.
+var REQUIRED_EXPORTS = [];
 
 // name of the file containing wasm binary, if relevant
 var WASM_BINARY_FILE = '';

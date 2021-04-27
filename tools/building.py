@@ -44,8 +44,6 @@ nm_cache = {}
 # Stores the object files contained in different archive files passed as input
 ar_contents = {}
 _is_ar_cache = {}
-# the exports the user requested
-user_requested_exports = set()
 
 
 class ObjectFileInfo:
@@ -979,7 +977,7 @@ def metadce(js_file, wasm_file, minify_whitespace, debug_info):
   for item in graph:
     if 'export' in item:
       export = asmjs_mangle(item['export'])
-      if settings.EXPORT_ALL or export in required_symbols:
+      if export in settings.REQUIRED_EXPORTS or settings.EXPORT_ALL:
         item['root'] = True
   # in standalone wasm, always export the memory
   if not settings.IMPORTED_MEMORY:
