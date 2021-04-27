@@ -236,51 +236,69 @@ emsdk_root = os.path.dirname(os.path.dirname(path_from_root()))
 emsdk_embedded_config = os.path.join(emsdk_root, '.emscripten')
 user_home_config = os.path.expanduser('~/.emscripten')
 
-if '--em-config' in sys.argv:
-  i = sys.argv.index('--em-config')
-  if len(sys.argv) <= i + 1:
-    exit_with_error('--em-config must be followed by a filename')
-  EM_CONFIG = sys.argv.pop(i + 1)
-  del sys.argv[i]
-elif 'EM_CONFIG' in os.environ:
-  EM_CONFIG = os.environ['EM_CONFIG']
-elif os.path.exists(embedded_config):
-  EM_CONFIG = embedded_config
-elif os.path.exists(emsdk_embedded_config):
-  EM_CONFIG = emsdk_embedded_config
-elif os.path.exists(user_home_config):
-  EM_CONFIG = user_home_config
-else:
-  # No config file found.  Set EM_CONFIG to a default value
-  # that will get reported in the error below.
-  if root_is_writable():
-    EM_CONFIG = embedded_config
-  else:
-    EM_CONFIG = user_home_config
 
-argv_cache = consume_argv('--cache')
-if argv_cache:
-  CACHE = os.path.abspath(os.path.expanduser(argv_cache))
-  os.environ['EM_CACHE'] = CACHE
+def init(argv):
+  global EM_CONFIG
+
+  # read response files very early on so that all subsequent code that accesses
+  # argv will see the expanded content.
+  try:
+    argv = substitute_response_files(argv)
+  except IOError as e:
+    exit_with_error(e)
+
+  def consume_argv(name):
+    value = None
+    while name in argv:
+      i = argv.index(name)
+      if len(argv) <= i + 1:
+        exit_with_error(name + ' must be followed by a filename')
+      value = argv.pop(i + 1)
+      del argv[i]
+    return value
+
+  EM_CONFIG = consume_argv('--em-config')
+  if not EM_CONFIG:
+    if 'EM_CONFIG' in os.environ:
+      EM_CONFIG = os.environ['EM_CONFIG']
+    elif os.path.exists(embedded_config):
+      EM_CONFIG = embedded_config
+    elif os.path.exists(emsdk_embedded_config):
+      EM_CONFIG = emsdk_embedded_config
+    elif os.path.exists(user_home_config):
+      EM_CONFIG = user_home_config
+    else:
+      # No config file found.  Set EM_CONFIG to a default value
+      # that will get reported in the error below.
+      if root_is_writable():
+        EM_CONFIG = embedded_config
+      else:
+        EM_CONFIG = user_home_config
+
+  argv_cache = consume_argv('--cache')
+  if argv_cache:
+    CACHE = os.path.abspath(os.path.expanduser(argv_cache))
+    os.environ['EM_CACHE'] = CACHE
 
 # We used to support inline EM_CONFIG.
-if '\n' in EM_CONFIG:
-  exit_with_error('Inline EM_CONFIG data no longer supported.  Please use a config file.')
+  if '\n' in EM_CONFIG:
+    exit_with_error('Inline EM_CONFIG data no longer supported.  Please use a config file.')
 
-EM_CONFIG = os.path.expanduser(EM_CONFIG)
+  EM_CONFIG = os.path.expanduser(EM_CONFIG)
 
-if consume_argv('--generate-config'):
-  generate_config(EM_CONFIG)
-  sys.exit(0)
+  if consume_argv('--generate-config'):
+    generate_config(EM_CONFIG)
+    sys.exit(0)
 
-if not os.path.exists(EM_CONFIG):
-  exit_with_error(f'config file not found: {EM_CONFIG}.  Please create one by hand or run `emcc --generate-config`')
+  if not os.path.exists(EM_CONFIG):
+    exit_with_error(f'config file not found: {EM_CONFIG}.  Please create one by hand or run `emcc --generate-config`')
 
-logger.debug('emscripten config is located in ' + EM_CONFIG)
+  logger.debug('emscripten config is located in ' + EM_CONFIG)
 
 # Emscripten compiler spawns other processes, which can reimport shared.py, so
 # make sure that those child processes get the same configuration file by
 # setting it to the currently active environment.
-os.environ['EM_CONFIG'] = EM_CONFIG
+  os.environ['EM_CONFIG'] = EM_CONFIG
 
-parse_config_file()
+  parse_config_file()
+  return argv

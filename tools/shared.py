@@ -40,6 +40,14 @@ DEBUG_SAVE = DEBUG or int(os.environ.get('EMCC_DEBUG_SAVE', '0'))
 EXPECTED_NODE_VERSION = (4, 1, 1)
 EXPECTED_LLVM_VERSION = "14.0"
 PYTHON = sys.executable
+PRINT_STAGES = int(os.getenv('EMCC_VERBOSE', '0'))
+# Verbosity level control for any intermediate subprocess spawns from the compiler. Useful for internal debugging.
+# 0: disabled.
+# 1: Log stderr of subprocess spawns.
+# 2: Log stdout and stderr of subprocess spawns. Print out subprocess commands that were executed.
+# 3: Log stdout and stderr, and pass VERBOSE=1 to CMake configure steps.
+EM_BUILD_VERBOSE = int(os.getenv('EM_BUILD_VERBOSE', '0'))
+TRACK_PROCESS_SPAWNS = EM_BUILD_VERBOSE >= 3
 
 # Used only when EM_PYTHON_MULTIPROCESSING=1 env. var is set.
 multiprocessing_pool = None
@@ -479,9 +487,8 @@ def replace_or_append_suffix(filename, new_suffix):
 # temp directory (TEMP_DIR/emscripten_temp).
 def get_emscripten_temp_dir():
   """Returns a path to EMSCRIPTEN_TEMP_DIR, creating one if it didn't exist."""
-  global configuration, EMSCRIPTEN_TEMP_DIR
-  if not EMSCRIPTEN_TEMP_DIR:
-    EMSCRIPTEN_TEMP_DIR = tempfile.mkdtemp(prefix='emscripten_temp_', dir=configuration.TEMP_DIR)
+  if not EMSCRIPTEN_TEMP_DIR.path:
+    EMSCRIPTEN_TEMP_DIR.path = tempfile.mkdtemp(prefix='emscripten_temp_', dir=configuration.TEMP_DIR)
 
     if not DEBUG_SAVE:
       def prepare_to_clean_temp(d):
@@ -538,14 +545,6 @@ class Configuration:
     else:
       # Otherwise use the system tempdir and try to clean up after ourselves.
       return tempfiles.TempFiles(self.TEMP_DIR, save_debug_files=False)
-
-
-def apply_configuration():
-  global configuration, EMSCRIPTEN_TEMP_DIR, CANONICAL_TEMP_DIR, TEMP_DIR
-  configuration = Configuration()
-  EMSCRIPTEN_TEMP_DIR = configuration.EMSCRIPTEN_TEMP_DIR
-  CANONICAL_TEMP_DIR = configuration.CANONICAL_TEMP_DIR
-  TEMP_DIR = configuration.TEMP_DIR
 
 
 def target_environment_may_be(environment):
@@ -802,49 +801,103 @@ def do_replace(input_, pattern, replacement):
   return input_.replace(pattern, replacement)
 
 
-# ============================================================================
-# End declarations.
-# ============================================================================
+def read_file(file_path):
+  """Read from a file opened in text mode"""
+  with open(file_path) as fh:
+    return fh.read()
 
-# Everything below this point is top level code that get run when importing this
-# file.  TODO(sbc): We should try to reduce that amount we do here and instead
-# have consumers explicitly call initialization functions.
 
-# Verbosity level control for any intermediate subprocess spawns from the compiler. Useful for internal debugging.
-# 0: disabled.
-# 1: Log stderr of subprocess spawns.
-# 2: Log stdout and stderr of subprocess spawns. Print out subprocess commands that were executed.
-# 3: Log stdout and stderr, and pass VERBOSE=1 to CMake configure steps.
-EM_BUILD_VERBOSE = int(os.getenv('EM_BUILD_VERBOSE', '0'))
-TRACK_PROCESS_SPAWNS = EM_BUILD_VERBOSE >= 3
+def read_binary(file_path):
+  """Read from a file opened in binary mode"""
+  with open(file_path, 'rb') as fh:
+    return fh.read()
 
-set_version_globals()
 
-CLANG_CC = os.path.expanduser(build_clang_tool_path(exe_suffix('clang')))
-CLANG_CXX = os.path.expanduser(build_clang_tool_path(exe_suffix('clang++')))
-LLVM_LINK = build_llvm_tool_path(exe_suffix('llvm-link'))
-LLVM_AR = build_llvm_tool_path(exe_suffix('llvm-ar'))
-LLVM_DWP = build_llvm_tool_path(exe_suffix('llvm-dwp'))
-LLVM_RANLIB = build_llvm_tool_path(exe_suffix('llvm-ranlib'))
-LLVM_OPT = os.path.expanduser(build_llvm_tool_path(exe_suffix('opt')))
-LLVM_NM = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-nm')))
-LLVM_INTERPRETER = os.path.expanduser(build_llvm_tool_path(exe_suffix('lli')))
-LLVM_COMPILER = os.path.expanduser(build_llvm_tool_path(exe_suffix('llc')))
-LLVM_DWARFDUMP = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-dwarfdump')))
-LLVM_OBJCOPY = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-objcopy')))
-WASM_LD = os.path.expanduser(build_llvm_tool_path(exe_suffix('wasm-ld')))
+def write_file(file_path, text):
+  """Write to a file opened in text mode"""
+  with open(file_path, 'w') as fh:
+    fh.write(text)
 
-EMCC = bat_suffix(path_from_root('emcc'))
-EMXX = bat_suffix(path_from_root('em++'))
-EMAR = bat_suffix(path_from_root('emar'))
-EMRANLIB = bat_suffix(path_from_root('emranlib'))
-EMCMAKE = bat_suffix(path_from_root('emcmake'))
-EMCONFIGURE = bat_suffix(path_from_root('emconfigure'))
-EM_NM = bat_suffix(path_from_root('emnm'))
-FILE_PACKAGER = bat_suffix(path_from_root('tools', 'file_packager'))
 
-apply_configuration()
+class ToolPath(os.PathLike):
+  """Class used to model a potentially unset tool name.
+  This mostly exists to that other modules can import, for example,
+  CLANG_CC before the config file has been parsed and the value
+  is known`.
+  """
+  def __init__(self, name):
+    self.name = name
+    self.path = None
 
-Cache = cache.Cache(config.CACHE)
+  def __str__(self):
+    assert self.path
+    return self.path
 
-PRINT_STAGES = int(os.getenv('EMCC_VERBOSE', '0'))
+  def __bool__(self):
+    return self.path != None
+
+  def __fspath__(self):
+    assert self.path is not None, f'ToolPath `{self.name}` not set'
+    return self.path
+
+
+CLANG_CC = ToolPath('CLANG_CC')
+CLANG_CXX = ToolPath('CLANG_CXX')
+LLVM_LINK = ToolPath('LLVM_LINK')
+LLVM_AR = ToolPath('LLVM_AR')
+LLVM_RANLIB = ToolPath('LLVM_RANLIB')
+LLVM_OPT = ToolPath('LLVM_OPT')
+LLVM_NM = ToolPath('LLVM_NM')
+LLVM_INTERPRETER = ToolPath('LLVM_INTERPRETER')
+LLVM_COMPILER = ToolPath('LLVM_COMPILER')
+LLVM_DWARFDUMP = ToolPath('LLVM_DWARFDUMP')
+LLVM_OBJCOPY = ToolPath('LLVM_OBJCOPY')
+WASM_LD = ToolPath('WASM_LD')
+
+EMCC = ToolPath('EMCC')
+EMXX = ToolPath('EMXX')
+EMAR = ToolPath('EMAR')
+EMRANLIB = ToolPath('EMRANLIB')
+EMCMAKE = ToolPath('EMCMAKE')
+EMCONFIGURE = ToolPath('EMCONFIGURE')
+FILE_PACKAGER = ToolPath('FILE_PACKAGER')
+
+TEMP_DIR = ToolPath('TEMP_DIR')
+CANONICAL_TEMP_DIR = ToolPath('CANONICAL_TEMP_DIR')
+EMSCRIPTEN_TEMP_DIR = ToolPath('EMSCRIPTEN_TEMP_DIR')
+
+
+def init(args):
+  global Cache, configuration
+  args = config.init(args)
+  set_version_globals()
+
+  configuration = Configuration()
+  Cache = cache.Cache(config.CACHE)
+
+  CLANG_CC.path = os.path.expanduser(build_clang_tool_path(exe_suffix('clang')))
+  CLANG_CXX.path = os.path.expanduser(build_clang_tool_path(exe_suffix('clang++')))
+  LLVM_LINK.path = build_llvm_tool_path(exe_suffix('llvm-link'))
+  LLVM_AR.path = build_llvm_tool_path(exe_suffix('llvm-ar'))
+  LLVM_RANLIB.path = build_llvm_tool_path(exe_suffix('llvm-ranlib'))
+  LLVM_OPT.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('opt')))
+  LLVM_NM.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-nm')))
+  LLVM_INTERPRETER.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('lli')))
+  LLVM_COMPILER.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('llc')))
+  LLVM_DWARFDUMP.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-dwarfdump')))
+  LLVM_OBJCOPY.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('llvm-objcopy')))
+  WASM_LD.path = os.path.expanduser(build_llvm_tool_path(exe_suffix('wasm-ld')))
+
+  EMCC.path = bat_suffix(path_from_root('emcc'))
+  EMXX.path = bat_suffix(path_from_root('em++'))
+  EMAR.path = bat_suffix(path_from_root('emar'))
+  EMRANLIB.path = bat_suffix(path_from_root('emranlib'))
+  EMCMAKE.path = bat_suffix(path_from_root('emcmake'))
+  EMCONFIGURE.path = bat_suffix(path_from_root('emconfigure'))
+  FILE_PACKAGER.path = bat_suffix(path_from_root('tools', 'file_packager'))
+
+  EMSCRIPTEN_TEMP_DIR.path = configuration.EMSCRIPTEN_TEMP_DIR
+  CANONICAL_TEMP_DIR.path = configuration.CANONICAL_TEMP_DIR
+  TEMP_DIR.path = configuration.TEMP_DIR
+
+  return args

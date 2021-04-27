@@ -32,7 +32,8 @@ from subprocess import CalledProcessError
 # Main run() function
 #
 def run():
-  if len(sys.argv) < 2 or sys.argv[1] in ('--version', '--help'):
+  argv = shared.init(sys.argv)
+  if len(argv) < 2 or argv[1] in ('--version', '--help'):
     print('''\
 emmake is a helper for make, setting various environment
 variables so that emcc etc. are used. Typical usage:
@@ -42,7 +43,7 @@ variables so that emcc etc. are used. Typical usage:
 (but you can run any command instead of make)''', file=sys.stderr)
     return 1
 
-  args = sys.argv[1:]
+  args = argv[1:]
   env = building.get_building_env()
 
   # On Windows prefer building with mingw32-make instead of make, if it exists.

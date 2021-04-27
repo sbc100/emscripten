@@ -3647,7 +3647,7 @@ int main()
       abs_include_path = 'C:\\nowhere\\at\\all'
     else:
       abs_include_path = '/nowhere/at/all'
-    cmd = [EMCC, test_file('hello_world.c'), '--valid-abspath', abs_include_path, '-I%s' % abs_include_path]
+    cmd = [os.fspath(EMCC), test_file('hello_world.c'), '--valid-abspath', abs_include_path, '-I%s' % abs_include_path]
     print(' '.join(cmd))
     self.run_process(cmd)
     self.assertContained('hello, world!', self.run_js('a.out.js'))

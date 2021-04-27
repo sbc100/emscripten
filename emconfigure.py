@@ -26,7 +26,8 @@ from subprocess import CalledProcessError
 # Main run() function
 #
 def run():
-  if len(sys.argv) < 2 or sys.argv[1] in ('--version', '--help'):
+  argv = shared.init(sys.argv)
+  if len(argv) < 2 or argv[1] in ('--version', '--help'):
     print('''\
 emconfigure is a helper for configure, setting various environment
 variables so that emcc etc. are used. Typical usage:
@@ -36,7 +37,7 @@ variables so that emcc etc. are used. Typical usage:
 (but you can run any command instead of configure)''', file=sys.stderr)
     return 1
 
-  args = sys.argv[1:]
+  args = argv[1:]
 
   if 'cmake' in args:
     print('error: use `emcmake` rather then `emconfigure` for cmake projects', file=sys.stderr)

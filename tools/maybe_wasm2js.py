@@ -33,9 +33,11 @@ sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tools import shared, building
 
-js_file = sys.argv[1]
-wasm_file = sys.argv[2]
-opts = sys.argv[3:]
+argv = shared.init(sys.argv)
+
+js_file = argv[1]
+wasm_file = argv[2]
+opts = argv[3:]
 
 # main
 

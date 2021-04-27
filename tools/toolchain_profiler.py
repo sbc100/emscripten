@@ -128,6 +128,7 @@ if EMPROFILE:
 
     @staticmethod
     def escape_string(arg):
+      arg = os.fspath(arg)
       return arg.replace('\\', '\\\\').replace('"', '\\"')
 
     @staticmethod
@@ -170,7 +171,7 @@ if EMPROFILE:
     def record_subprocess_spawn(process_pid, process_cmdline):
       expanded_cmdline = []
       for item in process_cmdline:
-        if item.startswith('@'):
+        if isinstance(item, str) and item.startswith('@'):
           expanded_cmdline += response_file.read_response_file(item)
         else:
           expanded_cmdline.append(item)

@@ -17,7 +17,8 @@ from subprocess import CalledProcessError
 # Main run() function
 #
 def run():
-  if len(sys.argv) < 2 or sys.argv[1] in ('--version', '--help'):
+  argv = shared.init(sys.argv)
+  if len(argv) < 2 or argv[1] in ('--version', '--help'):
     print('''\
 emcmake is a helper for cmake, setting various environment
 variables so that emcc etc. are used. Typical usage:
@@ -26,7 +27,7 @@ variables so that emcc etc. are used. Typical usage:
 ''', file=sys.stderr)
     return 1
 
-  args = sys.argv[1:]
+  args = argv[1:]
 
   def has_substr(args, substr):
     return any(substr in s for s in args)

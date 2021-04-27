@@ -10,5 +10,6 @@
 import sys
 from tools import shared
 
-cmd = [shared.LLVM_AR] + sys.argv[1:]
+args = shared.init(sys.argv)
+cmd = [shared.LLVM_AR] + args[1:]
 sys.exit(shared.run_process(cmd, stdin=sys.stdin, check=False).returncode)

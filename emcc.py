@@ -948,6 +948,8 @@ run_via_emxx = False
 # Main run() function
 #
 def run(args):
+  args = shared.init(args)
+
   # Additional compiler flags that we treat as if they were passed to us on the
   # commandline
   EMCC_CFLAGS = os.environ.get('EMCC_CFLAGS')
@@ -2316,8 +2318,8 @@ def phase_compile_inputs(options, state, newargs, input_files):
       return True
     return flag.startswith(('-l', '-L', '-Wl,'))
 
-  CXX = [shared.CLANG_CXX]
-  CC = [shared.CLANG_CC]
+  CXX = [os.fspath(shared.CLANG_CXX)]
+  CC = [os.fspath(shared.CLANG_CC)]
   if config.COMPILER_WRAPPER:
     logger.debug('using compiler wrapper: %s', config.COMPILER_WRAPPER)
     CXX.insert(0, config.COMPILER_WRAPPER)

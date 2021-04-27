@@ -15,7 +15,8 @@ from tools import shared
 
 
 def run():
-  newargs = [shared.LLVM_RANLIB] + sys.argv[1:]
+  argv = shared.init(sys.argv)
+  newargs = [shared.LLVM_RANLIB] + argv[1:]
   return shared.run_process(newargs, stdin=sys.stdin, check=False).returncode
 
 

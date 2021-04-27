@@ -31,7 +31,7 @@ import jsrun
 from tools.shared import TEMP_DIR, EMCC, EMXX, DEBUG, EMCONFIGURE, EMCMAKE
 from tools.shared import EMSCRIPTEN_TEMP_DIR
 from tools.shared import EM_BUILD_VERBOSE
-from tools.shared import get_canonical_temp_dir, try_delete, path_from_root
+from tools.shared import try_delete, path_from_root
 from tools.utils import MACOS, WINDOWS
 from tools import shared, line_endings, building, config
 
@@ -341,7 +341,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   # default temporary directory settings. set_temp_dir may be called later to
   # override these
   temp_dir = TEMP_DIR
-  canonical_temp_dir = get_canonical_temp_dir(TEMP_DIR)
+  canonical_temp_dir = shared.get_canonical_temp_dir(TEMP_DIR)
 
   # This avoids cluttering the test runner output, which is stderr too, with compiler warnings etc.
   # Change this to None to get stderr reporting, for debugging purposes
@@ -389,7 +389,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
 
   def set_temp_dir(self, temp_dir):
     self.temp_dir = temp_dir
-    self.canonical_temp_dir = get_canonical_temp_dir(self.temp_dir)
+    self.canonical_temp_dir = shared.get_canonical_temp_dir(self.temp_dir)
     # Explicitly set dedicated temporary directory for parallel tests
     os.environ['EMCC_TEMP_DIR'] = self.temp_dir
 

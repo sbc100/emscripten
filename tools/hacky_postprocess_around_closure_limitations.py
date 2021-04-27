@@ -8,7 +8,10 @@ sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools import building
 from tools.utils import read_file, write_file
 
-f = read_file(sys.argv[1])
+argv = tools.shared.init(sys.argv)
+
+f = open(argv, 'r').read()
+f = read_file(argv[1])
 orig_size = len(f)
 
 f = f.strip()
@@ -52,10 +55,10 @@ f = re.sub(r'([;{}=,\+\-\*/\(\)\[\]])[\n]', r'\1', f)
 f = re.sub(r'([;{}=,\*/\(\)\[\]])[\s]', r'\1', f)
 
 # Finally, rerun minifier because the above changes may have left redundant whitespaces
-write_file(sys.argv[1], f)
-minified = building.acorn_optimizer(sys.argv[1], ['minifyWhitespace'], return_output=True)
-write_file(sys.argv[1], minified)
+write_file(argv[1], f)
+minified = building.acorn_optimizer(argv[1], ['minifyWhitespace'], return_output=True)
+write_file(argv[1], minified)
 
 # optimized_size = len(f)
 # print('Further optimized ' + str(optimized_size - orig_size) + ' bytes (' + str(orig_size) + ' -> ' + str(optimized_size) + ' bytes, {0:.2f}'.format((optimized_size-orig_size)*100.0/orig_size) + '%)')
-write_file(sys.argv[1], f)
+write_file(argv[1], f)

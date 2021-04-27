@@ -332,6 +332,7 @@ def configure():
 
 
 def main(args):
+  shared.init(args)
   options = parse_args(args)
 
   # We set the environments variables here and then call configure,
