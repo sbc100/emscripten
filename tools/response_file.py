@@ -13,6 +13,13 @@ from .utils import WINDOWS
 DEBUG = int(os.environ.get('EMCC_DEBUG', '0'))
 
 
+# Backslashes and other special chars need to be escaped in the response file.
+ESCAPE_CHARS = ['\\', '\"']
+# When calling llvm-ar on Linux and macOS, single quote characters ' should be escaped.
+if not WINDOWS:
+  ESCAPE_CHARS += ['\'']
+
+
 def create_response_file(args, directory):
   """Routes the given cmdline param list in args into a new response file and
   returns the filename to it.
@@ -21,14 +28,8 @@ def create_response_file(args, directory):
   """
   response_fd, response_filename = tempfile.mkstemp(prefix='emscripten_', suffix='.rsp', dir=directory, text=True)
 
-  # Backslashes and other special chars need to be escaped in the response file.
-  escape_chars = ['\\', '\"']
-  # When calling llvm-ar on Linux and macOS, single quote characters ' should be escaped.
-  if not WINDOWS:
-    escape_chars += ['\'']
-
   def escape(arg):
-    for char in escape_chars:
+    for char in ESCAPE_CHARS:
       arg = arg.replace(char, '\\' + char)
     return arg
 
@@ -66,6 +67,33 @@ def create_response_file(args, directory):
   return response_filename
 
 
+def parse_windows_rsp_file(contents):
+  args = []
+
+  INIT = 0
+  UNQUOTED = 1
+  QUOTED = 2
+  state = INIT
+  arg = ''
+  for ch in contents:
+    if state == INIT:
+      if ch.isspace():
+        continue
+      if ch in '"':
+        state = QUOTED
+    elif state == QUOTED:
+      if ch == '"':
+        args.append(arg)
+        arg = ''
+        state = UNQUOTED
+      elif ch == '\\':
+
+      else:
+        arg.append(ch)
+
+  return args
+
+
 def read_response_file(response_filename):
   """Reads a response file, and returns the list of cmdline params found in the
   file.
@@ -78,8 +106,12 @@ def read_response_file(response_filename):
     raise IOError("response file not found: %s" % response_filename)
 
   with open(response_filename) as f:
-    args = f.read()
-  args = shlex.split(args)
+    contents = f.read()
+
+  if WINDOWS:
+    args = parse_windows_rsp_file(contents)
+  else:
+    args = shlex.split(contents)
 
   if DEBUG:
     logging.warning('Read response file ' + response_filename + ': ' + str(args))
