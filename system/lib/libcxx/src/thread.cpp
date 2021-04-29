@@ -35,8 +35,11 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 thread::~thread()
 {
-    if (!__libcpp_thread_isnull(&__t_))
+    printf("XXX %lx\n", __t_);
+    if (!__libcpp_thread_isnull(&__t_)) {
+        puts("YYY\n");
         terminate();
+    }
 }
 
 void

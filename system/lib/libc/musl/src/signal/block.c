@@ -2,6 +2,11 @@
 #include "syscall.h"
 #include <signal.h>
 
+#ifdef  __EMSCRIPTEN__
+void __block_all_sigs(void *set) {}
+void __block_app_sigs(void *set) {}
+void __restore_sigs(void *set) {}
+#else
 static const unsigned long all_mask[] = {
 #if ULONG_MAX == 0xffffffff && _NSIG == 129
 	-1UL, -1UL, -1UL, -1UL
@@ -48,3 +53,4 @@ void __restore_sigs(void *set)
 	__syscall(SYS_rt_sigprocmask, SIG_SETMASK, set, 0, _NSIG/8);
 #endif
 }
+#endif

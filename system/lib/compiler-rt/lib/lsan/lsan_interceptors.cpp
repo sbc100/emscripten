@@ -423,6 +423,7 @@ struct ThreadParam {
 };
 
 extern "C" void *__lsan_thread_start_func(void *arg) {
+  puts("__lsan_thread_start_func");
   ThreadParam *p = (ThreadParam*)arg;
   void* (*callback)(void *arg) = p->callback;
   void *param = p->param;

@@ -60,6 +60,7 @@ void CreateThread(long i)
 }
 
 void destructor1(void* val) {
+	printf("destructor called (%d)\n", destructorCounter);
 	destructorCounter++;
 }
 

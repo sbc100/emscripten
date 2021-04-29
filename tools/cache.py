@@ -81,6 +81,7 @@ class Cache:
     utils.safe_ensure_dirs(self.dirname)
 
   def erase(self):
+    logger.info(f'clearing cache at: {self.dirname}')
     with self.lock():
       if os.path.exists(self.dirname):
         for f in os.listdir(self.dirname):
@@ -159,7 +160,7 @@ class Cache:
           what = 'system library'
         else:
           what = 'system asset'
-      message = f'generating {what}: {shortname}... (this will be cached in "{cachename}" for subsequent builds)'
+      message = f'generating {what}: {os.path.basename(shortname)}... (this will be cached in "{cachename}" for subsequent builds)'
       logger.info(message)
       utils.safe_ensure_dirs(os.path.dirname(cachename))
       creator(cachename)

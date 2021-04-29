@@ -79,6 +79,7 @@ void __pthread_tsd_run_dtors()
 {
 	pthread_t self = __pthread_self();
 	int i, j;
+  printf("native __pthread_tsd_run_dtors %x %d\n", self, self->tsd_used);
 	for (j=0; self->tsd_used && j<PTHREAD_DESTRUCTOR_ITERATIONS; j++) {
 		__pthread_rwlock_rdlock(&key_lock);
 		self->tsd_used = 0;
