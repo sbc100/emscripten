@@ -1476,16 +1476,16 @@ def warn_on_unexported_main(symbolses):
         return
 
 
-def handle_reverse_deps(input_files):
+def handle_reverse_deps(cxx, input_files):
   if settings.REVERSE_DEPS == 'none':
-    return
+    return cxx
   elif settings.REVERSE_DEPS == 'all':
     # When not optimzing we add all possible reverse dependencies rather
     # than scanning the input files
     for symbols in deps_info.get_deps_info().values():
       for symbol in symbols:
         settings.EXPORTED_FUNCTIONS.append(mangle_c_symbol_name(symbol))
-    return
+    return cxx
 
   if settings.REVERSE_DEPS != 'auto':
     shared.exit_with_error(f'invalid values for REVERSE_DEPS: {settings.REVERSE_DEPS}')
@@ -1522,8 +1522,17 @@ def handle_reverse_deps(input_files):
       logger.debug('adding dependency on export %s' % export)
     symbolses[0].undefs.add(demangle_c_symbol_name(export))
 
+  std_cxx_found = False
   for symbols in symbolses:
+    if not cxx and not std_cxx_found:
+      std_cxx_found = any(undef.startswith('_ZNSt') for undef in symbols.undefs)
     add_reverse_deps(symbols)
+
+  if not cxx and std_cxx_found:
+    diagnostics.warning('deprecated', 'implictly linking C++ libraries due to symbol dependencies.  Please use `em++` to link C++ programs.')
+    cxx = True
+
+  return cxx
 
 
 def calculate(input_files, forced):
@@ -1538,7 +1547,7 @@ def calculate(input_files, forced):
     diagnostics.warning('deprecated', 'EMCC_ONLY_FORCED_STDLIBS is deprecated.  Use `-nostdlib` and/or `-s REVERSE_DEPS=none` depending on the desired result')
     settings.REVERSE_DEPS = 'all'
 
-  handle_reverse_deps(input_files)
+  cxx = handle_reverse_deps(cxx, input_files)
 
   libs_to_link = []
   already_included = set()

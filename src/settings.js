@@ -1836,7 +1836,7 @@ var LLD_REPORT_UNDEFINED = 0;
 // When this is disabled `em++` is required when compiling and linking C++
 // programs. This which matches the behaviour of gcc/g++ and clang/clang++.
 // [compile+link]
-var DEFAULT_TO_CXX = 1;
+var DEFAULT_TO_CXX = 0;
 
 // While LLVM's wasm32 has long double = float128, we don't support printing
 // that at full precision by default. Instead we print as 64-bit doubles, which
