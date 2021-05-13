@@ -2921,6 +2921,7 @@ def parse_args(newargs):
       options.no_entry = True
     elif check_arg('--js-library'):
       settings.JS_LIBRARIES.append((i + 1, os.path.abspath(consume_arg_file())))
+      settings.USER_JS_LIBRARIES.append(os.path.abspath(consume_arg_file()))
     elif check_flag('--remove-duplicates'):
       diagnostics.warning('legacy-settings', '--remove-duplicates is deprecated as it is no longer needed. If you cannot link without it, file a bug with a testcase')
     elif check_flag('--jcache'):

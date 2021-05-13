@@ -94,6 +94,9 @@ var WASI_MODULE_NAME = "wasi_snapshot_preview1";
 // added by the JS compiler.
 var JS_LIBRARIES = [];
 
+// Libraries specified via --js-library command line
+var USER_JS_LIBRARIES = [];
+
 // This will contain the emscripten version. This can be useful in combination
 // with RETAIN_COMPILER_SETTINGS
 var EMSCRIPTEN_VERSION = '';

@@ -6153,6 +6153,15 @@ mergeInto(LibraryManager.library, {
     self.run_process([EMXX, 'test.cpp', '--js-library', 'lib.js', '-s', 'EXPORTED_FUNCTIONS=_main,_memset'])
     self.assertContained('dddddddddd', self.run_js('a.out.js'))
 
+  def test_js_lib_internal_settings(self):
+    self.assertContained('var EMBIND =', open(path_from_root('src/settings_internal.js')).read())
+    create_file('lib.js', r'''
+#if EMBIND
+#endif
+''')
+    err = self.expect_fail([EMCC, test_file('hello_world.c'), '-o', 'out.js', '--js-library', 'lib.js'])
+    self.assertContained('ReferenceError: EMBIND is not defined', err)
+
   def test_realpath(self):
     create_file('src.c', r'''
 #include <stdlib.h>
