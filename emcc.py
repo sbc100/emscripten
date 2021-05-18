@@ -105,9 +105,6 @@ DEFAULT_ASYNCIFY_IMPORTS = [
   'dlopen', '__asyncjs__*'
 ]
 
-# Target options
-final_js = None
-
 UBSAN_SANITIZERS = {
   'alignment',
   'bool',
@@ -157,19 +154,26 @@ SIMD_NEON_FLAGS = ['-mfpu=neon']
 # return it)
 # TODO: refactor all this, a singleton that abstracts over the final output
 #       and saving of intermediates
-def save_intermediate(name, suffix='js'):
+def save_intermediate(state, name, suffix='js'):
   if not DEBUG:
     return
+<<<<<<< HEAD
   if not final_js:
     logger.debug(f'(not saving intermediate {name} because not generating JS)')
     return
   building.save_intermediate(final_js, f'{name}.{suffix}')
+=======
+  if not state.final_js:
+    logger.debug('(not saving intermediate %s because not generating JS)' % name)
+    return
+  building.save_intermediate(state.final_js, name + '.' + suffix)
+>>>>>>> ec5a6b91f (emcc.py: move final_js into EmccState object. NFC.)
 
 
-def save_intermediate_with_wasm(name, wasm_binary):
+def save_intermediate_with_wasm(state, name, wasm_binary):
   if not DEBUG:
     return
-  save_intermediate(name) # save the js
+  save_intermediate(state, name) # save the js
   building.save_intermediate(wasm_binary, name + '.wasm')
 
 
@@ -209,6 +213,7 @@ class EmccState:
     self.link_flags = []
     self.lib_dirs = []
     self.forced_stdlibs = []
+    self.final_js = None
 
 
 def add_link_flag(state, i, f):
@@ -2508,12 +2513,10 @@ def phase_link(linker_arguments, wasm_target):
 
 @ToolchainProfiler.profile_block('post_link')
 def phase_post_link(options, state, in_wasm, wasm_target, target):
-  global final_js
-
   target_basename = unsuffixed_basename(target)
 
   if options.oformat != OFormat.WASM:
-    final_js = in_temp(target_basename + '.js')
+    state.final_js = in_temp(target_basename + '.js')
 
   settings.TARGET_BASENAME = unsuffixed_basename(target)
 
@@ -2529,16 +2532,16 @@ def phase_post_link(options, state, in_wasm, wasm_target, target):
   else:
     memfile = shared.replace_or_append_suffix(target, '.mem')
 
-  phase_emscript(options, in_wasm, wasm_target, memfile)
+  phase_emscript(options, state, in_wasm, wasm_target, memfile)
 
-  phase_source_transforms(options, target)
+  phase_source_transforms(options, state, target)
 
   if memfile and not settings.MINIMAL_RUNTIME:
     # MINIMAL_RUNTIME doesn't use `var memoryInitializer` but instead expects Module['mem'] to
     # be loaded before the module.  See src/postamble_minimal.js.
-    phase_memory_initializer(memfile)
+    phase_memory_initializer(state, memfile)
 
-  phase_binaryen(target, options, wasm_target)
+  phase_binaryen(options, state, target, wasm_target)
 
   # If we are not emitting any JS then we are all done now
   if options.oformat != OFormat.WASM:
@@ -2546,7 +2549,7 @@ def phase_post_link(options, state, in_wasm, wasm_target, target):
 
 
 @ToolchainProfiler.profile_block('emscript')
-def phase_emscript(options, in_wasm, wasm_target, memfile):
+def phase_emscript(options, state, in_wasm, wasm_target, memfile):
   # Emscripten
   logger.debug('emscript')
   if options.memory_init_file:
@@ -2557,14 +2560,12 @@ def phase_emscript(options, in_wasm, wasm_target, memfile):
   if embed_memfile():
     settings.SUPPORT_BASE64_EMBEDDING = 1
 
-  emscripten.run(in_wasm, wasm_target, final_js, memfile)
-  save_intermediate('original')
+  emscripten.run(in_wasm, wasm_target, state.final_js, memfile)
+  save_intermediate(state, 'original')
 
 
 @ToolchainProfiler.profile_block('source transforms')
-def phase_source_transforms(options, target):
-  global final_js
-
+def phase_source_transforms(options, state, target):
   # Embed and preload files
   if len(options.preload_files) or len(options.embed_files):
     logger.debug('setting up files')
@@ -2590,44 +2591,40 @@ def phase_source_transforms(options, target):
     options.pre_js = js_manipulation.add_files_pre_js(options.pre_js, file_code)
 
   # Apply pre and postjs files
-  if final_js and (options.pre_js or options.post_js):
+  if state.final_js and (options.pre_js or options.post_js):
     logger.debug('applying pre/postjses')
     src = read_file(final_js)
-    final_js += '.pp.js'
-    with open(final_js, 'w') as f:
+    state.final_js += '.pp.js'
+    with open(state.final_js, 'w') as f:
       # pre-js code goes right after the Module integration code (so it
       # can use Module), we have a marker for it
       f.write(do_replace(src, '// {{PRE_JSES}}', fix_windows_newlines(options.pre_js)))
       f.write(fix_windows_newlines(options.post_js))
     options.pre_js = src = options.post_js = None
-    save_intermediate('pre-post')
+    save_intermediate(state, 'pre-post')
 
   # Apply a source code transformation, if requested
   if options.js_transform:
-    safe_copy(final_js, final_js + '.tr.js')
-    final_js += '.tr.js'
+    safe_copy(state.final_js, state.final_js + '.tr.js')
+    state.final_js += '.tr.js'
     posix = not shared.WINDOWS
     logger.debug('applying transform: %s', options.js_transform)
-    shared.check_call(building.remove_quotes(shlex.split(options.js_transform, posix=posix) + [os.path.abspath(final_js)]))
-    save_intermediate('transformed')
+    shared.check_call(building.remove_quotes(shlex.split(options.js_transform, posix=posix) + [os.path.abspath(state.final_js)]))
+    save_intermediate(state, 'transformed')
 
 
 @ToolchainProfiler.profile_block('memory initializer')
-def phase_memory_initializer(memfile):
+def phase_memory_initializer(state, memfile):
   # For the wasm backend, we don't have any memory info in JS. All we need to do
   # is set the memory initializer url.
-  global final_js
-
-  src = read_file(final_js)
+  src = read_file(state.final_js)
   src = do_replace(src, '// {{MEM_INITIALIZER}}', 'var memoryInitializer = "%s";' % os.path.basename(memfile))
-  write_file(final_js + '.mem.js', src)
-  final_js += '.mem.js'
+  write_file(state.final_js + '.mem.js', src)
+  state.final_js += '.mem.js'
 
 
 @ToolchainProfiler.profile_block('final emitting')
 def phase_final_emitting(options, state, target, wasm_target, memfile):
-  global final_js
-
   # Remove some trivial whitespace
   # TODO: do not run when compress has already been done on all parts of the code
   # src = read_file(final_js)
@@ -2651,41 +2648,41 @@ def phase_final_emitting(options, state, target, wasm_target, memfile):
   if settings.MODULARIZE:
     modularize()
 
-  module_export_name_substitution()
+  module_export_name_substitution(state)
 
   # Run a final regex pass to clean up items that were not possible to optimize by Closure, or unoptimalities that were left behind
   # by processing steps that occurred after Closure.
   if settings.MINIMAL_RUNTIME == 2 and settings.USE_CLOSURE_COMPILER and settings.DEBUG_LEVEL == 0 and not settings.SINGLE_FILE:
     # Process .js runtime file. Note that we need to handle the license text
     # here, so that it will not confuse the hacky script.
-    shared.JS.handle_license(final_js)
-    shared.run_process([shared.PYTHON, shared.path_from_root('tools', 'hacky_postprocess_around_closure_limitations.py'), final_js])
+    shared.JS.handle_license(state.final_js)
+    shared.run_process([shared.PYTHON, shared.path_from_root('tools', 'hacky_postprocess_around_closure_limitations.py'), state.final_js])
 
   # Unmangle previously mangled `import.meta` references in both main code and libraries.
   # See also: `preprocess` in parseTools.js.
   if settings.EXPORT_ES6 and settings.USE_ES6_IMPORT_META:
-    src = read_file(final_js)
-    final_js += '.esmeta.js'
-    write_file(final_js, src.replace('EMSCRIPTEN$IMPORT$META', 'import.meta'))
-    save_intermediate('es6-import-meta')
+    src = read_file(state.final_js)
+    state.final_js += '.esmeta.js'
+    write_file(state.final_js, src.replace('EMSCRIPTEN$IMPORT$META', 'import.meta'))
+    save_intermediate(state, 'es6-import-meta')
 
   # Apply pre and postjs files
   if options.extern_pre_js or options.extern_post_js:
     logger.debug('applying extern pre/postjses')
-    src = read_file(final_js)
-    final_js += '.epp.js'
-    with open(final_js, 'w') as f:
+    src = read_file(state.final_js)
+    state.final_js += '.epp.js'
+    with open(state.final_js, 'w') as f:
       f.write(fix_windows_newlines(options.extern_pre_js))
       f.write(src)
       f.write(fix_windows_newlines(options.extern_post_js))
-    save_intermediate('extern-pre-post')
+    save_intermediate(state, 'extern-pre-post')
 
-  shared.JS.handle_license(final_js)
+  shared.JS.handle_license(state.final_js)
 
   js_target = state.js_target
 
   # The JS is now final. Move it to its final location
-  move_file(final_js, js_target)
+  move_file(state.final_js, js_target)
 
   if not settings.SINGLE_FILE:
     generated_text_files_with_native_eols += [js_target]
@@ -3060,8 +3057,7 @@ def parse_args(newargs):
 
 
 @ToolchainProfiler.profile_block('binaryen')
-def phase_binaryen(target, options, wasm_target):
-  global final_js
+def phase_binaryen(options, state, target, wasm_target):
   logger.debug('using binaryen')
   if settings.GENERATE_SOURCE_MAP and not settings.SOURCE_MAP_BASE:
     logger.warning("Wasm source map won't be usable in a browser without --source-map-base")
@@ -3115,7 +3111,7 @@ def phase_binaryen(target, options, wasm_target):
 
   if settings.EVAL_CTORS:
     building.save_intermediate(wasm_target, 'pre-ctors.wasm')
-    building.eval_ctors(final_js, wasm_target, debug_info=intermediate_debug_info)
+    building.eval_ctors(state.final_js, wasm_target, debug_info=intermediate_debug_info)
 
   # after generating the wasm, do some final operations
 
@@ -3123,15 +3119,15 @@ def phase_binaryen(target, options, wasm_target):
     diagnostics.warning('deprecated', 'We hope to remove support for EMIT_EMSCRIPTEN_METADATA. See https://github.com/emscripten-core/emscripten/issues/12231')
     webassembly.add_emscripten_metadata(wasm_target)
 
-  if final_js:
+  if state.final_js:
     if settings.SUPPORT_BIG_ENDIAN:
-      final_js = building.little_endian_heap(final_js)
+      state.final_js = building.little_endian_heap(state.final_js)
 
     # >=2GB heap support requires pointers in JS to be unsigned. rather than
     # require all pointers to be unsigned by default, which increases code size
     # a little, keep them signed, and just unsign them here if we need that.
     if settings.CAN_ADDRESS_2GB:
-      final_js = building.use_unsigned_pointers_in_js(final_js)
+      state.final_js = building.use_unsigned_pointers_in_js(state.final_js)
 
     # pthreads memory growth requires some additional JS fixups.
     # note that we must do this after handling of unsigned pointers. unsigning
@@ -3139,25 +3135,25 @@ def phase_binaryen(target, options, wasm_target):
     # a method to get the heap, and that call would not be recognized by the
     # unsigning pass
     if settings.USE_PTHREADS and settings.ALLOW_MEMORY_GROWTH:
-      final_js = building.apply_wasm_memory_growth(final_js)
+      state.final_js = building.apply_wasm_memory_growth(state.final_js)
 
     if settings.USE_ASAN:
-      final_js = building.instrument_js_for_asan(final_js)
+      state.final_js = building.instrument_js_for_asan(state.final_js)
 
     if settings.SAFE_HEAP:
-      final_js = building.instrument_js_for_safe_heap(final_js)
+      state.final_js = building.instrument_js_for_safe_heap(state.final_js)
 
     if settings.OPT_LEVEL >= 2 and settings.DEBUG_LEVEL <= 2:
       # minify the JS. Do not minify whitespace if Closure is used, so that
       # Closure can print out readable error messages (Closure will then
       # minify whitespace afterwards)
-      save_intermediate_with_wasm('preclean', wasm_target)
-      final_js = building.minify_wasm_js(js_file=final_js,
-                                         wasm_file=wasm_target,
-                                         expensive_optimizations=will_metadce(),
-                                         minify_whitespace=minify_whitespace() and not options.use_closure_compiler,
-                                         debug_info=intermediate_debug_info)
-      save_intermediate_with_wasm('postclean', wasm_target)
+      save_intermediate_with_wasm(state, 'preclean', wasm_target)
+      state.final_js = building.minify_wasm_js(js_file=state.final_js,
+                                               wasm_file=wasm_target,
+                                               expensive_optimizations=will_metadce(),
+                                               minify_whitespace=minify_whitespace() and not options.use_closure_compiler,
+                                               debug_info=intermediate_debug_info)
+      save_intermediate_with_wasm(state, 'postclean', wasm_target)
 
   if settings.ASYNCIFY_LAZY_LOAD_CODE:
     building.asyncify_lazy_load_code(wasm_target, debug=intermediate_debug_info)
@@ -3166,12 +3162,11 @@ def phase_binaryen(target, options, wasm_target):
     return read_and_preprocess(shared.path_from_root('src', 'wasm2js.js'), expand_macros=True)
 
   def run_closure_compiler():
-    global final_js
-    final_js = building.closure_compiler(final_js, pretty=not minify_whitespace(),
-                                         extra_closure_args=options.closure_args)
-    save_intermediate_with_wasm('closure', wasm_target)
+    state.final_js = building.closure_compiler(state.final_js, pretty=not minify_whitespace(),
+                                               extra_closure_args=options.closure_args)
+    save_intermediate_with_wasm(state, 'closure', wasm_target)
 
-  if final_js and options.use_closure_compiler:
+  if state.final_js and options.use_closure_compiler:
     run_closure_compiler()
 
   symbols_file = None
@@ -3188,7 +3183,7 @@ def phase_binaryen(target, options, wasm_target):
       if options.emit_symbol_map:
         symbols_file_js = shared.replace_or_append_suffix(wasm2js_template, '.symbols')
     else:
-      wasm2js_template = final_js
+      wasm2js_template = state.final_js
       if options.emit_symbol_map:
         symbols_file_js = shared.replace_or_append_suffix(target, '.symbols')
 
@@ -3207,11 +3202,11 @@ def phase_binaryen(target, options, wasm_target):
       safe_copy(wasm2js, wasm2js_template)
 
     if settings.WASM != 2:
-      final_js = wasm2js
+      state.final_js = wasm2js
       # if we only target JS, we don't need the wasm any more
       shared.try_delete(wasm_target)
 
-    save_intermediate('wasm2js')
+    save_intermediate(state, 'wasm2js')
 
   # emit the final symbols, either in the binary or in a symbol map.
   # this will also remove debug info if we only kept it around in the intermediate invocations.
@@ -3221,7 +3216,7 @@ def phase_binaryen(target, options, wasm_target):
     intermediate_debug_info -= 1
     if os.path.exists(wasm_target):
       building.handle_final_wasm_symbols(wasm_file=wasm_target, symbols_file=symbols_file, debug_info=intermediate_debug_info)
-      save_intermediate_with_wasm('symbolmap', wasm_target)
+      save_intermediate_with_wasm(state, 'symbolmap', wasm_target)
 
   if settings.DEBUG_LEVEL >= 3 and settings.SEPARATE_DWARF and os.path.exists(wasm_target):
     building.emit_debug_on_side(wasm_target, settings.SEPARATE_DWARF)
@@ -3240,22 +3235,21 @@ def phase_binaryen(target, options, wasm_target):
     building.run_wasm_opt(wasm_target, wasm_target)
 
   # replace placeholder strings with correct subresource locations
-  if final_js and settings.SINGLE_FILE and not settings.WASM2JS:
-    js = read_file(final_js)
+  if state.final_js and settings.SINGLE_FILE and not settings.WASM2JS:
+    js = read_file(state.final_js)
 
     if settings.MINIMAL_RUNTIME:
       js = do_replace(js, '<<< WASM_BINARY_DATA >>>', base64_encode(read_binary(wasm_target)))
     else:
       js = do_replace(js, '<<< WASM_BINARY_FILE >>>', shared.JS.get_subresource_location(wasm_target))
     shared.try_delete(wasm_target)
-    with open(final_js, 'w') as f:
+    with open(state.final_js, 'w') as f:
       f.write(js)
 
 
-def modularize():
-  global final_js
+def modularize(state):
   logger.debug(f'Modularizing, assigning to var {settings.EXPORT_NAME}')
-  src = read_file(final_js)
+  src = read_file(state.final_js)
 
   return_value = settings.EXPORT_NAME
   if settings.WASM_ASYNC_COMPILATION:
@@ -3306,8 +3300,8 @@ var %(EXPORT_NAME)s = (function() {
       'src': src
     }
 
-  final_js += '.modular.js'
-  with open(final_js, 'w') as f:
+  state.final_js += '.modular.js'
+  with open(state.final_js, 'w') as f:
     f.write(src)
 
     # Export using a UMD style export, or ES6 exports if selected
@@ -3324,16 +3318,15 @@ else if (typeof exports === 'object')
   exports["%(EXPORT_NAME)s"] = %(EXPORT_NAME)s;
 ''' % {'EXPORT_NAME': settings.EXPORT_NAME})
 
-  shared.configuration.get_temp_files().note(final_js)
-  save_intermediate('modularized')
+  shared.configuration.get_temp_files().note(state.final_js)
+  save_intermediate(state, 'modularized')
 
 
-def module_export_name_substitution():
-  global final_js
+def module_export_name_substitution(state):
   logger.debug(f'Private module export name substitution with {settings.EXPORT_NAME}')
-  with open(final_js) as f:
+  with open(state.final_js) as f:
     src = f.read()
-  final_js += '.module_export_name_substitution.js'
+  state.final_js += '.module_export_name_substitution.js'
   if settings.MINIMAL_RUNTIME:
     # In MINIMAL_RUNTIME the Module object is always present to provide the .asm.js/.wasm content
     replacement = settings.EXPORT_NAME
@@ -3344,10 +3337,10 @@ def module_export_name_substitution():
   # loading external .asm.js file that assigns to Module['asm'] works even when Closure is used.
   if settings.MINIMAL_RUNTIME and (shared.target_environment_may_be('node') or shared.target_environment_may_be('shell')):
     src = 'if(typeof Module==="undefined"){var Module={};}\n' + src
-  with open(final_js, 'w') as f:
+  with open(state.final_js, 'w') as f:
     f.write(src)
-  shared.configuration.get_temp_files().note(final_js)
-  save_intermediate('module_export_name_substitution')
+  shared.configuration.get_temp_files().note(state.final_js)
+  save_intermediate(state, 'module_export_name_substitution')
 
 
 def generate_traditional_runtime_html(target, options, js_target, target_basename,
