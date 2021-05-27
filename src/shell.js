@@ -195,6 +195,7 @@ if (ENVIRONMENT_IS_NODE) {
 #endif
 
 #if NODEJS_CATCH_REJECTION
+  // TODO(sbc): Remove NODEJS_CATCH_REJECTION completely
   process['on']('unhandledRejection', abort);
 #endif
 

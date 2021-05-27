@@ -684,14 +684,12 @@ var EXCEPTION_CATCHING_ALLOWED = [];
 // [link]
 var NODEJS_CATCH_EXIT = 1;
 
-// Catch unhandled rejections in node. Without this, node may print the error,
-// and that this behavior will change in future node, wait a few seconds, and
-// then exit with 0 (which hides the error if you don't read the log). With
-// this, we catch any unhandled rejection and throw an actual error, which will
-// make the process exit immediately with a non-0 return code.
-// This should be fixed in Node 15+.
+// Catch unhandled rejections in node.  On older version of node (pre v15)
+// this is needed in order to get and non-zero exit code on unhandled promise
+// rejection.  This setting add an unhandledRejection handler that will cause
+// the proces to abort (which is essentailly the v15+ behaviour)
 // [link]
-var NODEJS_CATCH_REJECTION = 1;
+var NODEJS_CATCH_REJECTION = 0;
 
 // Whether to transform the code using asyncify. This makes it possible to
 // call JS functions from synchronous-looking code in C/C++.
