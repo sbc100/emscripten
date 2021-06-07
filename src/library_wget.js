@@ -87,7 +87,7 @@ var LibraryWget = {
           {{{ makeDynCall('vi', 'onerror') }}}(arg);
         });
       }
-    }, true /* no need for run dependency, this is async but will not do any prepare etc. step */ );
+    },
   },
 
   emscripten_async_wget2__deps: ['$PATH_FS', '$wget',

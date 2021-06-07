@@ -377,7 +377,7 @@ mergeInto(LibraryManager.library, {
       }, function() {
         {{{ makeSetValue('perror',  0, '1', 'i32') }}};
         wakeUp();
-      }, true /* no need for run dependency, this is async but will not do any prepare etc. step */ );
+      }),
     });
   },
 
