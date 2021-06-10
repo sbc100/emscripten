@@ -19,12 +19,13 @@
 
 namespace __cxxabiv1 {
 
-#ifdef __USING_EMSCRIPTEN_EXCEPTIONS__
+#if defined(__EMSCRIPTEN__) &&  !defined(__USING_WASM_EXCEPTIONS__)
 
 struct _LIBCXXABI_HIDDEN __cxa_exception {
   size_t referenceCount;
   std::type_info *exceptionType;
-  void (*exceptionDestructor)(void *);
+  // In Wasm, destructors return 'this' as in ARM
+  void *(*exceptionDestructor)(void *);
   uint8_t caught;
   uint8_t rethrown;
 };

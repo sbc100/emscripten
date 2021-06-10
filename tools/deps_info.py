@@ -61,9 +61,9 @@ _deps_info = {
   'SDL_PushEvent': ['malloc', 'free'],
   'SDL_free': ['free'],
   'SDL_malloc': ['malloc', 'free'],
-  '__cxa_allocate_exception': ['malloc'],
-  '__cxa_end_catch': ['setThrew', 'free'],
-  '__cxa_free_exception': ['free'],
+  '__cxa_end_catch': ['setThrew', 'free', '__cxa_decrement_exception_refcount'],
+  '__cxa_current_primary_exception': ['__cxa_increment_exception_refcount'],
+  '__cxa_begin_catch': ['__cxa_increment_exception_refcount'],
   '_embind_register_class': ['free'],
   '_embind_register_enum_value': ['free'],
   '_embind_register_function': ['free'],
@@ -201,7 +201,7 @@ _deps_info = {
 
 def get_deps_info():
   if not settings.EXCEPTION_HANDLING and settings.LINK_AS_CXX:
-    _deps_info['__cxa_begin_catch'] = ['__cxa_is_pointer_type']
+    _deps_info['__cxa_begin_catch'] = ['__cxa_is_pointer_type', '__cxa_increment_exception_refcount']
     _deps_info['__cxa_find_matching_catch'] = ['__cxa_can_catch']
     _deps_info['__cxa_find_matching_catch_1'] = ['__cxa_can_catch']
     _deps_info['__cxa_find_matching_catch_2'] = ['__cxa_can_catch']

@@ -2237,6 +2237,8 @@ def phase_linker_setup(options, state, newargs, settings_map):
       # so we include then unconditionally when exceptions are enabled.
       '___cxa_is_pointer_type',
       '___cxa_can_catch',
+      '___cxa_increment_exception_refcount',
+      '___cxa_decrement_exception_refcount',
 
       # Emscripten exception handling can generate invoke calls, and they call
       # setThrew(). We cannot handle this using deps_info as the invokes are not

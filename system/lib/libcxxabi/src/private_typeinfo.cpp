@@ -42,6 +42,7 @@
 // is_equal() with use_strcmp=false so the string names are not compared.
 
 #include <string.h>
+#include <stdio.h>
 
 #ifdef _LIBCXXABI_FORGIVING_DYNAMIC_CAST
 #include "abort_message.h"
@@ -1337,9 +1338,11 @@ __base_class_type_info::search_below_dst(__dynamic_cast_info* info,
 extern "C" {
 
 int __cxa_can_catch(__shim_type_info* catchType, __shim_type_info* excpType, void **thrown) {
-  //std::type_info *t1 = static_cast<std::type_info*>(catchType);
-  //std::type_info *t2 = static_cast<std::type_info*>(excpType);
-  //printf("can %s catch %s (%p)?\n", t1->name(), t2->name(), thrown);
+#if 0
+  std::type_info *t1 = static_cast<std::type_info*>(catchType);
+  std::type_info *t2 = static_cast<std::type_info*>(excpType);
+  printf("can %s catch %s (%p)?\n", t1->name(), t2->name(), thrown);
+#endif
 
   void *temp = *thrown;
   int ret = catchType->can_catch(excpType, temp);
@@ -1352,6 +1355,6 @@ int __cxa_is_pointer_type(__shim_type_info* type) {
 }
 
 }
-#endif // __USING_EMSCRIPTEN_EXCEPTIONS__
+#endif // !__USING_WASM_EXCEPTIONS__
 
 }  // __cxxabiv1

@@ -1008,13 +1008,15 @@ class libcxxabi(NoExceptLibrary, MTLibrary):
       'private_typeinfo.cpp'
     ]
     if self.eh_mode == Exceptions.NONE:
-      filenames += ['cxa_noexception.cpp']
+      filenames += ['cxa_noexception.cpp', 'cxa_exception_emscripten.cpp']
     elif self.eh_mode == Exceptions.WASM:
       filenames += [
         'cxa_exception_storage.cpp',
         'cxa_exception.cpp',
         'cxa_personality.cpp'
       ]
+    elif self.eh_mode == Exceptions.EMSCRIPTEN:
+      filenames += ['cxa_exception_emscripten.cpp']
 
     return files_in_path(
         path_components=['system', 'lib', 'libcxxabi', 'src'],

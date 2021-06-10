@@ -133,7 +133,3 @@ void
 __cxa_throw(void* ptr, void* type, void* destructor) {
   abort();
 }
-
-void* __cxa_allocate_exception(size_t thrown_size) {
-  abort();
-}
