@@ -682,7 +682,7 @@ var EXCEPTION_CATCHING_ALLOWED = [];
 // With this option, we prevent that from showing up as an unhandled
 // exception.
 // [link]
-var NODEJS_CATCH_EXIT = 1;
+var NODEJS_CATCH_EXIT = 0;
 
 // Catch unhandled rejections in node. Without this, node may print the error,
 // and that this behavior will change in future node, wait a few seconds, and
@@ -691,7 +691,7 @@ var NODEJS_CATCH_EXIT = 1;
 // make the process exit immediately with a non-0 return code.
 // This should be fixed in Node 15+.
 // [link]
-var NODEJS_CATCH_REJECTION = 1;
+var NODEJS_CATCH_REJECTION = 0;
 
 // Whether to transform the code using asyncify. This makes it possible to
 // call JS functions from synchronous-looking code in C/C++.

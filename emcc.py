@@ -2243,6 +2243,8 @@ def phase_linker_setup(options, state, newargs, settings_map):
       # emitted because of library function usage, but by codegen itself.
       '_setThrew',
     ]
+    if settings.ASSERTIONS:
+      settings.EXPORTED_FUNCTIONS.append('___cxa_handle_uncaught_exception')
 
   if settings.ASYNCIFY:
     if not settings.ASYNCIFY_IGNORE_INDIRECT:

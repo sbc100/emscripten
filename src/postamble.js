@@ -202,12 +202,18 @@ function callMain(args) {
     if (e instanceof ExitStatus || e == 'unwind') {
       return;
     }
-    // Anything else is an unexpected exception and we treat it as hard error.
     var toLog = e;
     if (e && typeof e === 'object' && e.stack) {
       toLog = [e, e.stack];
     }
-    err('exception thrown: ' + toLog);
+#if ASSERTIONS && !DISABLE_EXCEPTION_CATCHING
+    else {
+      out("calling ___cxa_handle_uncaught_exception: " + e);
+      Module['___cxa_handle_uncaught_exception'](e);
+      out("done calling ___cxa_handle_uncaught_exception");
+    }
+#endif
+    err('uncaught exception: ' + toLog);
     quit_(1, e);
 #endif // !PROXY_TO_PTHREAD
   } finally {
