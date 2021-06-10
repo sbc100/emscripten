@@ -995,10 +995,8 @@ class libcxxabi(NoExceptLibrary, MTLibrary):
     filenames = [
       'abort_message.cpp',
       'cxa_aux_runtime.cpp',
-      'cxa_default_handlers.cpp',
       'cxa_demangle.cpp',
       'cxa_guard.cpp',
-      'cxa_handlers.cpp',
       'cxa_virtual.cpp',
       'fallback_malloc.cpp',
       'stdlib_new_delete.cpp',
@@ -1011,7 +1009,9 @@ class libcxxabi(NoExceptLibrary, MTLibrary):
       filenames += ['cxa_noexception.cpp']
     elif self.eh_mode == Exceptions.WASM:
       filenames += [
+        'cxa_default_handlers.cpp',
         'cxa_exception_storage.cpp',
+        'cxa_handlers.cpp',
         'cxa_exception.cpp',
         'cxa_personality.cpp'
       ]

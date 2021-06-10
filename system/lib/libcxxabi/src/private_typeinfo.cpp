@@ -7,6 +7,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "private_typeinfo.h"
+/*
+#include "cxxabi.h"
+#include "cxa_handlers.h"
+#include "cxa_exception.h"
+#include "stdio.h"
+*/
 
 // The flag _LIBCXXABI_FORGIVING_DYNAMIC_CAST is used to make dynamic_cast
 // more forgiving when type_info's mistakenly have hidden visibility and
@@ -1350,6 +1356,22 @@ int __cxa_can_catch(__shim_type_info* catchType, __shim_type_info* excpType, voi
 int __cxa_is_pointer_type(__shim_type_info* type) {
   return !!dynamic_cast<__pointer_type_info*>(type);
 }
+
+/*
+static inline __cxa_exception* cxa_exception_from_thrown_object(void* thrown_object) {
+    return static_cast<__cxa_exception*>(thrown_object) - 1;
+}
+
+int __cxa_handle_uncaught_exception(void* thrown_object) {
+  // Copied from failed_throw in cxa_exception.cpp
+  __cxa_exception* exception_header = cxa_exception_from_thrown_object(thrown_object);
+  printf("__cxa_handle_uncaught_exception %p %p %d\n", thrown_object, exception_header, *(int*)thrown_object);
+  printf("__cxa_handle_uncaught_exception %p\n", exception_header->terminateHandler);
+    (void) __cxa_begin_catch(&exception_header->unwindHeader);
+  printf("__cxa_handle_uncaught_exception %p\n", exception_header->terminateHandler);
+    std::__terminate(exception_header->terminateHandler);
+}
+*/
 
 }
 #endif // __USING_EMSCRIPTEN_EXCEPTIONS__
