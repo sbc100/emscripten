@@ -6,8 +6,6 @@
 
 var LibraryExceptions = {
   $uncaughtExceptionCount: '0',
-  $exceptionLast: '0',
-  $exceptionCaught: ' []',
 
   // This class is the exception metadata which is prepended to each thrown object (in WASM memory).
   // It is allocated in one block among with a thrown object in __cxa_allocate_exception and freed
@@ -111,30 +109,6 @@ var LibraryExceptions = {
     return type;
   },
 
-  // We're done with a catch. Now, we can run the destructor if there is one
-  // and free the exception. Note that if the dynCall on the destructor fails
-  // due to calling apply on undefined, that means that the destructor is
-  // an invalid index into the FUNCTION_TABLE, so something has gone wrong.
-  __cxa_end_catch__deps: ['$exceptionCaught', '$exceptionLast', '__cxa_decrement_exception_refcount',
-                          '$CatchInfo'],
-  __cxa_end_catch__sig: 'v',
-  __cxa_end_catch: function() {
-    // Clear state flag.
-    _setThrew(0);
-#if ASSERTIONS
-    assert(exceptionCaught.length > 0);
-#endif
-    // Call destructor if one is registered then clear it.
-    var catchInfo = exceptionCaught.pop();
-
-#if EXCEPTION_DEBUG
-    err('cxa_end_catch popped ' + [catchInfo, exceptionLast, 'stack', exceptionCaught]);
-#endif
-    ___cxa_decrement_exception_refcount(catchInfo.get_base_ptr());
-    catchInfo.free();
-    exceptionLast = 0; // XXX in decRef?
-  },
-
   __cxa_get_exception_ptr__deps: ['$CatchInfo'],
   __cxa_get_exception_ptr: function(ptr) {
 #if EXCEPTION_DEBUG
@@ -177,57 +151,6 @@ var LibraryExceptions = {
     exceptionCaught.push(catchInfo);
     info.set_rethrown(true);
     ___cxa_rethrow();
-  },
-
-  // Finds a suitable catch clause for when an exception is thrown.
-  // In normal compilers, this functionality is handled by the C++
-  // 'personality' routine. This is passed a fairly complex structure
-  // relating to the context of the exception and makes judgements
-  // about how to handle it. Some of it is about matching a suitable
-  // catch clause, and some of it is about unwinding. We already handle
-  // unwinding using 'if' blocks around each function, so the remaining
-  // functionality boils down to picking a suitable 'catch' block.
-  // We'll do that here, instead, to keep things simpler.
-  __cxa_find_matching_catch__deps: ['$exceptionLast', '$ExceptionInfo', '$CatchInfo', '__resumeException', '__cxa_can_catch'],
-  __cxa_find_matching_catch: function() {
-    var thrown = exceptionLast;
-    if (!thrown) {
-      // just pass through the null ptr
-      {{{ makeStructuralReturn([0, 0]) }}};
-    }
-    var info = new ExceptionInfo(thrown);
-    var thrownType = info.get_type();
-    var catchInfo = new CatchInfo();
-    catchInfo.set_base_ptr(thrown);
-    catchInfo.set_adjusted_ptr(thrown);
-    if (!thrownType) {
-      // just pass through the thrown ptr
-      {{{ makeStructuralReturn(['catchInfo.ptr', 0]) }}};
-    }
-    var typeArray = Array.prototype.slice.call(arguments);
-
-    // can_catch receives a **, add indirection
-#if EXCEPTION_DEBUG
-    out("can_catch on " + [thrown]);
-#endif
-    // The different catch blocks are denoted by different types.
-    // Due to inheritance, those types may not precisely match the
-    // type of the thrown object. Find one which matches, and
-    // return the type of the catch block which should be called.
-    for (var i = 0; i < typeArray.length; i++) {
-      var caughtType = typeArray[i];
-      if (caughtType === 0 || caughtType === thrownType) {
-        // Catch all clause matched or exactly the same type is caught
-        break;
-      }
-      if ({{{ exportedAsmFunc('___cxa_can_catch') }}}(caughtType, thrownType, catchInfo.get_adjusted_ptr_addr())) {
-#if EXCEPTION_DEBUG
-        out("  can_catch found " + [catchInfo.get_adjusted_ptr(), caughtType]);
-#endif
-        {{{ makeStructuralReturn(['catchInfo.ptr', 'caughtType']) }}};
-      }
-    }
-    {{{ makeStructuralReturn(['catchInfo.ptr', 'thrownType']) }}};
   },
 
   __resumeException__deps: ['$exceptionLast', '$CatchInfo'],

@@ -1,10 +1,15 @@
+#include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <vector>
 
 #include "cxxabi.h"
-
+#include "private_typeinfo.h"
 #include "cxa_exception.h"
 #include "include/atomic_support.h"
+
+extern "C" void setThrew(uintptr_t threw, int value);
+extern "C" void setTempRet0(uint32_t value);
 
 namespace __cxxabiv1 {
 
@@ -67,46 +72,126 @@ struct __catch_info {
   void* adjustedPtr;
 };
 
-static __cxa_exception* get_exception_info(__catch_info* info) {
-  return (__cxa_exception*)info->basePtr;
+static __cxa_exception* get_cxa_exception(__catch_info* info) {
+  return cxa_exception_from_thrown_object(info->basePtr);
+}
+
+static int is_pointer_type(std::type_info* type) {
+  return !!dynamic_cast<__pointer_type_info*>(type);
 }
 
 // Get pointer which is expected to be received by catch clause in C++ code. It may be adjusted
 // when the pointer is casted to some of the exception object base classes (e.g. when virtual
 // inheritance is used). When a pointer is thrown this method should return the thrown pointer
 // itself.
-static void* get_thrown_object(__catch_info* info) {
-  bool isPointer = ___cxa_is_pointer_type(get_exception_info(info)->exceptionType);
+static void* get_exception_ptr(__catch_info* info) {
+  bool isPointer = is_pointer_type(get_cxa_exception(info)->exceptionType);
   if (isPointer) {
-    return *this.basePtr;
+    return info->basePtr;
   }
-  void* adjusted = get_adjusted_ptr(info);
-  if (adjusted) {
-    return adjusted;
+  if (info->adjustedPtr) {
+    return &info->adjustedPtr;
   }
-  return info.basePtr;
+  return &info->basePtr;
 }
 
 static int uncaughtExceptionCount;
 static std::vector<__catch_info*> exceptionCaught;
 
-void* __cxa_begin_catch(void* unwind_arg) _NOEXCEPT
+void* __cxa_begin_catch(void* unwind_arg) _NOEXCEPT {
   __catch_info* info = (__catch_info*)unwind_arg;
-  __cxa_exception* ex = get_exception_info(info);
-  if (!ex->caught()) {
+  __cxa_exception* ex = get_cxa_exception(info);
+  if (!ex->caught) {
     ex->caught = true;
     uncaughtExceptionCount--;
   }
-  info->rethrown = false;
+  ex->rethrown = false;
   exceptionCaught.push_back(info);
 #if 0
   err('cxa_begin_catch ' + [ptr, 'stack', exceptionCaught]);
 #endif
   __cxa_increment_exception_refcount(info->basePtr);
-  return get_thrown_object(info);
+  return get_exception_ptr(info);
 }
-#endif
 
+static void* exceptionLast;
+
+// We're done with a catch. Now, we can run the destructor if there is one
+// and free the exception. Note that if the dynCall on the destructor fails
+// due to calling apply on undefined, that means that the destructor is
+// an invalid index into the FUNCTION_TABLE, so something has gone wrong.
+void __cxa_end_catch() {
+  // Clear state flag.
+  setThrew(0, 0);
+  assert(exceptionCaught.size() > 0);
+  // Call destructor if one is registered then clear it.
+  __catch_info* catchInfo = exceptionCaught.back();
+  exceptionCaught.pop_back();
+
+  //err('cxa_end_catch popped ' + [catchInfo, exceptionLast, 'stack', exceptionCaught]);
+  __cxa_decrement_exception_refcount(catchInfo->basePtr);
+  ::free(catchInfo);
+  exceptionLast = 0; // XXX in decRef?
 }
+
+int __cxa_can_catch(std::type_info* catchType, std::type_info* excpType, void **thrown);
+
+// Finds a suitable catch clause for when an exception is thrown.
+// In normal compilers, this functionality is handled by the C++
+// 'personality' routine. This is passed a fairly complex structure
+// relating to the context of the exception and makes judgements
+// about how to handle it. Some of it is about matching a suitable
+// catch clause, and some of it is about unwinding. We already handle
+// unwinding using 'if' blocks around each function, so the remaining
+// functionality boils down to picking a suitable 'catch' block.
+// We'll do that here, instead, to keep things simpler.
+void* __cxa_find_matching_catch_v(int count, ...) {
+  void* thrown = exceptionLast;
+  if (!thrown) {
+    // just pass through the null ptr
+    setTempRet0(0);
+    return 0;
+  }
+  __cxa_exception* info = cxa_exception_from_thrown_object(thrown);
+  std::type_info* thrownType = info->exceptionType;
+  __catch_info CatchInfo{thrown, 0}
+  if (!thrownType) {
+    // just pass through the thrown ptr
+    setTempRet0(0);
+    return catchInfo.basePtr;
+  }
+
+  // can_catch receives a **, add indirection
+  //out("can_catch on " + [thrown]);
+  void* exceptionThrown = 0;
+  // The different catch blocks are denoted by different types.
+  // Due to inheritance, those types may not precisely match the
+  // type of the thrown object. Find one which matches, and
+  // return the type of the catch block which should be called.
+  va_list ap;
+  va_start(ap, count);
+  for (int i = 0; i < count; i++) {
+    std::type_info* caughtType = va_arg(va_list ap, std::type_info*);
+    if (caughtType === 0 || caughtType === thrownType) {
+      // Catch all clause matched or exactly the same type is caught
+      break;
+    }
+    if (__cxa_can_catch(caughtType, thrownType, &exceptionThrown) {
+      if (thrown !== exceptionThrown) {
+        catchInfo.set_adjusted_ptr(exceptionThrown);
+      }
+      //out("  can_catch found " + [adjusted, caughtType]);
+      setTempRet0(caughtType);
+      return makeStructuralReturn(catchInfo.basePtr);
+    }
+  }
+  va_end(ap);
+  setTempRet0(thrownType);
+  return catchInfo.basePtr;
+},
+
+#endif // __USING_EMSCRIPTEN_EXCEPTIONS__
+
+} // extern "C"
 
 }  // abi
