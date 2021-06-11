@@ -62,70 +62,6 @@ var LibraryExceptions = {
     }
   },
 
-  $CatchInfo__deps: ['$ExceptionInfo', '__cxa_is_pointer_type'],
-  // This native structure is returned from __cxa_find_matching_catch, and serves as catching
-  // context, i.e. stores information required to proceed with a specific selected catch. It stores
-  // base and adjusted pointers of a thrown object. It is allocated dynamically and should be freed
-  // when it is done with a specific catch (i.e. either in __cxa_end_catch when caught or in
-  // __resumeException when no catch clause matched). The class itself is just a native pointer
-  // wrapper, and contains all the necessary accessors for the fields in the native structure.
-  // ptr - Native structure pointer to wrap, the structure is allocated when not specified.
-  $CatchInfo: function(ptr) {
-
-    this.free = function() {
-      _free(this.ptr);
-      this.ptr = 0;
-    };
-
-    this.set_base_ptr = function(basePtr) {
-      {{{ makeSetValue('this.ptr', '0', 'basePtr', '*') }}};
-    };
-
-    this.get_base_ptr = function() {
-      return {{{ makeGetValue('this.ptr', '0', '*') }}};
-    };
-
-    this.set_adjusted_ptr = function(adjustedPtr) {
-      {{{ makeSetValue('this.ptr', Runtime.POINTER_SIZE, 'adjustedPtr', '*') }}};
-    };
-
-    this.get_adjusted_ptr_addr = function() {
-      return this.ptr + {{{ Runtime.POINTER_SIZE }}};
-    }
-
-    this.get_adjusted_ptr = function() {
-      return {{{ makeGetValue('this.ptr', Runtime.POINTER_SIZE, '*') }}};
-    };
-
-    // Get pointer which is expected to be received by catch clause in C++ code. It may be adjusted
-    // when the pointer is casted to some of the exception object base classes (e.g. when virtual
-    // inheritance is used). When a pointer is thrown this method should return the thrown pointer
-    // itself.
-    this.get_exception_ptr = function() {
-      // Work around a fastcomp bug, this code is still included for some reason in a build without
-      // exceptions support.
-      var isPointer = {{{ exportedAsmFunc('___cxa_is_pointer_type') }}}(
-        this.get_exception_info().get_type());
-      if (isPointer) {
-        return {{{ makeGetValue('this.get_base_ptr()', '0', '*') }}};
-      }
-      var adjusted = this.get_adjusted_ptr();
-      if (adjusted !== 0) return adjusted;
-      return this.get_base_ptr();
-    };
-
-    this.get_exception_info = function() {
-      return new ExceptionInfo(this.get_base_ptr());
-    };
-
-    if (ptr === undefined) {
-      this.ptr = _malloc({{{ Runtime.POINTER_SIZE * 2 }}});
-      this.set_adjusted_ptr(0);
-    } else {
-      this.ptr = ptr;
-    }
-  },
-
   // Here, we throw an exception after recording a couple of values that we need to remember
   // We also remember that it was the last exception thrown as we need to know that later.
   __cxa_throw__sig: 'viii',
@@ -173,25 +109,6 @@ var LibraryExceptions = {
 
   llvm_eh_typeid_for: function(type) {
     return type;
-  },
-
-  __cxa_begin_catch__deps: ['$CatchInfo', '$exceptionCaught',
-                            '$uncaughtExceptionCount',
-                            '__cxa_increment_exception_refcount'],
-  __cxa_begin_catch: function(ptr) {
-    var catchInfo = new CatchInfo(ptr);
-    var info = catchInfo.get_exception_info();
-    if (!info.get_caught()) {
-      info.set_caught(true);
-      uncaughtExceptionCount--;
-    }
-    info.set_rethrown(false);
-    exceptionCaught.push(catchInfo);
-#if EXCEPTION_DEBUG
-    err('cxa_begin_catch ' + [ptr, 'stack', exceptionCaught]);
-#endif
-    ___cxa_increment_exception_refcount(catchInfo.get_base_ptr());
-    return catchInfo.get_exception_ptr();
   },
 
   // We're done with a catch. Now, we can run the destructor if there is one

@@ -54,6 +54,57 @@ _LIBCXXABI_NO_CFI void __cxa_decrement_exception_refcount(void *thrown_object) _
     }
   }
 }
+
+// This native structure is returned from __cxa_find_matching_catch, and serves as catching
+// context, i.e. stores information required to proceed with a specific selected catch. It stores
+// base and adjusted pointers of a thrown object. It is allocated dynamically and should be freed
+// when it is done with a specific catch (i.e. either in __cxa_end_catch when caught or in
+// __resumeException when no catch clause matched). The class itself is just a native pointer
+// wrapper, and contains all the necessary accessors for the fields in the native structure.
+// ptr - Native structure pointer to wrap, the structure is allocated when not specified.
+struct __catch_info {
+  void* basePtr;
+  void* adjustedPtr;
+};
+
+static __cxa_exception* get_exception_info(__catch_info* info) {
+  return (__cxa_exception*)info->basePtr;
+}
+
+// Get pointer which is expected to be received by catch clause in C++ code. It may be adjusted
+// when the pointer is casted to some of the exception object base classes (e.g. when virtual
+// inheritance is used). When a pointer is thrown this method should return the thrown pointer
+// itself.
+static void* get_thrown_object(__catch_info* info) {
+  bool isPointer = ___cxa_is_pointer_type(get_exception_info(info)->exceptionType);
+  if (isPointer) {
+    return *this.basePtr;
+  }
+  void* adjusted = get_adjusted_ptr(info);
+  if (adjusted) {
+    return adjusted;
+  }
+  return info.basePtr;
+}
+
+static int uncaughtExceptionCount;
+static std::vector<__catch_info*> exceptionCaught;
+
+void* __cxa_begin_catch(void* unwind_arg) _NOEXCEPT
+  __catch_info* info = (__catch_info*)unwind_arg;
+  __cxa_exception* ex = get_exception_info(info);
+  if (!ex->caught()) {
+    ex->caught = true;
+    uncaughtExceptionCount--;
+  }
+  info->rethrown = false;
+  exceptionCaught.push_back(info);
+#if 0
+  err('cxa_begin_catch ' + [ptr, 'stack', exceptionCaught]);
+#endif
+  __cxa_increment_exception_refcount(info->basePtr);
+  return get_thrown_object(info);
+}
 #endif
 
 }
