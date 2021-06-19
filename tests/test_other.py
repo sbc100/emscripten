@@ -10940,3 +10940,8 @@ void foo() {}
     self.build(test_file('other', 'test_pthread_js_exception.c'))
     err = self.run_js('test_pthread_js_exception.js', assert_returncode=NON_ZERO)
     self.assertContained('missing is not defined', err)
+
+  def test_pic_implies_relocatable(self):
+    # Test that `-fPIC` implies `-s RELOCATABLE` which implies `-fvisibility=default`
+    out = self.run_process([EMCC, '-fPIC', '-c', test_file('hello_world.c'), '-v'], stderr=PIPE).stderr
+    self.assertContained('-fvisibility=default', out)

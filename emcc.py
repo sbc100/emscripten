@@ -838,8 +838,10 @@ def get_cflags(options, user_args):
     cflags.append('-fno-inline-functions')
 
   if settings.RELOCATABLE:
-    cflags.append('-fPIC')
-    cflags.append('-fvisibility=default')
+    if '-fPIC' not in user_args:
+      cflags.append('-fPIC')
+    if not any(a.startswith('-fvisibility') for a in user_args):
+      cflags.append('-fvisibility=default')
 
   if settings.LTO:
     if not any(a.startswith('-flto') for a in user_args):
@@ -1327,7 +1329,7 @@ def phase_setup(options, state, newargs, settings_map):
     if options.output_file and len(input_files) > 1:
       exit_with_error('cannot specify -o with -c/-S/-E/-M and multiple source files')
 
-  if settings.MAIN_MODULE or settings.SIDE_MODULE:
+  if settings.MAIN_MODULE or settings.SIDE_MODULE or '-fPIC' in newargs:
     settings.RELOCATABLE = 1
 
   if settings.USE_PTHREADS and '-pthread' not in newargs:
