@@ -10,7 +10,7 @@ import sys
 
 from . import diagnostics
 
-__rootpath__ = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+__rootpath__ = pathlib.Path(__file__).parent.parent.resolve()
 WINDOWS = sys.platform.startswith('win')
 MACOS = sys.platform == 'darwin'
 LINUX = sys.platform.startswith('linux')
@@ -21,7 +21,7 @@ def exit_with_error(msg, *args):
 
 
 def path_from_root(*pathelems):
-  return os.path.join(__rootpath__, *pathelems)
+  return str(pathlib.Path(__rootpath__, *pathelems))
 
 
 def safe_ensure_dirs(dirname):

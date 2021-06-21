@@ -6,6 +6,7 @@
 import os
 import sys
 import logging
+import pathlib
 
 from . import utils
 from .utils import path_from_root, exit_with_error, __rootpath__, which
@@ -264,17 +265,17 @@ else:
   sys.exit(0)
 
 # We used to support inline EM_CONFIG.
-if '\n' in EM_CONFIG:
+if '\n' in str(EM_CONFIG):
   exit_with_error('Inline EM_CONFIG data no longer supported.  Please use a config file.')
 
-EM_CONFIG = os.path.expanduser(EM_CONFIG)
-logger.debug('emscripten config is located in ' + EM_CONFIG)
-if not os.path.exists(EM_CONFIG):
-  exit_with_error('emscripten config file not found: ' + EM_CONFIG)
+EM_CONFIG = pathlib.Path(EM_CONFIG).expanduser()
+logger.debug(f'emscripten config is located in {EM_CONFIG}')
+if not EM_CONFIG.exists():
+  exit_with_error(f'emscripten config file not found: {EM_CONFIG}')
 
 # Emscripten compiler spawns other processes, which can reimport shared.py, so
 # make sure that those child processes get the same configuration file by
 # setting it to the currently active environment.
-os.environ['EM_CONFIG'] = EM_CONFIG
+os.environ['EM_CONFIG'] = str(EM_CONFIG)
 
 parse_config_file()

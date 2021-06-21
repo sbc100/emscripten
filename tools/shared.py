@@ -251,9 +251,9 @@ def timeout_run(proc, timeout=None, full_output=False, check=True):
 
 def get_npm_cmd(name):
   if WINDOWS:
-    cmd = [path_from_root('node_modules', '.bin', name + '.cmd')]
+    cmd = [path_from_root(f'node_modules/.bin/{name}.cmd')]
   else:
-    cmd = config.NODE_JS + [path_from_root('node_modules', '.bin', name)]
+    cmd = config.NODE_JS + [path_from_root(f'node_modules/.bin/{name}')]
   if not os.path.exists(cmd[-1]):
     exit_with_error(f'{name} was not found! Please run "npm install" in Emscripten root directory to set up npm dependencies')
   return cmd
