@@ -5,6 +5,7 @@
 
 import contextlib
 import os
+import pathlib
 import sys
 
 from . import diagnostics
@@ -70,19 +71,20 @@ def which(program):
   return None
 
 
-def read_file(file_path):
-  """Read from a file opened in text mode"""
-  with open(file_path) as fh:
-    return fh.read()
+def read_file(*path_components):
+  """Read contents of file opened in text mode."""
+  return pathlib.Path(*path_components).read_text()
 
 
-def read_binary(file_path):
-  """Read from a file opened in binary mode"""
-  with open(file_path, 'rb') as fh:
-    return fh.read()
+def read_binary(*path_components):
+  """Read contents of file opened in binary mode."""
+  return pathlib.Path(*path_components).read_bytes()
 
 
-def write_file(file_path, text):
-  """Write to a file opened in text mode"""
-  with open(file_path, 'w') as fh:
-    fh.write(text)
+def write_file(name, contents, binary=False):
+  """Write to a file opened, eitherin test or binary mode."""
+  name = pathlib.Path(name)
+  if binary:
+    name.write_bytes(contents)
+  else:
+    name.write_text(contents)

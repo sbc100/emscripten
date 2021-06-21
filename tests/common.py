@@ -32,7 +32,7 @@ from tools.shared import TEMP_DIR, EMCC, EMXX, DEBUG, EMCONFIGURE, EMCMAKE
 from tools.shared import EMSCRIPTEN_TEMP_DIR
 from tools.shared import EM_BUILD_VERBOSE
 from tools.shared import get_canonical_temp_dir, try_delete, path_from_root
-from tools.utils import MACOS, WINDOWS
+from tools.utils import MACOS, WINDOWS, read_file, read_binary, write_file
 from tools import shared, line_endings, building, config
 
 logger = logging.getLogger('common')
