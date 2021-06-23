@@ -76,6 +76,9 @@ See docs/process.md for more on how version tagging works.
   do, so including the support code is, more often than not, unnecessary.  Users
   who want shell support can enable it by including 'shell' in `-s ENVIRONMENT`
   (#14535).
+- Attempting to use emscripten with an incompatible version of llvm will now
+  result in a hard error.  We make use linker flags that don't exist in
+  llvm 12 so its really not possible to use older versions without patching.
 - A new setting called `ALLOW_UNIMPLEMENTED_SYSCALLS` was added.  This setting
   is enabled by default but, if disabled, will generate link-time errors if
   a program references an unimplemented syscall.  This setting is disabled
