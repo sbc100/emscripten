@@ -259,6 +259,7 @@ class EmccOptions:
     self.no_entry = False
     self.shared = False
     self.relocatable = False
+    self.dump_js_symbols = False
 
 
 def will_metadce():
@@ -427,30 +428,34 @@ def ensure_archive_index(archive_file):
 
 
 @ToolchainProfiler.profile_block('JS symbol generation')
-def get_all_js_syms():
+def get_all_js_syms(c_symbols_only):
   # Runs the js compiler to generate a list of all symbols available in the JS
   # libraries.  This must be done separately for each linker invokation since the
   # list of symbols depends on what settings are used.
   # TODO(sbc): Find a way to optimize this.  Potentially we could add a super-set
   # mode of the js compiler that would generate a list of all possible symbols
   # that could be checked in.
+  emscripten.generate_struct_info()
+  # Temporarily define INCLUDE_FULL_LIBRARY since we want a full list
+  # of all available JS library functions.
   old_full = settings.INCLUDE_FULL_LIBRARY
+  settings.INCLUDE_FULL_LIBRARY = True
+  settings.ONLY_CALC_JS_SYMBOLS = True
   try:
-    # Temporarily define INCLUDE_FULL_LIBRARY since we want a full list
-    # of all available JS library functions.
-    settings.INCLUDE_FULL_LIBRARY = True
-    settings.ONLY_CALC_JS_SYMBOLS = True
-    emscripten.generate_struct_info()
     glue, forwarded_data = emscripten.compile_settings()
     forwarded_json = json.loads(forwarded_data)
-    library_syms = set()
-    for name in forwarded_json['libraryFunctions']:
-      if shared.is_c_symbol(name):
-        name = shared.demangle_c_symbol_name(name)
-        library_syms.add(name)
   finally:
     settings.ONLY_CALC_JS_SYMBOLS = False
     settings.INCLUDE_FULL_LIBRARY = old_full
+
+  library_syms = set()
+  for name in forwarded_json['libraryFunctions']:
+    if c_symbols_only:
+      if shared.is_c_symbol(name):
+        name = shared.demangle_c_symbol_name(name)
+        library_syms.add(name)
+    else:
+      library_syms.add(name)
 
   return library_syms
 
@@ -1049,6 +1054,13 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
   ## Process argument and setup the compiler
   state = EmccState(args)
   options, newargs, settings_map = phase_parse_arguments(state)
+
+  if options.dump_js_symbols:
+    target, wasm_target = phase_linker_setup(options, state, newargs, settings_map)
+    process_libraries(state, [])
+    for sym in get_all_js_syms(c_symbols_only=False):
+      print(sym)
+    return 0
 
   # For internal consistency, ensure we don't attempt or read or write any link time
   # settings until we reach the linking phase.
@@ -2502,7 +2514,7 @@ def phase_link(linker_arguments, wasm_target):
   # TODO: we could check if this is a fastcomp build, and still speed things up here
   js_syms = None
   if settings.LLD_REPORT_UNDEFINED and settings.ERROR_ON_UNDEFINED_SYMBOLS:
-    js_syms = get_all_js_syms()
+    js_syms = get_all_js_syms(c_symbols_only=True)
   building.link_lld(linker_arguments, wasm_target, external_symbols=js_syms)
 
 
@@ -3039,6 +3051,8 @@ def parse_args(newargs):
       # because llvm args could, for example, start with `-o` and we don't want
       # to confuse that with a normal `-o` flag.
       skip = True
+    elif check_flag('--dump-js-symbols'):
+      options.dump_js_symbols = True
 
   if should_exit:
     sys.exit(0)
