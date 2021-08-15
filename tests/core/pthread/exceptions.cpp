@@ -19,6 +19,10 @@
 static std::atomic<int> sum;
 static std::atomic<int> total;
 
+pthread_t thread[NUM_THREADS];
+bool thread_done[NUM_THREADS];
+std::atomic<bool> thread_joined[NUM_THREADS];
+
 void *ThreadMain(void *arg) {
   for (int i = 0; i < TOTAL; i++) {
     try {
@@ -33,17 +37,18 @@ void *ThreadMain(void *arg) {
     } catch (float f) {
       // wait for a change, so we see interleaved processing.
       int last = ++sum;
-      while (sum.load() == last) {}
+      while (sum == last) {}
     }
   }
-  pthread_exit((void*)TOTAL);
+  bool* complete_signal = (bool*)arg;
+  *complete_signal = true;
+  return nullptr;
 }
 
-pthread_t thread[NUM_THREADS];
-
-void CreateThread(int i)
-{
-  int rc = pthread_create(&thread[i], nullptr, ThreadMain, (void*)i);
+void CreateThread(int i) {
+  thread_joined[i] = false;
+  thread_done[i] = false;
+  int rc = pthread_create(&thread[i], nullptr, ThreadMain, (void*)&thread_done[i]);
   assert(rc == 0);
 }
 
@@ -51,6 +56,24 @@ void loop() {
   static int main_adds = 0;
   int worker_adds = sum++ - main_adds++;
   printf("main iter %d : %d\n", main_adds, worker_adds);
+  int still_running = 0;
+
+  for (int i = 0; i < NUM_THREADS; ++i) {
+    if (!thread_joined[i]) {
+      if (thread_done[i]) {
+        assert(pthread_join(thread[i], nullptr) == 0);
+        thread_joined[i] = true;
+      } else {
+        still_running++;
+      }
+    }
+  }
+
+  if (still_running) {
+    printf("still running: %d\n", still_running);
+    return;
+  }
+
   if (worker_adds == NUM_THREADS * THREAD_ADDS &&
       main_adds >= MAIN_ADDS) {
     printf("done: %d.\n", total.load());
@@ -61,7 +84,7 @@ void loop() {
 
 int main() {
   // Create initial threads.
-  for(int i = 0; i < NUM_THREADS; ++i) {
+  for (int i = 0; i < NUM_THREADS; ++i) {
     printf("make\n");
     CreateThread(i);
   }
