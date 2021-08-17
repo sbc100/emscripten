@@ -6982,6 +6982,7 @@ someweirdtext
     self.emcc_args += ['--bind', '-fno-rtti', '-frtti']
     self.do_run(src, '418\ndotest returned: 42\n')
 
+  @no_minimal_runtime('uses addOnInit')
   @parameterized({
     '': (None, False),
     'all': ('ALL', False),
@@ -8689,7 +8690,9 @@ asani = make_run('asani', emcc_args=['-fsanitize=address', '--profiling', '-O2',
 
 # Experimental modes (not tested by CI)
 lld = make_run('lld', emcc_args=[], settings={'LLD_REPORT_UNDEFINED': 1})
-minimal0 = make_run('minimal', emcc_args=['-g'], settings={'MINIMAL_RUNTIME': 1})
+minimal0 = make_run('minimal0',
+                    emcc_args=['-g', '--pre-js', test_file('minimal_runtime_exit_handling.js')],
+                    settings={'MINIMAL_RUNTIME': 1, 'EXIT_RUNTIME': 1, 'SUPPORT_ERRNO': 1})
 
 # TestCoreBase is just a shape for the specific subclasses, we don't test it itself
 del TestCoreBase # noqa

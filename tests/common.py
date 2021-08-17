@@ -353,6 +353,8 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   def check_dylink(self):
     if self.get_setting('ALLOW_MEMORY_GROWTH') == 1 and not self.is_wasm():
       self.skipTest('no dynamic linking with memory growth (without wasm)')
+    if self.get_setting('MINIMAL_RUNTIME'):
+      self.skipTest('MINIMAL_RUNTIME is does not support dynamic linking')
     if not self.is_wasm():
       self.skipTest('no dynamic linking support in wasm2js yet')
     if '-fsanitize=address' in self.emcc_args:
