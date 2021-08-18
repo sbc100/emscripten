@@ -148,8 +148,9 @@ function ${name}(${args}) {
         return '';
       }
 
-      // if the function was implemented in compiled code, there is no need to include the js version
-      if (ident in WASM_EXPORTS) {
+      // If the function was implemented in compiled code, there is no need to include the js version
+      // However, in RELOCATABLE builds we may want to overide
+      if (!RELOCATABLE && ident in WASM_EXPORTS) {
         return '';
       }
 

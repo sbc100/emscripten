@@ -27,7 +27,7 @@ from tools import utils
 from tools import gen_struct_info
 from tools import webassembly
 from tools.utils import exit_with_error, path_from_root
-from tools.shared import WINDOWS, asmjs_mangle
+from tools.shared import WINDOWS, asmjs_mangle, demangle_c_symbol_name
 from tools.shared import treat_as_user_function, strip_prefix
 from tools.settings import settings
 
@@ -115,8 +115,12 @@ def update_settings_glue(metadata, DEBUG):
     # we don't need any JS library contents in side modules
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE = []
   else:
-    syms = settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE + [shared.JS.to_nice_ident(d) for d in metadata['declares']]
-    syms = set(syms).difference(metadata['exports'])
+    syms = set(settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE).difference(metadata['exports'])
+    syms.update(shared.JS.to_nice_ident(d) for d in metadata['declares'])
+    # in RELOCATABLE we never want to override anything that is exported by the
+    # module.
+    if not settings.RELOCATABLE:
+      syms = syms.difference(metadata['exports'])
     syms.update(metadata['globalImports'])
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE = sorted(syms)
 
@@ -324,7 +328,11 @@ def emscript(in_wasm, out_wasm, outfile_js, memfile, DEBUG):
 
   pre, post = glue.split('// EMSCRIPTEN_END_FUNCS')
 
+  libfuncs = [demangle_c_symbol_name(s) for s in forwarded_json['libraryFunctions']]
   exports = metadata['exports']
+  exports = set(metadata['exports']).difference(metadata['declares'])
+  exports = exports.difference(libfuncs)
+  exports = sorted(exports)
 
   if settings.ASYNCIFY:
     exports += ['asyncify_start_unwind', 'asyncify_stop_unwind', 'asyncify_start_rewind', 'asyncify_stop_rewind']
