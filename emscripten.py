@@ -117,6 +117,7 @@ def update_settings_glue(metadata, DEBUG):
   settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE = sorted(set(all_funcs).difference(metadata['exports']))
 
   settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += metadata['globalImports']
+  settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += metadata['addressImports']
 
   settings.WASM_EXPORTS = metadata['exports'] + list(metadata['namedGlobals'].keys())
   # Store function exports so that Closure and metadce can track these even in
@@ -758,6 +759,7 @@ def load_metadata_wasm(metadata_raw, DEBUG):
   metadata = {
     'declares': [],
     'globalImports': [],
+    'addressImports': [],
     'staticBump': 0,
     'tableSize': 0,
     'exports': [],
