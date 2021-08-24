@@ -3869,6 +3869,7 @@ ok
       header='typedef float (*floatfunc)(float);', force_c=True)
 
   @needs_dylink
+  @no_asan('MAIN_MODULE=1 and asan not working yet')
   def test_missing_signatures(self):
     create_file('test_sig.c', r'''#include <emscripten.h>
                                        int main() {
@@ -4245,6 +4246,8 @@ res64 - external 64\n''', header='''
     ''', expected=['12345\n'], force_c=True)
 
   @needs_dylink
+  @no_asan('requires extra libs')
+  @no_lsan('requires extra libs')
   @parameterized({
     'libcxx': ('libc,libc++,libmalloc,libc++abi',),
     'all': ('1',),

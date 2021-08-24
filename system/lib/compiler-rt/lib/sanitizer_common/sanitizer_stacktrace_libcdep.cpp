@@ -39,9 +39,11 @@ void StackTrace::Print() const {
     uptr pc = trace[i];
 #endif
     SymbolizedStack *frames;
+#if !SANITIZER_EMSCRIPTEN
     if (symbolize)
       frames = Symbolizer::GetOrInit()->SymbolizePC(pc);
     else
+#endif
       frames = SymbolizedStack::New(pc);
     CHECK(frames);
     for (SymbolizedStack *cur = frames; cur; cur = cur->next) {

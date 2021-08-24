@@ -1459,6 +1459,15 @@ class libubsan_rt(SanitizerLibrary):
 
   cflags = ['-DUBSAN_CAN_USE_CXXABI']
   src_dir = 'system/lib/compiler-rt/lib/ubsan'
+  src_glob_exclude = ['ubsan_diag_standalone.cpp']
+
+
+class libubsan_standalone(SanitizerLibrary):
+  name = 'libubsan_standalone'
+
+  cflags = ['-DUBSAN_CAN_USE_CXXABI']
+  src_dir = 'system/lib/compiler-rt/lib/ubsan'
+  src_glob = ['ubsan_diag_standalone.cpp']
 
 
 class liblsan_common_rt(SanitizerLibrary):
@@ -1742,6 +1751,14 @@ def calculate(input_files, forced):
       add_library('libstandalonewasm')
     add_library('libc_rt')
 
+    if settings.PROXY_POSIX_SOCKETS:
+      add_library('libsockets_proxy')
+    else:
+      add_library('libsockets')
+
+    if settings.USE_WEBGPU:
+      add_library('libwebgpu_cpp')
+
     if settings.USE_LSAN:
       force_include.append('liblsan_rt')
       add_library('liblsan_rt')
@@ -1755,20 +1772,14 @@ def calculate(input_files, forced):
       add_library('libubsan_minimal_rt')
     elif settings.UBSAN_RUNTIME == 2:
       add_library('libubsan_rt')
+    if settings.UBSAN_RUNTIME and not settings.USE_ASAN:
+      add_library('libubsan_standalone')
 
     if settings.USE_LSAN or settings.USE_ASAN:
       add_library('liblsan_common_rt')
 
     if sanitize:
       add_library('libsanitizer_common_rt')
-
-    if settings.PROXY_POSIX_SOCKETS:
-      add_library('libsockets_proxy')
-    else:
-      add_library('libsockets')
-
-    if settings.USE_WEBGPU:
-      add_library('libwebgpu_cpp')
 
   # When LINKABLE is set the entire link command line is wrapped in --whole-archive by
   # building.link_ldd.  And since --whole-archive/--no-whole-archive processing does not nest we

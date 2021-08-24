@@ -114,7 +114,7 @@ void WriteToSyslog(const char *msg) {
 
 void MaybeStartBackgroudThread() {
 #if (SANITIZER_LINUX || SANITIZER_NETBSD) && \
-    !SANITIZER_GO  // Need to implement/test on other platforms.
+    !SANITIZER_GO && !SANITIZER_EMSCRIPTEN  // Need to implement/test on other platforms.
   // Start the background thread if one of the rss limits is given.
   if (!common_flags()->hard_rss_limit_mb &&
       !common_flags()->soft_rss_limit_mb &&

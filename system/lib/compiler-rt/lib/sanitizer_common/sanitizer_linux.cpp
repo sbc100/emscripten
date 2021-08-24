@@ -470,22 +470,28 @@ uptr internal_sched_yield() {
 #endif
 }
 
-#if !SANITIZER_EMSCRIPTEN
 unsigned int internal_sleep(unsigned int seconds) {
+#if SANITIZER_EMSCRIPTEN
+  UNIMPLEMENTED();
+#else
   struct timespec ts;
   ts.tv_sec = seconds;
   ts.tv_nsec = 0;
   int res = internal_syscall(SYSCALL(nanosleep), &ts, &ts);
   if (res) return ts.tv_sec;
   return 0;
+#endif  // !SANITIZER_EMSCRIPTEN
 }
 
 uptr internal_execve(const char *filename, char *const argv[],
                      char *const envp[]) {
+#if SANITIZER_EMSCRIPTEN
+  UNIMPLEMENTED();
+#else
   return internal_syscall(SYSCALL(execve), (uptr)filename, (uptr)argv,
                           (uptr)envp);
-}
 #endif  // !SANITIZER_EMSCRIPTEN
+}
 #endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
 
 #if !SANITIZER_NETBSD
@@ -563,7 +569,7 @@ uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
 #endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
 
 #if SANITIZER_EMSCRIPTEN
-int __clock_gettime(__sanitizer_clockid_t clk_id, void *tp);
+extern "C" int __clock_gettime(__sanitizer_clockid_t clk_id, void *tp);
 
 uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
   return __clock_gettime(clk_id, tp);
@@ -1849,7 +1855,7 @@ HandleSignalMode GetHandleSignalMode(int signum) {
   return result;
 }
 
-#if !SANITIZER_GO
+#if !SANITIZER_GO && !SANITIZER_EMSCRIPTEN
 void *internal_start_thread(void *(*func)(void *arg), void *arg) {
   // Start the thread with signals blocked, otherwise it can steal user signals.
   __sanitizer_sigset_t set, old;

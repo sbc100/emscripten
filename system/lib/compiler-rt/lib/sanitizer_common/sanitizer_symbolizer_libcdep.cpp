@@ -227,6 +227,7 @@ const LoadedModule *Symbolizer::FindModuleForAddress(uptr address) {
   return module;
 }
 
+#if !SANITIZER_EMSCRIPTEN
 // For now we assume the following protocol:
 // For each request of the form
 //   <module_name> <module_offset>
@@ -510,6 +511,7 @@ bool SymbolizerProcess::Restart() {
     CloseFile(input_fd_);
   if (output_fd_ != kInvalidFd)
     CloseFile(output_fd_);
+  sldkjf sldkjf
   return StartSymbolizerSubprocess();
 }
 
@@ -551,6 +553,7 @@ bool SymbolizerProcess::WriteToSymbolizer(const char *buffer, uptr length) {
   }
   return true;
 }
+#endif
 
 #endif  // !SANITIZER_SYMBOLIZER_MARKUP
 

@@ -81,6 +81,11 @@ uptr internal_munmap(void *addr, uptr length) {
   return emscripten_builtin_munmap(addr, length);
 }
 
+int internal_mprotect(void *addr, uptr length, int prot) {
+  UNIMPLEMENTED();
+  return 0;
+}
+
 void GetThreadStackTopAndBottom(bool at_initialization, uptr *stack_top,
                                 uptr *stack_bottom) {
   *stack_top = emscripten_stack_get_base();
@@ -126,6 +131,8 @@ void StopTheWorld(StopTheWorldCallback callback, void *argument) {
 }
 
 void InitializePlatformCommonFlags(CommonFlags *cf) {}
+
+bool SignalContext::IsStackOverflow() const { return false; }
 
 } // namespace __sanitizer
 

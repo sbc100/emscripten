@@ -137,7 +137,7 @@ void SleepForMillis(int millis) {
 }
 
 void Abort() {
-#if !SANITIZER_GO
+#if !SANITIZER_GO && !SANITIZER_EMSCRIPTEN
   // If we are handling SIGABRT, unhandle it first.
   // TODO(vitalybuka): Check if handler belongs to sanitizer.
   if (GetHandleSignalMode(SIGABRT) != kHandleSignalNo) {
@@ -163,7 +163,7 @@ bool SupportsColoredOutput(fd_t fd) {
   return isatty(fd) != 0;
 }
 
-#if !SANITIZER_GO
+#if !SANITIZER_GO && !SANITIZER_EMSCRIPTEN
 // TODO(glider): different tools may require different altstack size.
 static const uptr kAltStackSize = SIGSTKSZ * 4;  // SIGSTKSZ is not enough.
 
@@ -396,7 +396,7 @@ real_pthread_attr_getstack(void *attr, void **addr, size_t *size);
 } // extern "C"
 
 int my_pthread_attr_getstack(void *attr, void **addr, uptr *size) {
-#if !SANITIZER_GO && !SANITIZER_MAC
+#if !SANITIZER_GO && !SANITIZER_MAC && !SANITIZER_EMSCRIPTEN
   if (&real_pthread_attr_getstack)
     return real_pthread_attr_getstack((pthread_attr_t *)attr, addr,
                                       (size_t *)size);

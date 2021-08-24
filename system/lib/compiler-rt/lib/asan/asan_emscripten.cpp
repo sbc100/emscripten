@@ -46,6 +46,10 @@ void *AsanDoesNotSupportStaticLinkage() {
 
 void InitializeAsanInterceptors() {}
 
+void AsanApplyToGlobals(globals_op_fptr op, const void *needle) {
+  UNIMPLEMENTED();
+}
+
 void FlushUnneededASanShadowMemory(uptr p, uptr size) {}
 
 extern "C" {
