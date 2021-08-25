@@ -2709,7 +2709,7 @@ The current type of b is: 9
         }
       };
 
-      Foo global;
+      Foo global2;
       ''')
     self.build_dlfcn_lib('liblib.cpp')
 
@@ -3022,6 +3022,8 @@ Var: 42
     self.do_run(src, '100\n200\n13\n42\n', force_c=True)
 
   @needs_dylink
+  @no_asan("odr-violation: global 'prezero'")
+  @no_lsan('reports leaks')
   def test_dlfcn_alignment_and_zeroing(self):
     self.set_setting('INITIAL_MEMORY', '16mb')
     create_file('liblib.c', r'''
@@ -3052,10 +3054,10 @@ Var: 42
         printf("setting this range to non-zero: %ld - %ld\n", (long)mem, ((long)mem) + num);
         memset(mem, 1, num);
         EM_ASM({
-          var value = HEAP8[64*1024*1024];
+          var value = HEAP8[$0 + 60*1024*1024];
           out('verify middle of memory is non-zero: ' + value);
           assert(value === 1);
-        });
+        }, mem);
         free(mem);
         for (int i = 0; i < 10; i++) {
           char curr[] = "?.so";
@@ -3709,6 +3711,7 @@ ok
     self.do_basic_dylink_test()
 
   @needs_dylink
+  @no_asan('ASan not compatible with SAFE_HEAP')
   def test_dylink_safe_heap(self):
     self.set_setting('SAFE_HEAP')
     self.do_basic_dylink_test()
