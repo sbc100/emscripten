@@ -473,10 +473,11 @@ def finalize_wasm(infile, outfile, memfile):
     # output file.
     # TODO(sbc): Find a better way to do this.
     modify_wasm = True
+  mapfile = shared.add_suffix(infile, '.map')
   if settings.GENERATE_SOURCE_MAP:
-    building.emit_wasm_source_map(infile, infile + '.map', outfile)
-    building.save_intermediate(infile + '.map', 'base_wasm.map')
-    args += ['--output-source-map-url=' + settings.SOURCE_MAP_BASE + os.path.basename(outfile) + '.map']
+    building.emit_wasm_source_map(infile, mapfile, outfile)
+    building.save_intermediate(mapfile, 'base_wasm.map')
+    args += ['--output-source-map-url=' + settings.SOURCE_MAP_BASE + outfile.with_suffix('.map').name]
     modify_wasm = True
   if settings.DEBUG_LEVEL >= 2 or settings.ASYNCIFY_ADD or settings.ASYNCIFY_ADVISE or settings.ASYNCIFY_ONLY or settings.ASYNCIFY_REMOVE or settings.EMIT_SYMBOL_MAP or settings.EMIT_NAME_SECTION:
     args.append('-g')
@@ -545,7 +546,7 @@ def finalize_wasm(infile, outfile, memfile):
   elif infile != outfile:
     shutil.copy(infile, outfile)
   if settings.GENERATE_SOURCE_MAP:
-    building.save_intermediate(infile + '.map', 'post_finalize.map')
+    building.save_intermediate(mapfile, 'post_finalize.map')
 
   if memfile:
     # we have a separate .mem file. binaryen did not strip any trailing zeros,

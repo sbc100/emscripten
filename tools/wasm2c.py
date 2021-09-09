@@ -80,8 +80,8 @@ def do_wasm2c(infile):
   assert settings.STANDALONE_WASM
   WASM2C = config.NODE_JS + [path_from_root('node_modules/wasm2c/wasm2c.js')]
   WASM2C_DIR = path_from_root('node_modules/wasm2c')
-  c_file = unsuffixed(infile) + '.wasm.c'
-  h_file = unsuffixed(infile) + '.wasm.h'
+  c_file = infile.with_suffix('.wasm.c')
+  h_file = infile.with_suffix('.wasm.h')
   cmd = WASM2C + [infile, '-o', c_file]
   check_call(cmd)
   total = '''\
@@ -96,7 +96,7 @@ def do_wasm2c(infile):
   def bundle_file(filename):
     nonlocal total
     with open(filename) as f:
-      total += '// ' + filename + '\n' + f.read() + SEP
+      total += '// ' + str(filename) + '\n' + f.read() + SEP
 
   # hermeticize the C file, by bundling in the wasm2c/ includes
   headers = [

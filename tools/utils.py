@@ -21,7 +21,7 @@ def exit_with_error(msg, *args):
 
 
 def path_from_root(*pathelems):
-  return str(Path(__rootpath__, *pathelems))
+  return Path(__rootpath__, *pathelems)
 
 
 def safe_ensure_dirs(dirname):

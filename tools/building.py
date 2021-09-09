@@ -641,7 +641,7 @@ def acorn_optimizer(filename, passes, extra_info=None, return_output=False):
   if settings.VERBOSE:
     cmd += ['verbose']
   if not return_output:
-    next = original_filename + '.jso.js'
+    next = shared.add_suffix(original_filename, '.jso.js')
     shared.get_temp_files().note(next)
     check_call(cmd, stdout=open(next, 'w'))
     save_intermediate(next, '%s.js' % passes[0])
@@ -869,7 +869,7 @@ def run_closure_cmd(cmd, filename, env, pretty):
   tempfiles = shared.get_temp_files()
 
   def move_to_safe_7bit_ascii_filename(filename):
-    if isascii(filename):
+    if isascii(str(filename)):
       return os.path.abspath(filename)
     safe_filename = tempfiles.get('.js').name  # Safe 7-bit filename
     shutil.copyfile(filename, safe_filename)
@@ -1091,7 +1091,7 @@ def asyncify_lazy_load_code(wasm_target, debug):
   if settings.OPT_LEVEL > 0:
     args.append(opt_level_to_str(settings.OPT_LEVEL, settings.SHRINK_LEVEL))
   run_wasm_opt(wasm_target,
-               wasm_target + '.lazy.wasm',
+               shared.add_suffix(wasm_target, '.lazy.wasm'),
                args=args,
                debug=debug)
   # re-optimize the original, by applying the knowledge that imports will
@@ -1206,7 +1206,7 @@ def wasm2js(js_file, wasm_file, opt_level, minify_whitespace, use_closure_compil
   marker = finds[0]
   all_js = all_js.replace(marker, f'(\n{wasm2js_js}\n)')
   # replace the placeholder with the actual code
-  js_file = js_file + '.wasm2js.js'
+  js_file = shared.add_suffix(js_file, '.wasm2js.js')
   utils.write_file(js_file, all_js)
   return js_file
 

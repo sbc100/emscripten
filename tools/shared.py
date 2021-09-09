@@ -11,6 +11,7 @@ import binascii
 import json
 import logging
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -451,7 +452,12 @@ def bat_suffix(cmd):
 
 def replace_suffix(filename, new_suffix):
   assert new_suffix[0] == '.'
-  return os.path.splitext(filename)[0] + new_suffix
+  return pathlib.Path(filename).with_suffix(new_suffix)
+
+
+def add_suffix(name, suffix):
+  name = pathlib.Path(name)
+  return name.parent / (name.name + suffix)
 
 
 # In MINIMAL_RUNTIME mode, keep suffixes of generated files simple
@@ -459,7 +465,9 @@ def replace_suffix(filename, new_suffix):
 # Retain the original naming scheme in traditional runtime.
 def replace_or_append_suffix(filename, new_suffix):
   assert new_suffix[0] == '.'
-  return replace_suffix(filename, new_suffix) if settings.MINIMAL_RUNTIME else filename + new_suffix
+  if settings.MINIMAL_RUNTIME:
+    return replace_suffix(filename, new_suffix)
+  return add_suffix(filename, new_suffix)
 
 
 # Temp dir. Create a random one, unless EMCC_DEBUG is set, in which case use the canonical
@@ -478,7 +486,7 @@ def get_emscripten_temp_dir():
         atexit.register(clean_temp)
       # this global var might change later
       prepare_to_clean_temp(EMSCRIPTEN_TEMP_DIR)
-  return EMSCRIPTEN_TEMP_DIR
+  return pathlib.Path(EMSCRIPTEN_TEMP_DIR)
 
 
 def get_canonical_temp_dir(temp_dir):
@@ -579,7 +587,7 @@ def reconfigure_cache():
 
 def suffix(name):
   """Return the file extension"""
-  return os.path.splitext(name)[1]
+  return pathlib.Path(name).suffix
 
 
 def unsuffixed(name):
@@ -587,11 +595,11 @@ def unsuffixed(name):
 
   If there are multiple extensions this strips only the final one.
   """
-  return os.path.splitext(name)[0]
+  return pathlib.Path(name).with_suffix('')
 
 
 def unsuffixed_basename(name):
-  return os.path.basename(unsuffixed(name))
+  return pathlib.Path(name).stem
 
 
 def strip_prefix(string, prefix):

@@ -608,11 +608,9 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     if force_c:
       compiler.append('-xc')
 
-    if output_basename:
-      output = output_basename + suffix
-    else:
-      basename = os.path.basename(filename)
-      output = shared.unsuffixed(basename) + suffix
+    if not output_basename:
+      output_basename = shared.unsuffixed_basename(filename)
+    output = output_basename + suffix
     cmd = compiler + [filename, '-o', output] + self.get_emcc_args(main_file=True) + emcc_args + libraries
     if shared.suffix(filename) not in ('.i', '.ii'):
       # Add the location of the test file to include path.
@@ -712,7 +710,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       error = e
 
     # Make sure that we produced proper line endings to the .js file we are about to run.
-    if not filename.endswith('.wasm'):
+    if not Path(filename).suffix == '.wasm':
       self.assertEqual(line_endings.check_line_endings(filename), 0)
 
     ret = read_file(stdout_file)
@@ -1000,7 +998,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     so = '.wasm' if self.is_wasm() else '.js'
 
     def ccshared(src, linkto=[]):
-      cmdv = [EMCC, src, '-o', shared.unsuffixed(src) + so, '-sSIDE_MODULE'] + self.get_emcc_args()
+      cmdv = [EMCC, src, '-o', shared.replace_suffix(src, so), '-sSIDE_MODULE'] + self.get_emcc_args()
       cmdv += linkto
       self.run_process(cmdv)
 
@@ -1087,9 +1085,9 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     self._build_and_run(filename, read_file(expected_output_filename), **kwargs)
 
   def do_run_in_out_file_test(self, *path, **kwargs):
-    srcfile = test_file(*path)
+    srcfile = Path(test_file(*path))
     out_suffix = kwargs.pop('out_suffix', '')
-    outfile = shared.unsuffixed(srcfile) + out_suffix + '.out'
+    outfile = srcfile.parent / (srcfile.stem + out_suffix + '.out')
     expected = read_file(outfile)
     self._build_and_run(srcfile, expected, **kwargs)
 

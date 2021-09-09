@@ -6,6 +6,7 @@
 import contextlib
 import logging
 import os
+import pathlib
 from . import tempfiles, filelock, config, utils
 from .settings import settings
 
@@ -26,8 +27,7 @@ class Cache:
 
   def __init__(self, dirname):
     # figure out the root directory for all caching
-    dirname = os.path.normpath(dirname)
-    self.dirname = dirname
+    self.dirname = pathlib.Path(dirname)
     self.acquired_count = 0
 
     # since the lock itself lives inside the cache directory we need to ensure it
@@ -91,8 +91,8 @@ class Cache:
 
   def get_sysroot(self, absolute):
     if absolute:
-      return os.path.join(self.dirname, 'sysroot')
-    return 'sysroot'
+      return self.dirname / 'sysroot'
+    return pathlib.Path('sysroot')
 
   def get_include_dir(self, *parts):
     return self.get_sysroot_dir('include', *parts)
@@ -101,11 +101,11 @@ class Cache:
     return os.path.join(self.get_sysroot(absolute=True), *parts)
 
   def get_lib_dir(self, absolute, varies=True):
-    path = os.path.join(self.get_sysroot(absolute=absolute), 'lib')
+    path = self.get_sysroot(absolute=absolute) / 'lib'
     if settings.MEMORY64:
-      path = os.path.join(path, 'wasm64-emscripten')
+      path /= 'wasm64-emscripten'
     else:
-      path = os.path.join(path, 'wasm32-emscripten')
+      path /= 'wasm32-emscripten'
     if not varies:
       return path
     # if relevant, use a subdir of the cache
@@ -118,11 +118,11 @@ class Cache:
     if settings.RELOCATABLE:
       subdir.append('pic')
     if subdir:
-      path = os.path.join(path, '-'.join(subdir))
+      path /= '-'.join(subdir)
     return path
 
   def get_lib_name(self, name, varies=True):
-    return os.path.join(self.get_lib_dir(absolute=False, varies=varies), name)
+    return self.get_lib_dir(absolute=False) / name
 
   def erase_lib(self, name):
     self.erase_file(self.get_lib_name(name))

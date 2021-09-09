@@ -14,7 +14,7 @@ import sys
 
 from . import utils
 
-sys.path.append(utils.path_from_root('third_party'))
+sys.path.append(str(utils.path_from_root('third_party')))
 
 import leb128
 

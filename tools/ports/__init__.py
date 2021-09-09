@@ -136,7 +136,7 @@ class Ports:
 
   @staticmethod
   def get_dir():
-    dirname = config.PORTS
+    dirname = pathlib.Path(config.PORTS)
     shared.safe_ensure_dirs(dirname)
     return dirname
 
@@ -156,7 +156,7 @@ class Ports:
   @staticmethod
   def fetch_project(name, url, subdir, sha512hash=None):
     # To compute the sha512 hash, run `curl URL | sha512sum`.
-    fullname = os.path.join(Ports.get_dir(), name)
+    fullname = Ports.get_dir() / name
 
     # EMCC_LOCAL_PORTS: A hacky way to use a local directory for a port. This
     #                   is not tested but can be useful for debugging
@@ -198,7 +198,7 @@ class Ports:
 
     url_filename = url.rsplit('/')[-1]
     ext = url_filename.split('.', 1)[1]
-    fullpath = fullname + '.' + ext
+    fullpath = fullname.with_suffix(ext)
 
     if name not in Ports.name_cache: # only mention each port once in log
       logger.debug(f'including port: {name}')

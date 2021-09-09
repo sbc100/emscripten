@@ -26,6 +26,7 @@ import base64
 import json
 import logging
 import os
+import pathlib
 import re
 import shlex
 import shutil
@@ -766,7 +767,7 @@ def emsdk_ldflags(user_args):
 
 
 def emsdk_cflags(user_args):
-  cflags = ['--sysroot=' + shared.Cache.get_sysroot(absolute=True)]
+  cflags = ['--sysroot=' + str(shared.Cache.get_sysroot(absolute=True))]
 
   def array_contains_any_of(hay, needles):
     for n in needles:
@@ -926,13 +927,13 @@ def get_secondary_target(target, ext):
   # never collide with the primary one.
   base = unsuffixed(target)
   if get_file_suffix(target) == ext:
-    base += '_'
-  return base + ext
+    ext = '_' + ext
+  return shared.add_suffix(base, ext)
 
 
 def in_temp(name):
   temp_dir = shared.get_emscripten_temp_dir()
-  return os.path.join(temp_dir, os.path.basename(name))
+  return str(temp_dir / name)
 
 
 def dedup_list(lst):
@@ -1621,6 +1622,7 @@ def phase_linker_setup(options, state, newargs, user_settings):
     target = 'a.out.wasm'
   else:
     target = 'a.out.js'
+  target = pathlib.Path(target)
 
   final_suffix = get_file_suffix(target)
 
@@ -2652,7 +2654,7 @@ def phase_compile_inputs(options, state, newargs, input_files):
   def uniquename(name):
     if name not in seen_names:
       seen_names[name] = str(len(seen_names))
-    return unsuffixed(name) + '_' + seen_names[name] + shared.suffix(name)
+    return pathlib.Path(unsuffixed(name).name + '_' + seen_names[name])
 
   def get_object_filename(input_file):
     if state.mode == Mode.COMPILE_ONLY:
@@ -2662,9 +2664,9 @@ def phase_compile_inputs(options, state, newargs, input_files):
         assert len(input_files) == 1
         return options.output_file
       else:
-        return unsuffixed_basename(input_file) + options.default_object_extension
+        return input_file.name.with_suffix(options.default_object_extension)
     else:
-      return in_temp(unsuffixed(uniquename(input_file)) + options.default_object_extension)
+      return in_temp(uniquename(input_file).with_suffix(options.default_object_extension))
 
   def compile_source_file(i, input_file):
     logger.debug(f'compiling source file: {input_file}')
@@ -2692,6 +2694,7 @@ def phase_compile_inputs(options, state, newargs, input_files):
 
   # First, generate LLVM bitcode. For each input file, we get base.o with bitcode
   for i, input_file in input_files:
+    input_file = pathlib.Path(input_file)
     file_suffix = get_file_suffix(input_file)
     if file_suffix in SOURCE_ENDINGS + ASSEMBLY_ENDINGS or (state.has_dash_c and file_suffix == '.bc'):
       compile_source_file(i, input_file)
@@ -2810,7 +2813,7 @@ def phase_source_transforms(options):
   if final_js and (options.pre_js or options.post_js):
     logger.debug('applying pre/postjses')
     src = read_file(final_js)
-    final_js += '.pp.js'
+    final_js = shared.add_suffix(final_js, '.pp.js')
     with open(final_js, 'w') as f:
       # pre-js code goes right after the Module integration code (so it
       # can use Module), we have a marker for it
@@ -2820,8 +2823,8 @@ def phase_source_transforms(options):
 
   # Apply a source code transformation, if requested
   if options.js_transform:
-    safe_copy(final_js, final_js + '.tr.js')
-    final_js += '.tr.js'
+    safe_copy(final_js, shared.add_suffix(final_js, '.tr.js'))
+    final_js = shared.add_suffix(final_js, '.tr.js')
     posix = not shared.WINDOWS
     logger.debug('applying transform: %s', options.js_transform)
     shared.check_call(building.remove_quotes(shlex.split(options.js_transform, posix=posix) + [os.path.abspath(final_js)]))
@@ -2836,8 +2839,8 @@ def phase_memory_initializer(memfile):
 
   src = read_file(final_js)
   src = do_replace(src, '// {{MEM_INITIALIZER}}', 'var memoryInitializer = "%s";' % os.path.basename(memfile))
-  write_file(final_js + '.mem.js', src)
-  final_js += '.mem.js'
+  write_file(shared.add_suffix(final_js, '.mem.js'), src)
+  final_js = shared.add_suffix(final_js, '.mem.js')
 
 
 @ToolchainProfiler.profile_block('final emitting')
@@ -2892,7 +2895,7 @@ def phase_final_emitting(options, state, target, wasm_target, memfile):
   # See also: `preprocess` in parseTools.js.
   if settings.EXPORT_ES6 and settings.USE_ES6_IMPORT_META:
     src = read_file(final_js)
-    final_js += '.esmeta.js'
+    final_js = shared.add_suffix(final_js, '.esmeta.js')
     write_file(final_js, src.replace('EMSCRIPTEN$IMPORT$META', 'import.meta'))
     save_intermediate('es6-import-meta')
 
@@ -2900,7 +2903,7 @@ def phase_final_emitting(options, state, target, wasm_target, memfile):
   if options.extern_pre_js or options.extern_post_js:
     logger.debug('applying extern pre/postjses')
     src = read_file(final_js)
-    final_js += '.epp.js'
+    final_js = shared.add_suffix(final_js, '.epp.js')
     with open(final_js, 'w') as f:
       f.write(options.extern_pre_js)
       f.write(src)
@@ -3006,10 +3009,13 @@ def parse_args(newargs):
       arg_value = None
       return rtn
 
+    def consume_arg_path():
+      return pathlib.Path(consume_arg())
+
     def consume_arg_file():
-      name = consume_arg()
-      if not os.path.isfile(name):
-        exit_with_error("'%s': file not found: '%s'" % (arg, name))
+      name = consume_arg_path()
+      if not name.is_file():
+        exit_with_error(f"'{arg}': file not found: '{name}'")
       return name
 
     if arg.startswith('-O'):
@@ -3174,7 +3180,7 @@ def parse_args(newargs):
     elif check_flag('--proxy-to-worker'):
       settings_changes.append('PROXY_TO_WORKER=1')
     elif check_arg('--valid-abspath'):
-      options.valid_abspaths.append(consume_arg())
+      options.valid_abspaths.append(consume_arg_path())
     elif check_flag('--separate-asm'):
       exit_with_error('cannot --separate-asm with the wasm backend, since not emitting asm.js')
     elif arg.startswith(('-I', '-L')):
@@ -3393,7 +3399,7 @@ def phase_binaryen(target, options, wasm_target):
   if settings.WASM2JS:
     symbols_file_js = None
     if settings.WASM == 2:
-      wasm2js_template = wasm_target + '.js'
+      wasm2js_template = shared.add_suffix(wasm_target, '.js')
       write_file(wasm2js_template, preprocess_wasm2js_script())
       # generate secondary file for JS symbols
       if options.emit_symbol_map:
@@ -3516,7 +3522,7 @@ var %(EXPORT_NAME)s = (() => {
       'src': src
     }
 
-  final_js += '.modular.js'
+  final_js = shared.add_suffix(final_js, '.modular.js')
   with open(final_js, 'w') as f:
     f.write(src)
 
@@ -3542,7 +3548,7 @@ def module_export_name_substitution():
   global final_js
   logger.debug(f'Private module export name substitution with {settings.EXPORT_NAME}')
   src = read_file(final_js)
-  final_js += '.module_export_name_substitution.js'
+  final_js = shared.add_suffix(final_js, '.module_export_name_substitution.js')
   if settings.MINIMAL_RUNTIME:
     # In MINIMAL_RUNTIME the Module object is always present to provide the .asm.js/.wasm content
     replacement = settings.EXPORT_NAME
@@ -3868,21 +3874,14 @@ class ScriptSource:
 
 
 def is_valid_abspath(options, path_name):
+  path_name = pathlib.Path(path_name)
+
   # Any path that is underneath the emscripten repository root must be ok.
-  if utils.path_from_root().replace('\\', '/') in path_name.replace('\\', '/'):
+  if path_name.is_relative_to(utils.path_from_root()):
     return True
 
-  def in_directory(root, child):
-    # make both path absolute
-    root = os.path.realpath(root)
-    child = os.path.realpath(child)
-
-    # return true, if the common prefix of both is equal to directory
-    # e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-    return os.path.commonprefix([root, child]) == root
-
   for valid_abspath in options.valid_abspaths:
-    if in_directory(valid_abspath, path_name):
+    if path_name.is_relative_to(valid_abspath):
       return True
   return False
 

@@ -6,6 +6,7 @@
 import os
 import sys
 import logging
+from pathlib import Path
 
 from . import utils
 from .utils import path_from_root, exit_with_error, __rootpath__, which
@@ -231,9 +232,9 @@ embedded_config = path_from_root('.emscripten')
 # We could remove this special case if emsdk were to write its embedded config
 # file into the emscripten directory itself.
 # See: https://github.com/emscripten-core/emsdk/pull/367
-emsdk_root = os.path.dirname(os.path.dirname(path_from_root()))
-emsdk_embedded_config = os.path.join(emsdk_root, '.emscripten')
-user_home_config = os.path.expanduser('~/.emscripten')
+emsdk_root = path_from_root().parent.parent
+emsdk_embedded_config = emsdk_root / '.emscripten'
+user_home_config = Path('~/.emscripten').expanduser()
 
 if '--em-config' in sys.argv:
   i = sys.argv.index('--em-config')
@@ -257,11 +258,13 @@ else:
   else:
     EM_CONFIG = user_home_config
 
-# We used to support inline EM_CONFIG.
-if '\n' in EM_CONFIG:
-  exit_with_error('Inline EM_CONFIG data no longer supported.  Please use a config file.')
+if type(EM_CONFIG) is str:
+  # We used to support inline EM_CONFIG.
+  if '\n' in EM_CONFIG:
+    exit_with_error('Inline EM_CONFIG data no longer supported.  Please use a config file.')
+  EM_CONFIG = Path(EM_CONFIG)
 
-EM_CONFIG = os.path.expanduser(EM_CONFIG)
+EM_CONFIG = EM_CONFIG.expanduser()
 
 # This command line flag needs to work even in the absence of a config file, so we must process it
 # here at script import time (otherwise the error below will trigger).
@@ -271,12 +274,11 @@ if '--generate-config' in sys.argv:
 
 if not os.path.exists(EM_CONFIG):
   exit_with_error(f'config file not found: {EM_CONFIG}.  Please create one by hand or run `emcc --generate-config`')
-
-logger.debug('emscripten config is located in ' + EM_CONFIG)
+logger.debug(f'emscripten config is located in {EM_CONFIG}')
 
 # Emscripten compiler spawns other processes, which can reimport shared.py, so
 # make sure that those child processes get the same configuration file by
 # setting it to the currently active environment.
-os.environ['EM_CONFIG'] = EM_CONFIG
+os.environ['EM_CONFIG'] = str(EM_CONFIG)
 
 parse_config_file()

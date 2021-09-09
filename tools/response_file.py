@@ -35,7 +35,7 @@ def create_response_file(args, directory, suffix='.rsp.utf-8'):
       arg = arg.replace(char, '\\' + char)
     return arg
 
-  args = [escape(a) for a in args]
+  args = [escape(str(a)) for a in args]
   contents = ""
 
   # Arguments containing spaces need to be quoted.

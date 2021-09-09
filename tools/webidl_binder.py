@@ -17,8 +17,8 @@ sys.path.append(__rootdir__)
 
 from tools import shared, utils
 
-sys.path.append(utils.path_from_root('third_party'))
-sys.path.append(utils.path_from_root('third_party/ply'))
+sys.path.append(str(utils.path_from_root('third_party')))
+sys.path.append(str(utils.path_from_root('third_party/ply')))
 
 import WebIDL
 
