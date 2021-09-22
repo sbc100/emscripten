@@ -30,12 +30,14 @@
 #include "lsan_allocator.h"
 #include "lsan_common.h"
 #include "lsan_thread.h"
+#include <stdio.h>
 
 #include <stddef.h>
 
 using namespace __lsan;
 
 extern "C" {
+void* pthread_self();
 int pthread_attr_init(void *attr);
 int pthread_attr_destroy(void *attr);
 int pthread_attr_getdetachstate(void *attr, int *v);
@@ -110,6 +112,7 @@ INTERCEPTOR(void*, valloc, uptr size) {
 
 #if SANITIZER_INTERCEPT_MEMALIGN
 INTERCEPTOR(void*, memalign, uptr alignment, uptr size) {
+  printf("intercept memalign\n");
   ENSURE_LSAN_INITED;
   GET_STACK_TRACE_MALLOC;
   return lsan_memalign(alignment, size, stack);
@@ -320,6 +323,7 @@ INTERCEPTOR(void, _ZdaPvRKSt9nothrow_t, void *ptr, std::nothrow_t const&)
 static unsigned g_thread_finalize_key;
 
 static void thread_finalize(void *v) {
+  printf("thread_finalize %p\n", pthread_self());
   uptr iter = (uptr)v;
   if (iter > 1) {
     if (pthread_setspecific(g_thread_finalize_key, (void*)(iter - 1))) {
@@ -450,12 +454,14 @@ extern "C" void *__lsan_thread_start_func(void *arg) {
 
 INTERCEPTOR(int, pthread_create, void *th, void *attr,
             void *(*callback)(void *), void *param) {
+  printf("XXXX\n");
   ENSURE_LSAN_INITED;
   EnsureMainThreadIDIsCorrect();
   __sanitizer_pthread_attr_t myattr;
   if (!attr || attr == __ATTRP_C11_THREAD) {
     pthread_attr_init(&myattr);
     attr = &myattr;
+    printf("using default attrs\n");
   }
   AdjustStackSize(attr);
   int detached = 0;
@@ -567,6 +573,7 @@ void InitializeInterceptors() {
 #endif  // !SANITIZER_EMSCRIPTEN
 
 #if !SANITIZER_NETBSD && !SANITIZER_FREEBSD
+  printf("key_create\n");
   if (pthread_key_create(&g_thread_finalize_key, &thread_finalize)) {
     Report("LeakSanitizer: failed to create thread key.\n");
     Die();

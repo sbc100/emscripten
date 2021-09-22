@@ -2675,6 +2675,13 @@ The current type of b is: 9
     expected = ['Aborted(). Build with -sASSERTIONS for more info', 'Aborted(native code called abort())']
     self.do_runf(test_file('pthread/test_pthread_abort_interrupt.c'), expected, assert_returncode=NON_ZERO)
 
+  @node_pthreads
+  def test_pthread_create_pthread(self):
+    self.set_setting('PTHREAD_POOL_SIZE', 2)
+    self.set_setting('EXIT_RUNTIME')
+    self.emcc_args += ['-fno-builtin']
+    self.do_run_in_out_file_test('pthread/test_pthread_create_pthread.cpp')
+
   @no_asan('ASan does not support custom memory allocators')
   @no_lsan('LSan does not support custom memory allocators')
   @node_pthreads

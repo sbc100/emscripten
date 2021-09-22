@@ -13,10 +13,13 @@ volatile int result = 0;
 
 static void *thread2_start(void *arg)
 {
+  printf("leaking %p\n", malloc(100));
   EM_ASM(out('thread2_start!'));
   ++result;
   return NULL;
 }
+
+void* b;
 
 static void *thread1_start(void *arg)
 {
@@ -27,7 +30,9 @@ static void *thread1_start(void *arg)
   assert(rtn != 0);
 #else
   assert(rtn == 0);
+  printf("JOINING1\n");
   pthread_join(thr, NULL);
+  printf("done JOINING1\n");
 #endif
   return NULL;
 }
@@ -36,17 +41,18 @@ int main()
 {
   pthread_t thr;
   pthread_create(&thr, NULL, thread1_start, NULL);
-
   pthread_attr_t attr;
   pthread_getattr_np(thr, &attr);
   size_t stack_size;
   void *stack_addr;
   pthread_attr_getstack(&attr, &stack_addr, &stack_size);
   printf("stack_size: %d, stack_addr: %p\n", (int)stack_size, stack_addr);
-  if (stack_size != 2*1024*1024 || stack_addr == NULL)
-    result = -100; // Report failure.
+  assert(stack_addr != NULL);
+  assert(stack_size == 2*1024*1024);
 
+  printf("JOINING2\n");
   pthread_join(thr, NULL);
+  printf("done JOINING2\n");
 
   printf("done result=%d\n", result);
 #ifdef SMALL_POOL

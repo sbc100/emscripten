@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lsan_common.h"
+#include "stdio.h"
 
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_flag_parser.h"
@@ -736,6 +737,7 @@ static bool PrintResults(LeakReport &report) {
 static bool CheckForLeaks() {
   if (&__lsan_is_turned_off && __lsan_is_turned_off())
     return false;
+  printf("CheckForLeaks\n");
   // Inside LockStuffAndStopTheWorld we can't run symbolizer, so we can't match
   // suppressions. However if a stack id was previously suppressed, it should be
   // suppressed in future checks as well.
@@ -779,9 +781,11 @@ bool HasReportedLeaks() { return has_reported_leaks; }
 void DoLeakCheck() {
   BlockingMutexLock l(&global_mutex);
   static bool already_done;
+  printf("DoLeakCheck already_done=%d\n", already_done);
   if (already_done) return;
   already_done = true;
   has_reported_leaks = CheckForLeaks();
+  printf("DoLeakCheck has_reported_leaks=%d\n", has_reported_leaks);
   if (has_reported_leaks) HandleLeaks();
 }
 

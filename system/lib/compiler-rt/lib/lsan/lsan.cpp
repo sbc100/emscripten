@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lsan.h"
+#include "stdio.h"
 
 #include "sanitizer_common/sanitizer_flags.h"
 #include "sanitizer_common/sanitizer_flag_parser.h"
@@ -134,6 +135,7 @@ extern "C" void __lsan_init() {
 
   lsan_inited = true;
   lsan_init_is_running = false;
+  printf("__lsan_init done\n");
 }
 
 extern "C" SANITIZER_INTERFACE_ATTRIBUTE
