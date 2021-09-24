@@ -276,11 +276,17 @@ self.onmessage = function(e) {
 #endif
         }
       }
-    } else if (e.data.cmd === 'cancel') { // Main thread is asking for a pthread_cancel() on this thread.
+    } else if (e.data.cmd === 'cancel') {
+      // Main thread is asking for a pthread_cancel() on this thread.
+      // If we have not yet already recieved the cancelation we will recieve it
+      // now.  The actual cleanup of this thread will then happen either when
+      // another thread joins with this one or, if the thead is detached it will
+      // happen synchronously (see __pthread_detached_exit).  If the thread is
+      // neither joined nor detached is will be a zombie
+      // thread.
       if (Module['_pthread_self']()) {
-        Module['__emscripten_thread_exit'](-1/*PTHREAD_CANCELED*/);
+        Module['_pthread_testcancel']();
       }
-      postMessage({ 'cmd': 'cancelDone' });
     } else if (e.data.target === 'setimmediate') {
       // no-op
     } else if (e.data.cmd === 'processThreadQueue') {
