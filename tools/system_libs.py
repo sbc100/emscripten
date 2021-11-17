@@ -40,10 +40,14 @@ def glob_in_path(path, glob_pattern, excludes=()):
   return sorted(f for f in files if os.path.basename(f) not in excludes)
 
 
-def get_base_cflags(force_object_files=False):
+def get_base_cflags(force_object_files=False, is_debug=False):
   # Always build system libraries with debug information.  Non-debug builds
   # will ignore this at link time because we link with `-strip-debug`.
   flags = ['-g']
+  if is_debug:
+    flags += ['-UNDEBUG']
+  else:
+    flags += ['-DNDEBUG']
   if settings.LTO and not force_object_files:
     flags += ['-flto=' + settings.LTO]
   if settings.RELOCATABLE:
@@ -201,6 +205,8 @@ class Library:
   # Whether to always generate WASM object files, even when LTO is set
   force_object_files = False
 
+  is_debug = False
+
   def __init__(self):
     """
     Creates a variation of this library.
@@ -353,7 +359,7 @@ class Library:
     Override and add any flags as needed to handle new variations.
     """
     cflags = self._inherit_list('cflags')
-    cflags += get_base_cflags(force_object_files=self.force_object_files)
+    cflags += get_base_cflags(force_object_files=self.force_object_files, is_debug=self.is_debug)
 
     if self.includes:
       cflags += ['-I' + utils.path_from_root(i) for i in self._inherit_list('includes')]
@@ -737,6 +743,7 @@ class libc(MuslInternalLibrary,
              '-Wno-macro-redefined',
              '-Wno-shift-op-parentheses',
              '-Wno-string-plus-int',
+             '-Wno-macro-redefined',
              '-Wno-pointer-sign']
 
   def __init__(self, **kwargs):
@@ -1152,7 +1159,6 @@ class libcxxabi(NoExceptLibrary, MTLibrary):
 
   def get_cflags(self):
     cflags = super().get_cflags()
-    cflags.append('-DNDEBUG')
     if not self.is_mt and not self.is_ww:
       cflags.append('-D_LIBCXXABI_HAS_NO_THREADS')
     if self.eh_mode == Exceptions.NONE:
@@ -1245,7 +1251,6 @@ class libunwind(NoExceptLibrary, MTLibrary):
 
   def get_cflags(self):
     cflags = super().get_cflags()
-    cflags.append('-DNDEBUG')
     if not self.is_mt and not self.is_ww:
       cflags.append('-D_LIBUNWIND_HAS_NO_THREADS')
     if self.eh_mode == Exceptions.NONE:
@@ -1290,9 +1295,7 @@ class libmalloc(MTLibrary):
     if self.verbose:
       cflags += ['-DEMMALLOC_VERBOSE']
     if self.is_debug:
-      cflags += ['-UNDEBUG', '-DDLMALLOC_DEBUG']
-    else:
-      cflags += ['-DNDEBUG']
+      cflags += ['-DDLMALLOC_DEBUG']
     if not self.use_errno:
       cflags += ['-DMALLOC_FAILURE_ACTION=', '-DEMSCRIPTEN_NO_ERRNO']
     if self.is_tracing:
@@ -1606,7 +1609,7 @@ class libstandalonewasm(MuslInternalLibrary):
 
   def get_cflags(self):
     cflags = super().get_cflags()
-    cflags += ['-DNDEBUG', '-DEMSCRIPTEN_STANDALONE_WASM']
+    cflags += ['-DEMSCRIPTEN_STANDALONE_WASM']
     if self.is_mem_grow:
       cflags += ['-DEMSCRIPTEN_MEMORY_GROWTH']
     return cflags
