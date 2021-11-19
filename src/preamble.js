@@ -66,6 +66,7 @@ var ABORT = false;
 // but only when noExitRuntime is false.
 var EXITSTATUS;
 
+#if ASSERTIONS
 /** @type {function(*, string=)} */
 function assert(condition, text) {
   if (!condition) {
@@ -79,6 +80,7 @@ function assert(condition, text) {
 #endif
   }
 }
+#endif
 
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {

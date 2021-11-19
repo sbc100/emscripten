@@ -101,6 +101,9 @@ Module['{name}'] = {name};
 mid_js += ['''
 // Bindings utilities
 
+// In case assertions are not defined in emscripten define `assert` to do nothing.
+if (typeof assert === 'undefined') assert = function() {};
+
 /** @suppress {duplicate} (TODO: avoid emitting this multiple times, it is redundant) */
 function WrapperObject() {
 }

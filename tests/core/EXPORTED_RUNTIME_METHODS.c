@@ -15,12 +15,13 @@ void waka(int x, int y, int z) {
 
 int main() {
   EM_ASM({
+    var check = function(cond) { if (!cond) abort("check failed") };
 #if EXPORTED
     // test for additional things being exported
-    assert(Module['addFunction']);
-    assert(Module['lengthBytesUTF8']);
+    check(Module['addFunction']);
+    check(Module['lengthBytesUTF8']);
     Module['setTempRet0'](42);
-    assert(Module['getTempRet0']() == 42);
+    check(Module['getTempRet0']() == 42);
     // the main test here
     Module['dynCall']('viii', $0, [1, 4, 9]);
 #else
@@ -28,11 +29,11 @@ int main() {
     // stubs that show a useful error if called. So it is only meaningful
     // to check they don't exist when assertions are disabled.
     if (!ASSERTIONS) {
-      assert(!Module['addFunction']);
-      assert(!Module['lengthBytesUTF8']);
-      assert(!Module['setTempRet0']);
-      assert(!Module['getTempRet0']);
-      assert(!Module['dynCall']);
+      check(!Module['addFunction']);
+      check(!Module['lengthBytesUTF8']);
+      check(!Module['setTempRet0']);
+      check(!Module['getTempRet0']);
+      check(!Module['dynCall']);
     }
     dynCall('viii', $0, [1, 4, 9]);
 #endif
