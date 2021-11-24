@@ -1290,7 +1290,8 @@ class libmalloc(MTLibrary):
     if self.verbose:
       cflags += ['-DEMMALLOC_VERBOSE']
     if self.is_debug:
-      cflags += ['-UNDEBUG', '-DDLMALLOC_DEBUG']
+      # dlmalloc debugging is enabled by defining DEBUG
+      cflags += ['-UNDEBUG', '-DDEBUG']
     else:
       cflags += ['-DNDEBUG']
     if not self.use_errno:
