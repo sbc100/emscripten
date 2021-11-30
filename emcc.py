@@ -2118,10 +2118,8 @@ def phase_linker_setup(options, state, newargs, user_settings):
   if settings.USE_PTHREADS:
     setup_pthreads(target)
     settings.JS_LIBRARIES.append((0, 'library_pthread.js'))
-  else:
-    if settings.PROXY_TO_PTHREAD:
-      exit_with_error('-sPROXY_TO_PTHREAD requires -sUSE_PTHREADS to work!')
-    settings.JS_LIBRARIES.append((0, 'library_pthread_stub.js'))
+  elif settings.PROXY_TO_PTHREAD:
+    exit_with_error('-sPROXY_TO_PTHREAD requires -sUSE_PTHREADS to work!')
 
   # TODO: Move this into the library JS file once it becomes possible.
   # See https://github.com/emscripten-core/emscripten/pull/15982

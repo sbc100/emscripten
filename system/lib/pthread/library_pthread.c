@@ -350,12 +350,6 @@ EMSCRIPTEN_RESULT emscripten_wait_for_call_i(
   return res;
 }
 
-static struct pthread __main_pthread;
-
-pthread_t emscripten_main_browser_thread_id() {
-  return &__main_pthread;
-}
-
 static pthread_t normalize_thread(pthread_t target_thread) {
   assert(target_thread);
   if (target_thread == EM_CALLBACK_THREAD_CONTEXT_MAIN_BROWSER_THREAD) {
@@ -662,29 +656,4 @@ int emscripten_dispatch_to_thread_async_(pthread_t target_thread,
     target_thread, sig, func_ptr, satellite, args);
   va_end(args);
   return ret;
-}
-
-static void *dummy_tsd[1] = { 0 };
-weak_alias(dummy_tsd, __pthread_tsd_main);
-
-// See system/lib/README.md for static constructor ordering.
-__attribute__((constructor(48)))
-void __emscripten_init_main_thread(void) {
-  __emscripten_init_main_thread_js(&__main_pthread);
-
-  // The pthread struct has a field that points to itself - this is used as
-  // a magic ID to detect whether the pthread_t structure is 'alive'.
-  __main_pthread.self = &__main_pthread;
-  __main_pthread.stack = (void*)emscripten_stack_get_base();
-  __main_pthread.stack_size = emscripten_stack_get_base() - emscripten_stack_get_end();
-  __main_pthread.detach_state = DT_JOINABLE;
-  // pthread struct robust_list head should point to itself.
-  __main_pthread.robust_list.head = &__main_pthread.robust_list.head;
-  // Main thread ID is always 1.  It can't be 0 because musl assumes
-  // tid is always non-zero.
-  __main_pthread.tid = getpid();
-  __main_pthread.locale = &libc.global_locale;
-  // TODO(sbc): Implement circular list of threads
-  //__main_pthread.next = __main_pthread.prev = &__main_pthread;
-  __main_pthread.tsd = (void **)__pthread_tsd_main;
 }

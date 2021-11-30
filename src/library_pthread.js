@@ -618,19 +618,20 @@ var LibraryPThread = {
     return navigator['hardwareConcurrency'];
   },
 
-  __emscripten_init_main_thread_js: function(tb) {
-    // Pass the thread address to the native code where they stored in wasm
-    // globals which act as a form of TLS. Global constructors trying
-    // to access this value will read the wrong value, but that is UB anyway.
-    __emscripten_thread_init(
-      tb,
-      /*isMainBrowserThread=*/!ENVIRONMENT_IS_WORKER,
-      /*isMainRuntimeThread=*/1,
-      /*canBlock=*/!ENVIRONMENT_IS_WEB,
-#if PTHREADS_PROFILING
-      /*start_profiling=*/true
+  __emscripten_is_main_browser_thread: function() {
+#if MINIMAL_RUNTIME
+    return typeof importScripts === 'undefined';
+#else
+    return !ENVIRONMENT_IS_WORKER;
 #endif
-    );
+  },
+
+  __emscripten_init_main_thread_js: function(tb) {
+#if PTHREADS_PROFILING
+    PThread.createProfilerBlock(tb);
+    PThread.setThreadName(tb, "Browser main thread");
+#endif
+
 #if ASSERTIONS
     PThread.mainRuntimeThread = true;
 #endif

@@ -96,7 +96,6 @@ typedef struct thread_profiler_block {
   char name[EM_THREAD_NAME_MAX];
 } thread_profiler_block;
 
-void __emscripten_init_main_thread_js(void* tb);
 void _emscripten_thread_profiler_enable();
 
 #ifdef NDEBUG

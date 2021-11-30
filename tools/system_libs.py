@@ -848,8 +848,6 @@ class libc(MuslInternalLibrary,
           'proxying.c',
           'pthread_create.c',
           'emscripten_proxy_main.c',
-          'emscripten_thread_init.c',
-          'emscripten_thread_state.S',
           'emscripten_futex_wait.c',
           'emscripten_futex_wake.c',
           'emscripten_yield.c',
@@ -990,7 +988,12 @@ class libc(MuslInternalLibrary,
 
     libc_files += files_in_path(
         path='system/lib/pthread',
-        filenames=['emscripten_atomic.c', 'thread_profiler.c'])
+        filenames=[
+          'emscripten_atomic.c',
+          'thread_profiler.c',
+          'emscripten_thread_init.c',
+          'emscripten_thread_state.S',
+        ])
 
     libc_files += files_in_path(
       path='system/lib/libc',
