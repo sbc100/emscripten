@@ -70,6 +70,7 @@ void emscripten_longjmp(uintptr_t env, int val) {
   setThrew(env, val);
   _emscripten_throw_longjmp();
 }
+<<<<<<< HEAD
 #endif
 
 #ifdef __USING_WASM_SJLJ__
@@ -91,3 +92,5 @@ void __wasm_longjmp(void *env, int val) {
 }
 
 #endif
+=======
+>>>>>>> 4d49c4312 (Add new `emld` entry point that emulates a native linker)

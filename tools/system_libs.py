@@ -615,42 +615,6 @@ class NoExceptLibrary(Library):
     return super().get_default_variation(eh_mode=eh_mode, **kwargs)
 
 
-class SjLjLibrary(Library):
-  def __init__(self, **kwargs):
-    # Whether we use Wasm EH instructions for SjLj support
-    self.is_wasm = kwargs.pop('is_wasm')
-    super().__init__(**kwargs)
-
-  def get_cflags(self):
-    cflags = super().get_cflags()
-    if self.is_wasm:
-      # DISABLE_EXCEPTION_THROWING=0 is the default, which is for Emscripten
-      # EH/SjLj, so we should reverse it.
-      cflags += ['-sSUPPORT_LONGJMP=wasm',
-                 '-sDISABLE_EXCEPTION_THROWING=1',
-                 '-D__USING_WASM_SJLJ__']
-    else:
-      cflags += ['-sSUPPORT_LONGJMP=emscripten']
-    return cflags
-
-  def get_base_name(self):
-    name = super().get_base_name()
-    # TODO Currently emscripten-based SjLj is the default mode, thus no
-    # suffixes. Change the default to wasm exception later.
-    if self.is_wasm:
-      name += '-wasm-sjlj'
-    return name
-
-  @classmethod
-  def vary_on(cls):
-    return super().vary_on() + ['is_wasm']
-
-  @classmethod
-  def get_default_variation(cls, **kwargs):
-    is_wasm = settings.SUPPORT_LONGJMP == 'wasm'
-    return super().get_default_variation(is_wasm=is_wasm, **kwargs)
-
-
 class MuslInternalLibrary(Library):
   includes = [
     'system/lib/libc/musl/src/internal',
@@ -691,14 +655,17 @@ class AsanInstrumentedLibrary(Library):
     return super().get_default_variation(is_asan=settings.USE_ASAN, **kwargs)
 
 
-# Subclass of SjLjLibrary because emscripten_setjmp.c uses SjLj support
-class libcompiler_rt(MTLibrary, SjLjLibrary):
-  name = 'libcompiler_rt'
+class libclang_rt(MTLibrary):
+  name = 'libclang_rt.builtins'
   # compiler_rt files can't currently be part of LTO although we are hoping to remove this
   # restriction soon: https://reviews.llvm.org/D71738
   force_object_files = True
 
-  cflags = ['-fno-builtin']
+  cflags = ['-fno-builtin',
+            # These are needed for wasm_setjmp.c but otherwise should
+            # have no effect
+            '-sSUPPORT_LONGJMP=wasm',
+            '-sDISABLE_EXCEPTION_THROWING=1']
   src_dir = 'system/lib/compiler-rt/lib/builtins'
   # gcc_personality_v0.c depends on libunwind, which don't include by default.
   src_files = glob_in_path(src_dir, '*.c', excludes=['gcc_personality_v0.c'])
@@ -707,9 +674,22 @@ class libcompiler_rt(MTLibrary, SjLjLibrary):
       filenames=[
         'stack_ops.S',
         'stack_limits.S',
+        'wasm_setjmp.c',
         'emscripten_setjmp.c',
         'emscripten_exception_builtins.c'
       ])
+
+  def get_base_name(self):
+    name = super().get_base_name()
+    if settings.MEMORY64:
+      name += '-wasm64'
+    else:
+      name += '-wasm32'
+    return name
+
+  def get_path(self):
+    full_name = os.path.join(shared.Cache.get_resource_dir(), self.get_filename())
+    return shared.Cache.get(full_name, self.build)
 
 
 class libnoexit(Library):

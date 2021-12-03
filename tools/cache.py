@@ -100,6 +100,9 @@ class Cache:
   def get_sysroot_dir(self, *parts):
     return os.path.join(self.get_sysroot(absolute=True), *parts)
 
+  def get_resource_dir(self):
+    return 'clang/lib/emscripten'
+
   def get_lib_dir(self, absolute, varies=True):
     path = os.path.join(self.get_sysroot(absolute=absolute), 'lib')
     if settings.MEMORY64:
