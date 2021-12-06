@@ -13,17 +13,22 @@ See emld --help  for details.
 
 from tools.toolchain_profiler import ToolchainProfiler  # noqa
 
+import logging
+import os
 import sys
 import time
-import logging
 
 from tools.settings import settings
+from tools import shared
 import emcc
 
 logger = logging.getLogger('emld')
 
 
 def run(args):
+  if shared.DEBUG:
+    logger.warning(f'invocation: {shared.shlex_join(args)} (in {os.getcwd()})')
+
   ## Process argument and setup the compiler
   state = emcc.EmccState(args)
   options, newargs, settings_map = emcc.phase_parse_arguments(state)
