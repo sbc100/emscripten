@@ -50,7 +50,7 @@ from tools import js_manipulation
 from tools import wasm2c
 from tools import webassembly
 from tools import config
-from tools.settings import settings, MEM_SIZE_SETTINGS, COMPILE_TIME_SETTINGS
+from tools.settings import settings, MEM_SIZE_SETTINGS, COMPILE_TIME_SETTINGS, NON_BOOL_SETTINGS
 from tools.utils import read_file, write_file, read_binary
 
 logger = logging.getLogger('emcc')
@@ -735,6 +735,10 @@ def parse_s_args(args):
 
         # If not = is specified default to 1
         if '=' not in key:
+          if key in NON_BOOL_SETTINGS:
+            # Ideally we would error out here but issue a warning in case
+            # there are existing users.
+            diagnostics.warning('deprecated', f'setting `{key}` requires an argument')
           key += '=1'
 
         # Special handling of browser version targets. A version -1 means that the specific version

@@ -21,6 +21,10 @@ MEM_SIZE_SETTINGS = {
     'DEFAULT_PTHREAD_STACK_SIZE'
 }
 
+NON_BOOL_SETTINGS = {
+    'PTHREAD_POOL_SIZE',
+}.union(MEM_SIZE_SETTINGS)
+
 PORTS_SETTINGS = {
     # All port-related settings are valid at compile time
     'USE_SDL',
