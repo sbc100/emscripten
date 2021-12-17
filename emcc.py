@@ -605,6 +605,8 @@ def get_binaryen_passes():
 def make_js_executable(script):
   src = read_file(script)
   cmd = shared.shlex_join(config.JS_ENGINE)
+  if settings.USE_PTHREADS:
+    cmd += ' --experimental-wasm-threads'
   if not os.path.isabs(config.JS_ENGINE[0]):
     # TODO: use whereis etc. And how about non-*NIX?
     cmd = '/usr/bin/env -S ' + cmd
@@ -1566,6 +1568,12 @@ def phase_linker_setup(options, state, newargs, user_settings):
     settings.NODERAWFS = 1
     # Add `#!` line to output JS and make it executable.
     options.executable = True
+
+  if settings.ENVIRONMENT_MAY_BE_NODE and not settings.SHRINK_LEVEL:
+    # Older browsers don't support ignoring the #! line
+    # https://github.com/tc39/proposal-hashbang
+    if settings.MIN_CHROME_VERSION < 74 or settings.MIN_FIREFOX_VERSION < 67 or settings.MIN_IE_VERSION != 0x7fffffff:
+      options.executable = True
 
   ldflags = emsdk_ldflags(newargs)
   for f in ldflags:

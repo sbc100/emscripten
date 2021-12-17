@@ -589,7 +589,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       #  ES-Check: there were no ES version matching errors!
       # pipe stdout and stderr so that we can choose if/when to print this
       # output and avoid spamming stdout when tests are successful.
-      shared.run_process(es_check + ['es5', os.path.abspath(filename)], stdout=PIPE, stderr=STDOUT, env=es_check_env)
+      shared.run_process(es_check + ['es5', os.path.abspath(filename), '--allow-hash-bang'], stdout=PIPE, stderr=STDOUT, env=es_check_env)
     except subprocess.CalledProcessError as e:
       print(e.stdout)
       self.fail('es-check failed to verify ES5 output compliance')

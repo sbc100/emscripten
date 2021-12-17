@@ -159,6 +159,10 @@ See docs/process.md for more on how version tagging works.
   processed as the last item after all system provided JS libraries have been
   added to the build. This fix enables overriding WebGL 2 symbols from user JS
   libraries.
+- The JavaScript file output by emscripten is now marked as executable and
+  given a `#!` line to run under node, as long as node is a possible
+  `ENVIRONMENT` and `-Oz` or `-Os` is not used (since this adds a few bytes
+  to the resulting JavaScript file).
 
 3.0.0 - 11/22/2021
 ------------------
