@@ -3,6 +3,7 @@
 'use strict';
 
 const acorn = require('acorn');
+const astring = require('astring');
 const terser = require('../third_party/terser');
 const fs = require('fs');
 
@@ -1758,11 +1759,11 @@ function reattachComments(ast, comments) {
   const symbols = [];
 
   // Collect all code symbols
-  ast.walk(new terser.TreeWalker(function(node) {
+  fullWalk(ast, (node) => {
     if (node.start && node.start.pos) {
       symbols.push(node);
     }
-  }));
+  });
 
   // Sort them by ascending line number
   symbols.sort((a, b) => a.start.pos - b.start.pos);
@@ -1897,18 +1898,10 @@ const registry = {
 passes.forEach((pass) => registry[pass](ast));
 
 if (!noPrint) {
-  const terserAst = terser.AST_Node.from_mozilla_ast(ast);
-
-  if (closureFriendly) {
-    reattachComments(terserAst, sourceComments);
-  }
-
-  const output = terserAst.print_to_string({
-    beautify: !minifyWhitespace,
-    indent_level: minifyWhitespace ? 0 : 1,
-    keep_quoted_props: true, // for closure
-    comments: true, // for closure as well
-  });
+  var options = {
+    comments: true,
+  };
+  var output = astring.generate(ast, options);
   print(output);
   if (suffix) {
     print(suffix);
