@@ -3,6 +3,7 @@
 'use strict';
 
 const acorn = require('acorn');
+const astravel = require('astravel');
 const astring = require('astring');
 const terser = require('../third_party/terser');
 const fs = require('fs');
@@ -1753,59 +1754,6 @@ function minifyGlobals(ast) {
   suffix = '// EXTRA_INFO:' + JSON.stringify(json);
 }
 
-// Utilities
-
-function reattachComments(ast, comments) {
-  const symbols = [];
-
-  // Collect all code symbols
-  fullWalk(ast, (node) => {
-    if (node.start && node.start.pos) {
-      symbols.push(node);
-    }
-  });
-
-  // Sort them by ascending line number
-  symbols.sort((a, b) => a.start.pos - b.start.pos);
-
-  // Walk through all comments in ascending line number, and match each
-  // comment to the appropriate code block.
-  for (let i = 0, j = 0; i < comments.length; ++i) {
-    while (j < symbols.length && symbols[j].start.pos < comments[i].end) {
-      ++j;
-    }
-    if (j >= symbols.length) {
-      break;
-    }
-    if (symbols[j].start.pos - comments[i].end > 20) {
-      // This comment is too far away to refer to the given symbol. Drop
-      // the comment altogether.
-      continue;
-    }
-    if (!Array.isArray(symbols[j].start.comments_before)) {
-      symbols[j].start.comments_before = [];
-    }
-    symbols[j].start.comments_before.push(new terser.AST_Token({
-      end: undefined,
-      quote: undefined,
-      raw: undefined,
-      file: '0',
-      comments_after: undefined,
-      comments_before: undefined,
-      nlb: false,
-      endpos: undefined,
-      endcol: undefined,
-      endline: undefined,
-      pos: undefined,
-      col: undefined,
-      line: undefined,
-      value: comments[i].value,
-      type: comments[i].type == 'Line' ? 'comment' : 'comment2',
-      flags: 0,
-    }));
-  }
-}
-
 // Main
 
 let suffix = '';
@@ -1841,7 +1789,11 @@ if (extraInfoStart > 0) {
 // Collect all JS code comments to this array so that we can retain them in the outputted code
 // if --closureFriendly was requested.
 const sourceComments = [];
+<<<<<<< HEAD
 let ast;
+=======
+var ast;
+>>>>>>> 3330ba2a2 (.)
 try {
   ast = acorn.parse(input, {
     // Keep in sync with --language_in that we pass to closure in building.py
@@ -1898,10 +1850,25 @@ const registry = {
 passes.forEach((pass) => registry[pass](ast));
 
 if (!noPrint) {
+<<<<<<< HEAD
+=======
+  if (closureFriendly) {
+    /*
+    for (var c of sourceComments) {
+      printErr(c);
+      printErr(c.loc);
+      console.error(c);
+    }
+    */
+    astravel.attachComments(ast, sourceComments)
+    //escodegen.attachComments(ast, sourceComments)
+  }
+>>>>>>> 3330ba2a2 (.)
   var options = {
     comments: true,
   };
   var output = astring.generate(ast, options);
+  //var output = escodegen.generate(ast, options);
   print(output);
   if (suffix) {
     print(suffix);
