@@ -9519,6 +9519,22 @@ int main () {
     self.set_setting('WASM', 0)
     self.do_run(src, 'SAFE_HEAP load: ')
 
+  def test_safe_heap_dylink(self):
+    self.set_setting('SAFE_HEAP')
+    self.set_setting('MAIN_MODULE', 2)
+    self.set_setting('EXIT_RUNTIME')
+    src = read_file(test_file('hello_world.c'))
+    self.do_run(src, 'hello, world!');
+
+  @node_pthreads
+  def test_safe_heap_dylink_pthreads(self):
+    self.set_setting('SAFE_HEAP')
+    self.set_setting('MAIN_MODULE', 2)
+    self.set_setting('USE_PTHREADS')
+    self.set_setting('EXIT_RUNTIME')
+    src = read_file(test_file('hello_world.c'))
+    self.do_run(src, 'hello, world!', emcc_args=['-Wno-experimental', '--profiling-funcs']);
+
   def test_mini_printfs(self):
     def test(code):
       with open('src.c', 'w') as f:

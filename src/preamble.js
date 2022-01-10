@@ -1165,7 +1165,7 @@ function createWasm() {
       wasmOffsetConverter = new WasmOffsetConverter(savedBinary, instance.module);
 #endif
       return instance;
-    }).then(receiver, function(reason) {
+    }).then(receiver); /*, function(reason) {
       err('failed to asynchronously prepare wasm: ' + reason);
 
 #if WASM == 2
@@ -1194,6 +1194,7 @@ function createWasm() {
 #endif
       abort(reason);
     });
+    */
   }
 
   function instantiateAsync() {

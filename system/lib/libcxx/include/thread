@@ -284,8 +284,10 @@ template <class _Fp>
 _LIBCPP_INLINE_VISIBILITY
 void* __thread_proxy(void* __vp)
 {
+    printf("__thread_proxy\n");
     // _Fp = tuple< unique_ptr<__thread_struct>, Functor, Args...>
     unique_ptr<_Fp> __p(static_cast<_Fp*>(__vp));
+    printf("__thread_local_data -> %p\n", __thread_local_data().get());
     __thread_local_data().set_pointer(_VSTD::get<0>(*__p.get()).release());
     typedef typename __make_tuple_indices<tuple_size<_Fp>::value, 2>::type _Index;
     _VSTD::__thread_execute(*__p.get(), _Index());
@@ -297,9 +299,16 @@ template <class _Fp, class ..._Args,
          >
 thread::thread(_Fp&& __f, _Args&&... __args)
 {
+    printf("NEW\n");
     typedef unique_ptr<__thread_struct> _TSPtr;
-    _TSPtr __tsp(new __thread_struct);
+    printf("NEW 2\n");
+    auto x = new __thread_struct;
+     __throw_system_error(0, "thread constructor failed");
+    printf("NEW 3\n");
+    _TSPtr __tsp(x);
+    printf("NEW 4\n");
     typedef tuple<_TSPtr, typename decay<_Fp>::type, typename decay<_Args>::type...> _Gp;
+    printf("NEW 5\n");
     unique_ptr<_Gp> __p(
             new _Gp(_VSTD::move(__tsp),
                     _VSTD::__decay_copy(_VSTD::forward<_Fp>(__f)),

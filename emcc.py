@@ -858,8 +858,8 @@ def get_cflags(user_args):
   # backend defaults visibility=hidden.  This matched the expectations of C/C++
   # code in the wild which expects undecorated symbols to be exported to other
   # DSO's by default.
-  if not any(a.startswith('-fvisibility') for a in user_args):
-    cflags.append('-fvisibility=default')
+  #if not any(a.startswith('-fvisibility') for a in user_args):
+    #cflags.append('-fvisibility=default')
 
   if settings.LTO:
     if not any(a.startswith('-flto') for a in user_args):

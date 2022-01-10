@@ -221,6 +221,11 @@ self.onmessage = (e) => {
 #endif // EMBIND
 
       try {
+#if STACK_OVERFLOW_CHECK
+        err('checking cookie before invokeEntryPoint');
+        Module['checkStackCookie']();
+        err('done checkStackCookie');
+#endif
         // pthread entry points are always of signature 'void *ThreadMain(void *arg)'
         // Native codebases sometimes spawn threads with other thread entry point signatures,
         // such as void ThreadMain(void *arg), void *ThreadMain(), or void ThreadMain().
@@ -231,7 +236,9 @@ self.onmessage = (e) => {
         var result = Module['invokeEntryPoint'](e.data.start_routine, e.data.arg);
 
 #if STACK_OVERFLOW_CHECK
+        err('checking cookie after invokeEntryPoint');
         Module['checkStackCookie']();
+        err('done checkStackCookie');
 #endif
 #if MINIMAL_RUNTIME
         // In MINIMAL_RUNTIME the noExitRuntime concept does not apply to

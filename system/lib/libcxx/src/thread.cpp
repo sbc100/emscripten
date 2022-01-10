@@ -114,6 +114,7 @@ sleep_for(const chrono::nanoseconds& ns)
 __thread_specific_ptr<__thread_struct>&
 __thread_local_data()
 {
+  printf("__thread_local_data\n");
     static __thread_specific_ptr<__thread_struct> __p;
     return __p;
 }
@@ -146,7 +147,9 @@ class _LIBCPP_HIDDEN __thread_struct_imp
     __thread_struct_imp(const __thread_struct_imp&);
     __thread_struct_imp& operator=(const __thread_struct_imp&);
 public:
-    __thread_struct_imp() {}
+    __thread_struct_imp() {
+      printf("new __thread_struct_imp\n");
+    }
     ~__thread_struct_imp();
 
     void notify_all_at_thread_exit(condition_variable* cv, mutex* m);
@@ -187,6 +190,7 @@ __thread_struct_imp::__make_ready_at_thread_exit(__assoc_sub_state* __s)
 __thread_struct::__thread_struct()
     : __p_(new __thread_struct_imp)
 {
+  printf("new __thread_struct\n");
 }
 
 __thread_struct::~__thread_struct()

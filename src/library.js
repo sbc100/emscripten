@@ -3510,6 +3510,10 @@ LibraryManager.library = {
 #endif
   },
 
+  check_cookie: function() {
+      checkStackCookie();
+  },
+
 #if RELOCATABLE
   // Globals that are normally exported from the wasm module but in relocatable
   // mode are created here and imported by the module.
