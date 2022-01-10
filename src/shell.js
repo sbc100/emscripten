@@ -83,7 +83,7 @@ var quit_ = (status, toThrow) => {
 };
 
 // Determine the runtime environment we are in. You can customize this by
-// setting the ENVIRONMENT setting at compile time (see settings.js).
+// setting the ENVIRONMENT setting at compile time (see settings.py).
 
 #if ENVIRONMENT && !ENVIRONMENT.includes(',')
 var ENVIRONMENT_IS_WEB = {{{ ENVIRONMENT === 'web' }}};

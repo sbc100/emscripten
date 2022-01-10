@@ -6689,7 +6689,7 @@ high = 1234
     # no suggestions
     stderr = self.expect_fail([EMCC, test_file('hello_world.c'), '-sCHEEZ'])
     self.assertContained("perhaps a typo in emcc\'s  -sX=Y  notation?", stderr)
-    self.assertContained('(see src/settings.js for valid values)', stderr)
+    self.assertContained('(see src/settings.py for valid values)', stderr)
     # suggestions do not include renamed legacy settings
     stderr = self.expect_fail([EMCC, test_file('hello_world.c'), '-sZBINARYEN_ASYNC_COMPILATION'])
     self.assertContained("Attempt to set a non-existent setting: 'ZBINARYEN_ASYNC_COMPILATION'", stderr)
@@ -9988,8 +9988,8 @@ Aborted(Module.arguments has been replaced with plain arguments_ (the initial va
     self.run_process([EMCC, test_file('hello_world.c'), '-sMODULARIZE', '-sASSERTIONS', '--extern-post-js', 'test.js'])
     # A return code of 7 is from the unhandled Promise rejection
     out = self.run_js('a.out.js', assert_returncode=7)
-    self.assertContained('You are getting _main on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js', out)
-    self.assertContained('You are setting onRuntimeInitialized on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js', out)
+    self.assertContained('You are getting _main on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in', out)
+    self.assertContained('You are setting onRuntimeInitialized on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in', out)
 
   def test_em_asm_duplicate_strings(self):
     # We had a regression where tow different EM_ASM strings from two diffferent

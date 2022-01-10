@@ -2301,7 +2301,7 @@ var LibrarySDL = {
         raw = callStbImage('stbi_load_from_memory', [rwops.bytes, rwops.count]);
         if (!raw) return 0;
 #else
-        warnOnce('Only file names that have been preloaded are supported for IMG_Load_RW. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.js), or package files with --use-preload-plugins');
+        warnOnce('Only file names that have been preloaded are supported for IMG_Load_RW. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.py), or package files with --use-preload-plugins');
         return 0;
 #endif
       }
@@ -2322,7 +2322,7 @@ var LibrarySDL = {
           if (!raw) return 0;
 #else
           warnOnce('Cannot find preloaded image ' + filename);
-          warnOnce('Cannot find preloaded image ' + filename + '. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.js), or package files with --use-preload-plugins');
+          warnOnce('Cannot find preloaded image ' + filename + '. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.py), or package files with --use-preload-plugins');
           return 0;
 #endif
         } else if (Module['freePreloadedMediaOnUse']) {

@@ -1163,7 +1163,7 @@ function addReadyPromiseAssertions(promise) {
   // older MODULARIZE-using codebases.
   properties.push('onRuntimeInitialized');
   return properties.map((property) => {
-    const warningEnding = `${property} on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js`;
+    const warningEnding = `${property} on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.py`;
     return `
       if (!Object.getOwnPropertyDescriptor(${promise}, '${property}')) {
         Object.defineProperty(${promise}, '${property}', { configurable: true, get: function() { abort('You are getting ${warningEnding}') } });

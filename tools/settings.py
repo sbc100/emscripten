@@ -5,7 +5,7 @@
 
 import difflib
 import os
-import re
+import importlib.util
 
 from .utils import path_from_root, exit_with_error
 from . import diagnostics
@@ -98,23 +98,17 @@ class SettingsManager:
     self.internal_settings.clear()
     self.allowed_settings.clear()
 
-    # Load the JS defaults into python.
-    def read_js_settings(filename, attrs):
-      with open(filename) as fh:
-        settings = fh.read()
-      # Use a bunch of regexs to convert the file from JS to python
-      # TODO(sbc): This is kind hacky and we should probably covert
-      # this file in format that python can read directly (since we
-      # no longer read this file from JS at all).
-      settings = settings.replace('//', '#')
-      settings = re.sub(r'var ([\w\d]+)', r'attrs["\1"]', settings)
-      settings = re.sub(r'=\s+false\s*;', '= False', settings)
-      settings = re.sub(r'=\s+true\s*;', '= True', settings)
-      exec(settings, {'attrs': attrs})
+    def read_settings(filename, attrs):
+      spec = importlib.util.spec_from_file_location('settings', filename)
+      settings = importlib.util.module_from_spec(spec)
+      spec.loader.exec_module(settings)
+      for key in dir(settings):
+        if not key.startswith('__'):
+          attrs[key] = getattr(settings, key)
 
     internal_attrs = {}
-    read_js_settings(path_from_root('src/settings.js'), self.attrs)
-    read_js_settings(path_from_root('src/settings_internal.js'), internal_attrs)
+    read_settings(path_from_root('src/settings.py'), self.attrs)
+    read_settings(path_from_root('src/settings_internal.py'), internal_attrs)
     self.attrs.update(internal_attrs)
     self.infer_types()
 
@@ -123,15 +117,15 @@ class SettingsManager:
 
     # Special handling for LEGACY_SETTINGS.  See src/setting.js for more
     # details
-    for legacy in self.attrs['LEGACY_SETTINGS']:
-      if len(legacy) == 2:
-        name, new_name = legacy
+    for name, new_name in self.attrs['LEGACY_SETTINGS'].items():
+      if len(new_name) == 1:
+        new_name = new_name[0]
         self.legacy_settings[name] = (None, 'setting renamed to ' + new_name)
         self.alt_names[name] = new_name
         self.alt_names[new_name] = name
         default_value = self.attrs[new_name]
       else:
-        name, fixed_values, err = legacy
+        fixed_values, err = new_name
         self.legacy_settings[name] = (fixed_values, err)
         default_value = fixed_values[0]
       assert name not in self.attrs, 'legacy setting (%s) cannot also be a regular setting' % name
@@ -195,7 +189,7 @@ class SettingsManager:
       if suggestions:
         msg += ' - did you mean one of %s?\n' % suggestions
       msg += " - perhaps a typo in emcc's  -sX=Y  notation?\n"
-      msg += ' - (see src/settings.js for valid values)'
+      msg += ' - (see src/settings.py for valid values)'
       exit_with_error(msg)
 
     self.check_type(name, value)
