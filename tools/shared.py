@@ -41,7 +41,7 @@ from . import diagnostics
 from . import config
 from . import filelock
 from . import utils
-from .settings import settings
+from . import settings
 
 
 DEBUG_SAVE = DEBUG or int(os.environ.get('EMCC_DEBUG_SAVE', '0'))

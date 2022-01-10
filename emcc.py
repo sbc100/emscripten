@@ -50,7 +50,8 @@ from tools import js_manipulation
 from tools import wasm2c
 from tools import webassembly
 from tools import config
-from tools.settings import settings, MEM_SIZE_SETTINGS, COMPILE_TIME_SETTINGS
+from tools import settings
+from tools import settings_manager
 from tools.utils import read_file, write_file, read_binary
 
 logger = logging.getLogger('emcc')
@@ -353,18 +354,35 @@ def apply_settings(user_settings):
   # Stash a copy of all available incoming APIs before the user can potentially override it
   settings.ALL_INCOMING_MODULE_JS_API = settings.INCOMING_MODULE_JS_API + EXTRA_INCOMING_JS_API
 
+<<<<<<< HEAD
   for key, value in user_settings.items():
     if key in settings.internal_settings:
+=======
+  def standardize_setting_change(key, value):
+    # boolean NO_X settings are aliases for X
+    # (note that *non*-boolean setting values have special meanings,
+    # and we can't just flip them, so leave them as-is to be
+    # handled in a special way later)
+    if key.startswith('NO_') and value in ('0', '1'):
+      key = strip_prefix(key, 'NO_')
+      value = str(1 - int(value))
+    return key, value
+
+  for key, value in changes.items():
+    key, value = standardize_setting_change(key, value)
+
+    if key in settings_manager.internal_settings:
+>>>>>>> 6b0b6346e (.)
       exit_with_error('%s is an internal setting and cannot be set from command line', key)
 
     # map legacy settings which have aliases to the new names
     # but keep the original key so errors are correctly reported via the `setattr` below
     user_key = key
-    if key in settings.legacy_settings and key in settings.alt_names:
+    if key in settings_manager.legacy_settings and key in settings.alt_names:
       key = settings.alt_names[key]
 
     # In those settings fields that represent amount of memory, translate suffixes to multiples of 1024.
-    if key in MEM_SIZE_SETTINGS:
+    if key in settings_manager.MEM_SIZE_SETTINGS:
       value = str(expand_byte_size_suffixes(value))
 
     filename = None
@@ -1120,12 +1138,12 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
 
   # For internal consistency, ensure we don't attempt or read or write any link time
   # settings until we reach the linking phase.
-  settings.limit_settings(COMPILE_TIME_SETTINGS)
+  settings_manager.limit_settings(settings_manager.COMPILE_TIME_SETTINGS)
 
   newargs, input_files = phase_setup(options, state, newargs, user_settings)
 
   if state.mode == Mode.POST_LINK_ONLY:
-    settings.limit_settings(None)
+    settings_manager.limit_settings(None)
     target, wasm_target = phase_linker_setup(options, state, newargs, user_settings)
     process_libraries(state, [])
     if len(input_files) != 1:
@@ -1146,7 +1164,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
     return 0
 
   # We have now passed the compile phase, allow reading/writing of all settings.
-  settings.limit_settings(None)
+  settings_manager.limit_settings(None)
 
   if options.output_file and options.output_file.startswith('-'):
     exit_with_error(f'invalid output filename: `{options.output_file}`')
@@ -1264,7 +1282,7 @@ def phase_parse_arguments(state):
 
   # Apply user -jsD settings
   for s in user_js_defines:
-    settings[s[0]] = s[1]
+    setattr(settings, s[0], s[1])
 
   # Apply -s settings in newargs here (after optimization levels, so they can override them)
   apply_settings(user_settings)
@@ -1391,7 +1409,7 @@ def phase_setup(options, state, newargs, user_settings):
 
   if state.mode in (Mode.COMPILE_ONLY, Mode.PREPROCESS_ONLY):
     for key in user_settings:
-      if key not in COMPILE_TIME_SETTINGS:
+      if key not in settings_manager.COMPILE_TIME_SETTINGS:
         diagnostics.warning(
             'unused-command-line-argument',
             "linker setting ignored during compilation: '%s'" % key)
@@ -2164,8 +2182,8 @@ def phase_linker_setup(options, state, newargs, user_settings):
     ]
 
   def check_memory_setting(setting):
-    if settings[setting] % webassembly.WASM_PAGE_SIZE != 0:
-      exit_with_error(f'{setting} must be a multiple of WebAssembly page size (64KiB), was {settings[setting]}')
+    if getattr(settings, setting) % webassembly.WASM_PAGE_SIZE != 0:
+      exit_with_error(f'{setting} must be a multiple of WebAssembly page size (64KiB), was {getattr(settings, setting)}')
 
   check_memory_setting('INITIAL_MEMORY')
   check_memory_setting('MAXIMUM_MEMORY')

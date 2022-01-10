@@ -35,6 +35,7 @@ global.read = (filename) => {
 };
 
 function load(f) {
+  printErr('loading: ' + f);
   eval.call(null, read(f));
 };
 

@@ -16,8 +16,8 @@ from glob import iglob
 from . import shared, building, utils
 from . import deps_info, tempfiles
 from . import diagnostics
-from tools.shared import demangle_c_symbol_name
-from tools.settings import settings
+from . import settings
+from .shared import demangle_c_symbol_name
 
 logger = logging.getLogger('system_libs')
 

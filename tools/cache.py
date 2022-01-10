@@ -6,8 +6,7 @@
 import contextlib
 import logging
 import os
-from . import tempfiles, filelock, config, utils
-from .settings import settings
+from . import tempfiles, filelock, config, utils, settings
 
 logger = logging.getLogger('cache')
 

@@ -10,7 +10,7 @@ sys.path.append(__rootdir__)
 from tools import shared
 from tools import line_endings
 from tools import utils
-from tools.settings import settings
+from tools import settings
 
 logger = logging.getLogger('minimal_runtime_shell')
 

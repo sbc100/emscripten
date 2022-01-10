@@ -28,10 +28,11 @@ from tools import utils
 from tools import gen_struct_info
 from tools import webassembly
 from tools import extract_metadata
+from tools import settings
+from tools import settings_manager
 from tools.utils import exit_with_error, path_from_root
 from tools.shared import DEBUG, WINDOWS, asmjs_mangle
 from tools.shared import treat_as_user_function, strip_prefix
-from tools.settings import settings
 
 logger = logging.getLogger('emscripten')
 
@@ -72,7 +73,7 @@ def optimize_syscalls(declares):
   MAIN_MODULE since a side module might need the filesystem.
   """
   relevant_settings = ['FORCE_FILESYSTEM', 'INCLUDE_FULL_LIBRARY', 'MAIN_MODULE']
-  if any(settings[s] for s in relevant_settings):
+  if any(getattr(settings, s) for s in relevant_settings):
     return
 
   if settings.FILESYSTEM == 0:
@@ -169,12 +170,12 @@ def compile_settings():
   # Only the names of the legacy settings are used by the JS compiler
   # so we can reduce the size of serialized json by simplifying this
   # otherwise complex value.
-  settings['LEGACY_SETTINGS'] = [l[0] for l in settings['LEGACY_SETTINGS']]
+  settings.LEGACY_SETTINGS = [l[0] for l in settings.LEGACY_SETTINGS]
 
   # Save settings to a file to work around v8 issue 1579
   with shared.get_temp_files().get_file('.json') as settings_file:
     with open(settings_file, 'w') as s:
-      json.dump(settings.dict(), s, sort_keys=True, indent=2)
+      json.dump(settings_manager.dict(), s, sort_keys=True, indent=2)
 
     # Call js compiler
     env = os.environ.copy()

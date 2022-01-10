@@ -7,9 +7,9 @@ import os
 import re
 
 from tools.shared import unsuffixed, check_call
-from tools.settings import settings
 from tools.utils import path_from_root, exit_with_error
 from tools import config
+from tools import settings
 
 
 # map an emscripten-style signature letter to a wasm2c C type

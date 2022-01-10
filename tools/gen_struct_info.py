@@ -92,7 +92,7 @@ sys.path.append(__rootdir__)
 from tools import shared
 from tools import system_libs
 from tools import utils
-from tools.settings import settings
+from tools import settings
 
 QUIET = (__name__ != '__main__')
 DEBUG = False

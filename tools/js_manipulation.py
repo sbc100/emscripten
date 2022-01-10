@@ -5,8 +5,7 @@
 
 import re
 
-from .settings import settings
-from . import utils
+from . import utils, settings
 
 emscripten_license = '''\
 /**

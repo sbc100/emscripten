@@ -48,7 +48,7 @@
 # TODO: Move all __deps from src/library*.js to deps_info, and use that single source of info
 #       both here and in the JS compiler.
 
-from tools.settings import settings
+from . import settings
 
 _deps_info = {
   'alarm': ['raise'],

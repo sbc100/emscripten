@@ -13,7 +13,7 @@ from tools import config
 from tools import shared
 from tools import system_libs
 from tools import utils
-from tools.settings import settings
+from tools import settings
 
 ports = []
 
