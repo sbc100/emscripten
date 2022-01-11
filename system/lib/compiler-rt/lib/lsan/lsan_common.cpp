@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lsan_common.h"
+#include "stdio.h"
 
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_flag_parser.h"
@@ -24,6 +25,8 @@
 #include "sanitizer_common/sanitizer_suppressions.h"
 #include "sanitizer_common/sanitizer_thread_registry.h"
 #include "sanitizer_common/sanitizer_tls_get_addr.h"
+
+extern "C" void print_dtors();
 
 #if SANITIZER_EMSCRIPTEN
 #include "lsan/lsan_allocator.h"
@@ -61,7 +64,7 @@ void RegisterLsanFlags(FlagParser *parser, Flags *f) {
 
 #define LOG_POINTERS(...)                           \
   do {                                              \
-    if (flags()->log_pointers) Report(__VA_ARGS__); \
+    Report(__VA_ARGS__); \
   } while (0)
 
 #define LOG_THREADS(...)                           \
@@ -196,12 +199,17 @@ void ScanRangeForPointers(uptr begin, uptr end,
   if (pp % alignment)
     pp = pp + alignment - pp % alignment;
 
+  uptr allocator_begin = 0, allocator_end = 0;
+  GetAllocatorGlobalRange(&allocator_begin, &allocator_end);
+  printf("GetAllocatorGlobalRange %x %x\n", allocator_begin, allocator_end);
+
   // Emscripten in non-threaded mode stores thread_local variables in the
   // same place as normal globals. This means allocator_cache must be skipped
   // when scanning globals instead of when scanning thread-locals.
 #if SANITIZER_EMSCRIPTEN && !defined(__EMSCRIPTEN_PTHREADS__)
   uptr cache_begin, cache_end;
   GetAllocatorCacheRange(&cache_begin, &cache_end);
+  printf("GetAllocatorCacheRange %x %x\n", cache_begin, cache_end);
 #endif
 
   for (; pp + sizeof(void *) <= end; pp += alignment) {  // NOLINT
@@ -231,9 +239,12 @@ void ScanRangeForPointers(uptr begin, uptr end,
     }
 #endif
 
-    m.set_tag(tag);
     LOG_POINTERS("%p: found %p pointing into chunk %p-%p of size %zu.\n", pp, p,
                  chunk, chunk + m.requested_size(), m.requested_size());
+    printf("tagging chunk: 0x%x\n", chunk);
+    print_dtors();
+    m.set_tag(tag);
+    print_dtors();
     if (frontier)
       frontier->push_back(chunk);
   }

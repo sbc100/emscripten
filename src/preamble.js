@@ -400,6 +400,7 @@ function exitRuntime() {
 #if RUNTIME_DEBUG
   err('exitRuntime');
 #endif
+  _print_dtors();
 #if ASYNCIFY && ASSERTIONS
   // ASYNCIFY cannot be used once the runtime starts shutting down.
   Asyncify.state = Asyncify.State.Disabled;

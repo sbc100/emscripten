@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "abort_message.h"
+#include "stdio.h"
 #include "cxxabi.h"
 #include <__threading_support>
 #ifndef _LIBCXXABI_HAS_NO_THREADS
@@ -14,6 +15,15 @@
 #pragma comment(lib, "pthread")
 #endif
 #endif
+
+/*
+#ifdef __EMSCRIPTEN__
+#define malloc emscripten_builtin_malloc
+#define free emscripten_builtin_free
+#endif
+*/
+
+extern "C" void print_dtors();
 
 #include <stdlib.h>
 
@@ -74,6 +84,8 @@ namespace {
   std::__libcpp_tls_key dtors_key;
 
   void run_dtors(void*) {
+    printf("run_dtors\n");
+    print_dtors();
     while (auto head = dtors) {
       dtors = head->next;
       head->dtor(head->obj);
@@ -131,15 +143,18 @@ extern "C" {
         dtors_alive = true;
       }
 
+      printf("add dtor\n");
       auto head = static_cast<DtorList*>(::malloc(sizeof(DtorList)));
       if (!head) {
         return -1;
       }
 
+      printf("add dtors: head=%p dtor=%p\n", head, dtor);
       head->dtor = dtor;
       head->obj = obj;
       head->next = dtors;
       dtors = head;
+      print_dtors();
 
       return 0;
     }
@@ -148,3 +163,18 @@ extern "C" {
 
 } // extern "C"
 } // namespace __cxxabiv1
+
+
+using namespace __cxxabiv1;
+void print_dtors() {
+  static Dtor seen_head = 0;
+  if (dtors) {
+    if (!seen_head) {
+      seen_head = dtors->dtor;
+    } else if (seen_head != dtors->dtor) {
+      printf("dtors mismatch: head=%p dtor=%p seen_dtor=%p\nn", dtors, dtors->dtor, seen_head);
+      abort();
+    }
+  }
+  printf("dtors: head=%p dtor=%p next=%p\n", dtors, dtors->dtor, dtors->next);
+}

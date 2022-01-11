@@ -22,6 +22,7 @@ static struct fl
 static int slot;
 static volatile int lock[1];
 volatile int *const __atexit_lockptr = lock;
+void print_dtors();
 
 void __funcs_on_exit()
 {
@@ -33,6 +34,7 @@ void __funcs_on_exit()
 		UNLOCK(lock);
 		func(arg);
 		LOCK(lock);
+    print_dtors();
 	}
 }
 
@@ -42,6 +44,7 @@ void ___cxa_finalize(void *dso)
 
 int ___cxa_atexit(void (*func)(void *), void *arg, void *dso)
 {
+  printf("___cxa_atexit %p\n", func);
 	LOCK(lock);
 
 	/* Defer initialization of head so it can be in BSS */
@@ -70,11 +73,16 @@ int ___cxa_atexit(void (*func)(void *), void *arg, void *dso)
 
 static void call(void *p)
 {
+  printf("atexit call %p\n", p);
+  print_dtors();
 	((void (*)(void))(uintptr_t)p)();
+  printf("done call %p\n", p);
+  print_dtors();
 }
 
 int __atexit(void (*func)(void))
 {
+  printf("_atexit %p\n", func);
 	return ___cxa_atexit(call, (void *)(uintptr_t)func, 0);
 }
 

@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lsan_thread.h"
+#include "stdlib.h"
 #if SANITIZER_POSIX
 #include "lsan_posix.h"
 #elif SANITIZER_FUCHSIA
@@ -42,8 +43,9 @@ void LsanOnDeadlySignal(int signo, void *siginfo, void *context);
 
 #define ENSURE_LSAN_INITED do {   \
   CHECK(!lsan_init_is_running);   \
-  if (!lsan_inited)               \
+  if (!lsan_inited) {             \
     __lsan_init();                \
+  } \
 } while (0)
 
 }  // namespace __lsan

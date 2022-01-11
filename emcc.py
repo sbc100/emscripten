@@ -2076,6 +2076,7 @@ def phase_linker_setup(options, state, newargs, user_settings):
     # Called by `callMain` to handle exceptions
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$handleException']
   else:
+    settings.REQUIRED_EXPORTS += ['print_dtors']
     if not settings.MINIMAL_RUNTIME:
       # In non-MINIMAL_RUNTIME, the core runtime depends on these functions to be present. (In MINIMAL_RUNTIME, they are
       # no longer always bundled in)

@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lsan.h"
+#include "stdio.h"
 
 #include "sanitizer_common/sanitizer_flags.h"
 #include "sanitizer_common/sanitizer_flag_parser.h"
@@ -107,6 +108,7 @@ static void InitializeFlags() {
 }
 
 extern "C" void __lsan_init() {
+  printf("__lsan_init %d\n", lsan_init_is_running);
   CHECK(!lsan_init_is_running);
   if (lsan_inited)
     return;

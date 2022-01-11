@@ -41,6 +41,6 @@ LSAN_FLAG(bool, use_ld_allocations, true,
 LSAN_FLAG(bool, use_unaligned, false, "Consider unaligned pointers valid.")
 LSAN_FLAG(bool, use_poisoned, false,
           "Consider pointers found in poisoned memory to be valid.")
-LSAN_FLAG(bool, log_pointers, false, "Debug logging")
-LSAN_FLAG(bool, log_threads, false, "Debug logging")
+LSAN_FLAG(bool, log_pointers, true, "Debug logging")
+LSAN_FLAG(bool, log_threads, true, "Debug logging")
 LSAN_FLAG(const char *, suppressions, "", "Suppressions file name.")

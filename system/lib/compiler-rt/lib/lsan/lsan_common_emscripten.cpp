@@ -16,6 +16,8 @@
 #include "sanitizer_common/sanitizer_platform.h"
 #include "lsan_common.h"
 
+extern "C" void print_dtors();
+
 #if CAN_SANITIZE_LEAKS && SANITIZER_EMSCRIPTEN
 #include <emscripten.h>
 
@@ -28,7 +30,7 @@
 
 #define LOG_THREADS(...)                           \
   do {                                             \
-    if (flags()->log_threads) Report(__VA_ARGS__); \
+    Report(__VA_ARGS__); \
   } while (0)
 
 namespace __lsan {
@@ -139,12 +141,11 @@ static void ProcessThreadsCallback(ThreadContextBase *tctx, void *arg) {
   }
 
   if (flags()->use_stacks) {
-    LOG_THREADS("Stack at %p-%p.\n", stack_begin, stack_end);
-
     // We can't get the SP for other threads to narrow down the range, but we
     // we can for the current thread.
     if (tctx->tid == GetCurrentThread()) {
       uptr sp = (uptr) __builtin_frame_address(0);
+      LOG_THREADS("Stack at %p-%p (SP = %p).\n", stack_begin, stack_end, sp);
       if (sp < stack_begin || sp >= stack_end) {
         // SP is outside the recorded stack range (e.g. the thread is running a
         // signal handler on alternate stack, or swapcontext was used).
@@ -154,9 +155,12 @@ static void ProcessThreadsCallback(ThreadContextBase *tctx, void *arg) {
         // Shrink the stack range to ignore out-of-scope values.
         stack_begin = sp;
       }
+    } else {
+      LOG_THREADS("Stack at %p-%p.\n", stack_begin, stack_end);
     }
 
     ScanRangeForPointers(stack_begin, stack_end, frontier, "STACK", kReachable);
+    //print_dtors();
   }
 
   if (flags()->use_tls && tls_begin) {

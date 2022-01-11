@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <stdio.h>
 #include "lsan_allocator.h"
 
 #include "sanitizer_common/sanitizer_allocator.h"
@@ -284,6 +285,7 @@ ChunkTag LsanMetadata::tag() const {
 }
 
 void LsanMetadata::set_tag(ChunkTag value) {
+  printf("set_tag %x\n", metadata_);
   reinterpret_cast<ChunkMetadata *>(metadata_)->tag = value;
 }
 

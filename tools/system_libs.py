@@ -1660,7 +1660,7 @@ class libstandalonewasm(MuslInternalLibrary):
 
 class libjsmath(Library):
   name = 'libjsmath'
-  cflags = ['-Os']
+  cflags = ['-O0']
   src_dir = 'system/lib'
   src_files = ['jsmath.c']
 
