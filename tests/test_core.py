@@ -222,14 +222,14 @@ def also_with_standalone_wasm(wasm2c=False, impure=False):
         self.emcc_args.append('-Wno-unused-command-line-argument')
         # if we are impure, disallow all wasm engines
         if impure:
-          self.wasm_engines = []
+          self.skip_standalone = True
         self.js_engines = [config.NODE_JS]
         self.node_args.append('--experimental-wasm-bigint')
         func(self)
         if wasm2c:
           print('wasm2c')
           self.set_setting('WASM2C')
-          self.wasm_engines = []
+          self.skip_standalone = True
           func(self)
 
     metafunc._parameterize = {'': (False,),
@@ -6744,7 +6744,7 @@ void* operator new(size_t size) {
     self.set_setting('STANDALONE_WASM')
     self.set_setting('WASM2C')
     self.set_setting('WASM2C_SANDBOXING', mode)
-    self.wasm_engines = []
+    self.skip_standalone = True
     self.do_core_test('test_hello_world.c')
 
   ### Integration tests

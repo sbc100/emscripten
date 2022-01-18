@@ -324,6 +324,7 @@ def parse_args(args):
   parser.add_argument('--all-engines', action='store_true', default=None)
   parser.add_argument('--detect-leaks', action='store_true', default=None)
   parser.add_argument('--skip-slow', action='store_true', help='Skip tests marked as slow')
+  parser.add_argument('--skip-standalone', action='store_true', help='Skip tests that run under standalone wasm engined (e.g. wasmtime)')
   parser.add_argument('--cores',
                       help='Set the number tests to run in parallel.  Defaults '
                            'to the number of CPU cores.', default=None)
@@ -345,6 +346,7 @@ def configure():
   common.EMTEST_SAVE_DIR = int(os.getenv('EMTEST_SAVE_DIR', '0'))
   common.EMTEST_ALL_ENGINES = int(os.getenv('EMTEST_ALL_ENGINES', '0'))
   common.EMTEST_SKIP_SLOW = int(os.getenv('EMTEST_SKIP_SLOW', '0'))
+  common.EMTEST_SKIP_STANDALONE = int(os.getenv('EMTEST_SKIP_STANDALONE', '0'))
   common.EMTEST_LACKS_NATIVE_CLANG = int(os.getenv('EMTEST_LACKS_NATIVE_CLANG', '0'))
   common.EMTEST_REBASELINE = int(os.getenv('EMTEST_REBASELINE', '0'))
   common.EMTEST_VERBOSE = int(os.getenv('EMTEST_VERBOSE', '0')) or shared.DEBUG
@@ -391,6 +393,7 @@ def main(args):
   else:
     set_env('EMTEST_SAVE_DIR', options.save_dir)
   set_env('EMTEST_SKIP_SLOW', options.skip_slow)
+  set_env('EMTEST_SKIP_STANDALONE', options.skip_standalone)
   set_env('EMTEST_ALL_ENGINES', options.all_engines)
   set_env('EMTEST_REBASELINE', options.rebaseline)
   set_env('EMTEST_VERBOSE', options.verbose)

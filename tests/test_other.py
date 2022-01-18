@@ -10662,7 +10662,8 @@ int main () {
   def test_standalone_wasm_exceptions(self):
     self.set_setting('STANDALONE_WASM')
     self.set_setting('WASM_BIGINT')
-    self.wasm_engines = []
+    # Doesn't run under wasmtime due to lack of EH support there.
+    self.skip_standalone = True
     self.emcc_args += ['-fwasm-exceptions']
     self.v8_args.append('--experimental-wasm-eh')
     self.do_run_from_file(test_file('core/test_exceptions.cpp'), test_file('core/test_exceptions_caught.out'))

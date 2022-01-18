@@ -55,6 +55,7 @@ EMTEST_SAVE_DIR = None
 # to force testing on all js engines, good to find js engine bugs
 EMTEST_ALL_ENGINES = None
 EMTEST_SKIP_SLOW = None
+EMTEST_SKIP_STANDALONE = None
 EMTEST_LACKS_NATIVE_CLANG = None
 EMTEST_VERBOSE = None
 EMTEST_REBASELINE = None
@@ -451,6 +452,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     self.wasm_engines = config.WASM_ENGINES.copy()
     self.banned_js_engines = []
     self.use_all_engines = EMTEST_ALL_ENGINES
+    self.skip_standalone = False
 
     if EMTEST_DETECT_TEMPFILE_LEAKS:
       for root, dirnames, filenames in os.walk(self.temp_dir):
@@ -1120,9 +1122,13 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     if self.get_setting('STANDALONE_WASM'):
       # TODO once standalone wasm support is more stable, apply use_all_engines
       # like with js engines, but for now as we bring it up, test in all of them
-      if not self.wasm_engines:
-        logger.warning('no wasm engine was found to run the standalone part of this test')
-      engines += self.wasm_engines
+      if not self.skip_standalone:
+        if EMTEST_SKIP_STANDALONE:
+          print('skipping running in standalone mode due to EMTEST_SKIP_STANDALONE')
+        else:
+          if not self.wasm_engines:
+            self.fail('standalone wasm engine required to run this test. Use EMTEST_SKIP_STANDALONE to skip')
+          engines += self.wasm_engines
       if self.get_setting('WASM2C') and not EMTEST_LACKS_NATIVE_CLANG:
         # compile the c file to a native executable.
         c = shared.replace_suffix(js_file, '.wasm.c')
