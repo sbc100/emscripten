@@ -4234,8 +4234,10 @@ ok
     ''', '''
       #include "header.h"
 
+      int foo = 11;
+
       int sidey() {
-        return 11;
+        return foo;
       }
     ''', 'other says 11.', 'int sidey();', force_c=True, **kwargs)
 
@@ -5241,7 +5243,7 @@ main main sees -524, -534, 72.
   @needs_make('mingw32-make')
   @needs_dylink
   def test_dylink_zlib(self):
-    self.set_setting('RELOCATABLE')
+    self.amcc_args.append('-fPIC')
     zlib_archive = self.get_zlib_library(cmake=WINDOWS)
     # example.c uses K&R style function declarations
     self.emcc_args.append('-Wno-deprecated-non-prototype')

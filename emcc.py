@@ -670,7 +670,7 @@ def get_binaryen_passes():
     passes += ['--fpcast-emu']
   if settings.ASYNCIFY == 1:
     passes += ['--asyncify']
-    if settings.MAIN_MODULE or settings.SIDE_MODULE:
+    if settings.RELOCATABLE or settings.MAIN_MODULE:
       passes += ['--pass-arg=asyncify-relocatable']
     if settings.ASSERTIONS:
       passes += ['--pass-arg=asyncify-asserts']
@@ -840,7 +840,7 @@ def process_dynamic_libs(dylibs, lib_dirs):
     # TODO(sbc): Integrate with metadata.invokeFuncs that comes from the
     # main module to avoid creating new invoke functions at runtime.
     imports = set(imports)
-    imports = set(i for i in imports if not i.startswith('invoke_'))
+    imports = set(i for i in imports if not i.startswith('invoke_') and i not in ('__memory_base',))
     strong_imports = sorted(imports.difference(exports))
     logger.debug('Adding symbols requirements from `%s`: %s', dylib, imports)
 
@@ -949,7 +949,7 @@ def get_clang_flags(user_args):
   if settings.INLINING_LIMIT:
     flags.append('-fno-inline-functions')
 
-  if settings.RELOCATABLE and '-fPIC' not in user_args:
+  if settings.RELOCATABLE or settings.MAIN_MODULE and '-fPIC' not in user_args:
     flags.append('-fPIC')
 
   # We use default visiibilty=default in emscripten even though the upstream
@@ -1580,7 +1580,7 @@ def phase_setup(options, state, newargs):
             'unused-command-line-argument',
             "compiler flag ignored during linking: '%s'" % arg)
 
-  if settings.MAIN_MODULE or settings.SIDE_MODULE:
+  if settings.SIDE_MODULE:
     settings.RELOCATABLE = 1
 
   if 'USE_PTHREADS' in user_settings:
@@ -1663,14 +1663,13 @@ def phase_setup(options, state, newargs):
 
 
 def setup_pthreads(target):
-  if settings.RELOCATABLE:
-    # phtreads + dyanmic linking has certain limitations
-    if settings.SIDE_MODULE:
-      diagnostics.warning('experimental', '-sSIDE_MODULE + pthreads is experimental')
-    elif settings.MAIN_MODULE:
-      diagnostics.warning('experimental', '-sMAIN_MODULE + pthreads is experimental')
-    elif settings.LINKABLE:
-      diagnostics.warning('experimental', '-sLINKABLE + pthreads is experimental')
+  # phtreads + dyanmic linking has certain limitations
+  if settings.SIDE_MODULE:
+    diagnostics.warning('experimental', '-sSIDE_MODULE + pthreads is experimental')
+  elif settings.MAIN_MODULE:
+    diagnostics.warning('experimental', '-sMAIN_MODULE + pthreads is experimental')
+  elif settings.LINKABLE:
+    diagnostics.warning('experimental', '-sLINKABLE + pthreads is experimental')
   if settings.ALLOW_MEMORY_GROWTH:
     diagnostics.warning('pthreads-mem-growth', '-pthread + ALLOW_MEMORY_GROWTH may run non-wasm code slowly, see https://github.com/WebAssembly/design/issues/1271')
 
@@ -2099,13 +2098,23 @@ def phase_linker_setup(options, state, newargs):
       '$registerTLSInit',
     ]
 
-  if settings.RELOCATABLE:
+
+  if settings.RELOCATABLE or settings.MAIN_MODULE:
+    settings.SUPPORT_DYLINK = 1
+
+  if settings.SUPPORT_DYLINK:
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += [
       '$reportUndefinedSymbols',
       '$relocateExports',
+      '$normalizeExports',
+      '$updateGOT',
       '$GOTHandler',
-      '__heap_base',
-      '__stack_pointer',
+    ]
+
+    # Unconditional dependency in library_dylink.js
+    settings.REQUIRED_EXPORTS += [
+        '_emscripten_sbrk_addr',
+        'setThrew',
     ]
 
     if settings.ASYNCIFY == 1:
@@ -2118,6 +2127,16 @@ def phase_linker_setup(options, state, newargs):
     if settings.SUPPORT_LONGJMP == 'emscripten' or not settings.DISABLE_EXCEPTION_CATCHING:
       settings.REQUIRED_EXPORTS += ['setThrew']
 
+    if settings.RELOCATABLE:
+      # In RELOCATABLE the __heap_base and __stack_pointer are defined by the JS runtime
+      # code.
+      settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['__heap_base', '__stack_pointer']
+    else:
+      # Otherwise they get defined by the native linker
+      settings.REQUIRED_EXPORTS += ['__stack_pointer', '__heap_base']
+    default_setting(user_settings, 'ALLOW_TABLE_GROWTH', 1)
+
+  if settings.RELOCATABLE:
     if settings.MINIMAL_RUNTIME:
       exit_with_error('MINIMAL_RUNTIME is not compatible with relocatable output')
     if settings.WASM2JS:

@@ -261,3 +261,5 @@ var POST_JS_FILES = [];
 var PTHREADS = false;
 
 var BULK_MEMORY = false;
+
+var SUPPORT_DYLINK = 0;

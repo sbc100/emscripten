@@ -342,7 +342,7 @@ function(${args}) {
             warn('To build in STANDALONE_WASM mode without a main(), use emcc --no-entry');
           }
         }
-        if (!RELOCATABLE) {
+        if (!MAIN_MODULE) {
           // emit a stub that will fail at runtime
           LibraryManager.library[symbol] = new Function(`err('missing function: ${symbol}'); abort(-1);`);
           // We have already warned/errored about this function, so for the purposes of Closure use, mute all type checks
@@ -476,7 +476,7 @@ function(${args}) {
       // WebAssembly.Function with the signature for the Promise API.
       // TODO: For asyncify we could only add the signatures we actually need,
       //       of async imports/exports.
-      if (sig && (RELOCATABLE || ASYNCIFY == 2)) {
+      if (sig && (MAIN_MODULE || RELOCATABLE || ASYNCIFY == 2)) {
         if (!WASM_BIGINT) {
           sig = sig[0].replace('j', 'i') + sig.slice(1).replace(/j/g, 'ii');
         }

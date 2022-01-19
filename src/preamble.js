@@ -19,7 +19,7 @@ Module.realPrint = out;
 out = err = () => {};
 #endif
 
-#if RELOCATABLE
+#if MAIN_MODULE
 {{{ makeModuleReceiveWithVar('dynamicLibraries', undefined, '[]', true) }}}
 #endif
 
@@ -183,7 +183,7 @@ var __ATMAIN__    = []; // functions called when main() is to be run
 var __ATEXIT__    = []; // functions called during shutdown
 var __ATPOSTRUN__ = []; // functions called after the main() is called
 
-#if RELOCATABLE
+#if SUPPORT_DYLINK
 var __RELOC_FUNCS__ = [];
 #endif
 
@@ -236,7 +236,7 @@ function initRuntime() {
   setStackLimits();
 #endif
 
-#if RELOCATABLE
+#if SUPPORT_DYLINK
   callRuntimeCallbacks(__RELOC_FUNCS__);
 #endif
   <<< ATINITS >>>
@@ -951,7 +951,7 @@ function createWasm() {
 #if SPLIT_MODULE
     'placeholder': new Proxy({}, splitModuleProxyHandler),
 #endif
-#if RELOCATABLE
+#if SUPPORT_DYLINK
     'GOT.mem': new Proxy(wasmImports, GOTHandler),
     'GOT.func': new Proxy(wasmImports, GOTHandler),
 #endif
@@ -963,8 +963,20 @@ function createWasm() {
   function receiveInstance(instance, module) {
     var exports = instance.exports;
 
+#if !RELOCATABLE
+    Module['asm'] = exports;
+    wasmTable = Module['asm']['__indirect_function_table'];
+#if ASSERTIONS && !PURE_WASI
+    assert(wasmTable, "table not found in wasm exports");
+#endif
+#endif
+
+#if SUPPORT_DYLINK
+    exports = normalizeExports(exports);
 #if RELOCATABLE
     exports = relocateExports(exports, {{{ GLOBAL_BASE }}});
+#endif
+    updateGOT(exports);
 #endif
 
 #if ASYNCIFY
@@ -976,9 +988,9 @@ function createWasm() {
 #endif
 
 #if MAIN_MODULE
-    var metadata = getDylinkMetadata(module);
+    var metadata = getDylinkMetadata(module, true);
 #if AUTOLOAD_DYLIBS
-    if (metadata.neededDynlibs) {
+    if (metadata && metadata.neededDynlibs) {
       dynamicLibraries = metadata.neededDynlibs.concat(dynamicLibraries);
     }
 #endif
@@ -1020,13 +1032,6 @@ function createWasm() {
     runMemoryInitializer();
 #endif
 
-#if !RELOCATABLE
-    wasmTable = Module['asm']['__indirect_function_table'];
-#if ASSERTIONS && !PURE_WASI
-    assert(wasmTable, "table not found in wasm exports");
-#endif
-#endif
-
 #if AUDIO_WORKLET
     // If we are in the audio worklet environment, we can only access the Module object
     // and not the global scope of the main JS script. Therefore we need to export
@@ -1038,7 +1043,7 @@ function createWasm() {
     addOnInit(Module['asm']['__wasm_call_ctors']);
 #endif
 
-#if hasExportedSymbol('__wasm_apply_data_relocs')
+#if SUPPORT_DYLINK && hasExportedSymbol('__wasm_apply_data_relocs')
     __RELOC_FUNCS__.push(Module['asm']['__wasm_apply_data_relocs']);
 #endif
 
@@ -1081,7 +1086,7 @@ function createWasm() {
     assert(Module === trueModule, 'the Module object should not be replaced during async compilation - perhaps the order of HTML elements is wrong?');
     trueModule = null;
 #endif
-#if SHARED_MEMORY || RELOCATABLE
+#if SHARED_MEMORY || SUPPORT_DYLINK
     receiveInstance(result['instance'], result['module']);
 #else
     // TODO: Due to Closure regression https://github.com/google/closure-compiler/issues/3193, the above line no longer optimizes out down to the following line.

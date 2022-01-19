@@ -157,7 +157,14 @@ def lld_flags_for_executable(external_symbols):
     stub = create_stub_object(external_symbols)
     cmd.append(stub)
 
-  if not settings.ERROR_ON_UNDEFINED_SYMBOLS:
+  if settings.MAIN_MODULE:
+    cmd.append('--experimental-pic')
+    cmd.append('--unresolved-symbols=import-dynamic')
+  elif settings.ERROR_ON_UNDEFINED_SYMBOLS:
+    undefs = shared.get_temp_files().get('.undefined').name
+    utils.write_file(undefs, '\n'.join(external_symbols))
+    cmd.append('--allow-undefined-file=%s' % undefs)
+  else:
     cmd.append('--import-undefined')
 
   if settings.IMPORTED_MEMORY:
@@ -687,7 +694,7 @@ def minify_wasm_js(js_file, wasm_file, expensive_optimizations, minify_whitespac
     js_file = acorn_optimizer(js_file, passes)
   # if we can optimize this js+wasm combination under the assumption no one else
   # will see the internals, do so
-  if not settings.LINKABLE:
+  if not settings.LINKABLE and not settings.SUPPORT_DYLINK:
     # if we are optimizing for size, shrink the combined wasm+JS
     # TODO: support this when a symbol map is used
     if expensive_optimizations:

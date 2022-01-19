@@ -233,6 +233,12 @@ def report_missing_symbols(js_symbols):
     # In this mode we never expect _main in the export list.
     return
 
+  # PROXY_TO_PTHREAD only makes sense with a main(), so error if one is
+  # missing. note that when main() might arrive from another module we cannot
+  # error here.
+  if settings.PROXY_TO_PTHREAD and '_main' not in defined_symbols and not settings.SUPPORT_DYLINK:
+    exit_with_error('PROXY_TO_PTHREAD proxies main() for you, but no main exists')
+
   if settings.IGNORE_MISSING_MAIN:
     # The default mode for emscripten is to ignore the missing main function allowing
     # maximum compatibility.
@@ -367,8 +373,8 @@ def emscript(in_wasm, out_wasm, outfile_js, memfile, js_syms):
     if settings.INITIAL_TABLE == -1:
       settings.INITIAL_TABLE = dylink_sec.table_size + 1
 
-    if settings.ASYNCIFY == 1:
-      metadata.imports += ['__asyncify_state', '__asyncify_data']
+  if settings.ASYNCIFY == 1 and settings.SUPPORT_DYLINK:
+    metadata.imports += ['__asyncify_state', '__asyncify_data']
 
   if metadata.invokeFuncs:
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$getWasmTableEntry']
@@ -497,6 +503,13 @@ def finalize_wasm(infile, outfile, memfile, js_syms):
     # In AUTODEBUG mode we want to delay all legalization until later.  This is hack
     # to force wasm-emscripten-finalize not to do any legalization at all.
     args.append('--bigint')
+  if settings.LEGALIZE_JS_FFI:
+    # When we dynamically link our JS loader adds functions from wasm modules to
+    # the table. It must add the original versions of them, not legalized ones,
+    # so that indirect calls have the right type, so export those.
+    if settings.SUPPORT_DYLINK:
+      args.append('--pass-arg=legalize-js-interface-export-originals')
+    modify_wasm = True
   else:
     if settings.LEGALIZE_JS_FFI:
       # When we dynamically link our JS loader adds functions from wasm modules to

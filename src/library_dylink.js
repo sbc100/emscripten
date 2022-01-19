@@ -166,6 +166,9 @@ var LibraryDylink = {
   $isInternalSym: function(symName) {
     // TODO: find a way to mark these in the binary or avoid exporting them.
     return [
+      'memory',
+      '__indirect_function_table',
+      '__stack_pointer',
       '__cpp_exception',
       '__c_longjmp',
       '__wasm_apply_data_relocs',
@@ -188,6 +191,7 @@ var LibraryDylink = {
 
   $updateGOT__internal: true,
   $updateGOT__deps: ['$GOT', '$isInternalSym', '$addFunction', '$getFunctionAddress'],
+  $updateGOT__docs: '/** @param {boolean=} replace */',
   $updateGOT: function(exports, replace) {
 #if DYLINK_DEBUG
     dbg("updateGOT: adding " + Object.keys(exports).length + " symbols");
@@ -237,13 +241,26 @@ var LibraryDylink = {
 #endif
   },
 
+  $normalizeExports__internal: true,
+  $normalizeExports: function(exports) {
+    var normalized = {}
+    for (var e in exports) {
+      var value = exports[e];
+      if (!isInternalSym(e) && typeof value == 'object' && typeof value.value != 'undefined') {
+        // a breaking change in the wasm spec, globals are now objects
+        // https://github.com/WebAssembly/mutable-global/issues/1
+        normalized[e] = value.value;
+      } else {
+        normalized[e] = value;
+      }
+    }
+    return normalized;
+  },
+
   // Applies relocations to exported things.
   $relocateExports__internal: true,
-  $relocateExports__deps: ['$updateGOT'],
-  $relocateExports__docs: '/** @param {boolean=} replace */',
-  $relocateExports: function(exports, memoryBase, replace) {
+  $relocateExports: function(exports, memoryBase) {
     var relocated = {};
-
     for (var e in exports) {
       var value = exports[e];
 #if SPLIT_MODULE
@@ -263,7 +280,6 @@ var LibraryDylink = {
       }
       relocated[e] = value;
     }
-    updateGOT(relocated, replace);
     return relocated;
   },
 
@@ -349,7 +365,7 @@ var LibraryDylink = {
   // Allocate memory even if malloc isn't ready yet.  The allocated memory here
   // must be zero initialized since its used for all static data, including bss.
   $getMemory__noleakcheck: true,
-  $getMemory__deps: ['$GOT', '__heap_base', '$zeroMemory', 'malloc'],
+  $getMemory__deps: ['$GOT', '__heap_base', '$zeroMemory', 'malloc', '_emscripten_sbrk_addr'],
   $getMemory: function(size) {
     // After the runtime is initialized, we must only use sbrk() normally.
 #if DYLINK_DEBUG
@@ -366,8 +382,17 @@ var LibraryDylink = {
 #if ASSERTIONS
     assert(end <= HEAP8.length, 'failure to getMemory - memory growth etc. is not supported there, call malloc/sbrk directly or increase INITIAL_MEMORY');
 #endif
+#if USE_PTHREADS
+    if (!ENVIRONMENT_IS_PTHREAD) {
+#endif
+#if DYLINK_DEBUG
+      err('__emscripten_sbrk_addr[' + __emscripten_sbrk_addr + '] : ' + ret + ' -> ' + end);
+#endif
+      {{{ makeSetValue('__emscripten_sbrk_addr', '0', 'end', POINTER_TYPE) }}};
+#if USE_PTHREADS
+    }
+#endif
     ___heap_base = end;
-    GOT['__heap_base'].value = {{{ to64('end') }}};
     return ret;
   },
 
@@ -375,7 +400,7 @@ var LibraryDylink = {
   // { memorySize, memoryAlign, tableSize, tableAlign, neededDynlibs}
   $getDylinkMetadata__deps: ['$UTF8ArrayToString'],
   $getDylinkMetadata__internal: true,
-  $getDylinkMetadata: function(binary) {
+  $getDylinkMetadata: function(binary, optional = false) {
     var offset = 0;
     var end = 0;
 
@@ -412,6 +437,9 @@ var LibraryDylink = {
       if (dylinkSection.length === 0) {
         name = 'dylink'
         dylinkSection = WebAssembly.Module.customSections(binary, name);
+      }
+      if (!dylinkSection.length && optional) {
+        return undefined;
       }
       failIf(dylinkSection.length === 0, 'need dylink section');
       binary = new Uint8Array(dylinkSection[0]);
@@ -516,7 +544,7 @@ var LibraryDylink = {
   $mergeLibSymbols: function(exports, libName) {
     // add symbols into global namespace TODO: weak linking etc.
     for (var sym in exports) {
-      if (!exports.hasOwnProperty(sym)) {
+      if (!Object.prototype.hasOwnProperty.call(exports, sym)) {
         continue;
       }
 #if ASSERTIONS == 2
@@ -583,11 +611,12 @@ var LibraryDylink = {
     */`,
   $loadWebAssemblyModule__deps: [
     '$loadDynamicLibrary', '$getMemory',
-    '$relocateExports', '$resolveGlobalSymbol', '$GOTHandler',
+    '$normalizeExports', '$relocateExports', '$resolveGlobalSymbol', '$GOTHandler',
     '$getDylinkMetadata', '$alignMemory', '$zeroMemory',
     '$alignMemory', '$zeroMemory',
     '$currentModuleWeakSymbols', '$alignMemory', '$zeroMemory',
     '$updateTableMap',
+    '$updateGOT',
   ],
   $loadWebAssemblyModule: function(binary, flags, libName, localScope, handle) {
 #if DYLINK_DEBUG
@@ -732,7 +761,9 @@ var LibraryDylink = {
 #endif
         // add new entries to functionsInTableMap
         updateTableMap(tableBase, metadata.tableSize);
+        moduleExports = normalizeExports(instance.exports);
         moduleExports = relocateExports(instance.exports, memoryBase);
+        updateGOT(moduleExports);
 #if ASYNCIFY
         moduleExports = Asyncify.instrumentWasmExports(moduleExports);
 #endif
@@ -796,6 +827,9 @@ var LibraryDylink = {
 #endif
               applyRelocs();
             } else {
+#if DYLINK_DEBUG
+              err('defering applyRelocs');
+#endif
               __RELOC_FUNCS__.push(applyRelocs);
             }
           }
@@ -1030,7 +1064,9 @@ var LibraryDylink = {
 #if DYLINK_DEBUG
       dbg('loadDylibs: no libraries to preload');
 #endif
+#if !USE_PTHREADS
       reportUndefinedSymbols();
+#endif
       return;
     }
 
@@ -1046,6 +1082,7 @@ var LibraryDylink = {
       });
     }, Promise.resolve()).then(() => {
       // we got them all, wonderful
+#if !USE_PTHREADS
       reportUndefinedSymbols();
       removeRunDependency('loadDylibs');
 #if DYLINK_DEBUG

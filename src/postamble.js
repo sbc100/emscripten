@@ -135,7 +135,12 @@ function callMain() {
 #endif // HAS_MAIN
 
 #if STACK_OVERFLOW_CHECK
+var doneStackCheckInit = false;
 function stackCheckInit() {
+  if (doneStackCheckInit)
+    return false;
+  doneStackCheckInit = true;
+  //err("stackCheckInit");
   // This is normally called automatically during __wasm_call_ctors but need to
   // get these values before even running any of the ctors so we call it redundantly
   // here.

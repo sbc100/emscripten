@@ -40,6 +40,9 @@ var LibraryPThread = {
 #if !MINIMAL_RUNTIME
                    '$handleException',
 #endif
+#if SUPPORT_DYLINK
+                   '$reportUndefinedSymbols',
+#endif
                    ],
   $PThread: {
     // Contains all Workers that are idle/unused and not currently hosting an
@@ -249,6 +252,11 @@ var LibraryPThread = {
       // Call thread init functions (these are the _emscripten_tls_init for each
       // module loaded.
       PThread.tlsInitFunctions.forEach((f) => f());
+#if SUPPORT_DYLINK
+      // Until TLS initializtion is done we could have can have TLS symbols
+      // with address zero.
+      reportUndefinedSymbols();
+#endif
     },
     // Loads the WebAssembly module into the given Worker.
     // onFinishedLoading: A callback function that will be called once all of
@@ -602,6 +610,7 @@ var LibraryPThread = {
   },
 
 #if MAIN_MODULE
+  $registerTLSInit__deps: ['$relocateExports', '$normalizeExports', '$updateGOT'],
   $registerTLSInit: function(tlsInitFunc, moduleExports, metadata) {
 #if DYLINK_DEBUG
     dbg("registerTLSInit: " + tlsInitFunc);
@@ -623,7 +632,9 @@ var LibraryPThread = {
       }
       var tlsExports = {};
       metadata.tlsExports.forEach((s) => tlsExports[s] = moduleExports[s]);
-      relocateExports(tlsExports, __tls_base, /*replace=*/true);
+      var normalized = normalizeExports(tlsExports);
+      var relocated = relocateExports(normalized, __tls_base);
+      updateGOT(relocated, /*replace=*/true);
     }
 
     // Register this function so that its gets called for each thread on

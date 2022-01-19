@@ -6842,8 +6842,7 @@ int main(int argc, char** argv) {
     def build_main(args):
       print(args)
       with env_modify({'EMCC_FORCE_STDLIBS': 'libc++abi'}):
-        self.run_process([EMXX, 'main.cpp', '-sMAIN_MODULE',
-                          '--embed-file', 'libside.wasm'] + args)
+        self.run_process([EMXX, 'main.cpp', '-sMAIN_MODULE=2', 'libside.wasm'] + args)
 
     build_main([])
     out = self.run_js('a.out.js', assert_returncode=NON_ZERO)
@@ -11707,7 +11706,7 @@ exec "$@"
     self.run_process([EMCC, test_file('hello_world.c'), '--js-library=lib.js', '-sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$__foo'])
 
   def test_wasm2js_no_dylink(self):
-    for arg in ['-sMAIN_MODULE', '-sSIDE_MODULE', '-sRELOCATABLE']:
+    for arg in ['-sSIDE_MODULE', '-sRELOCATABLE']:
       print(arg)
       err = self.expect_fail([EMCC, test_file('hello_world.c'), '-sWASM=0', arg])
       self.assertContained('WASM2JS is not compatible with relocatable output', err)
@@ -12868,7 +12867,9 @@ int main() {
   def test_extended_const(self):
     self.v8_args += ['--experimental-wasm-extended-const']
     # Export at least one global so that we exercise the parsing of the global section.
-    self.do_runf(test_file('hello_world.c'), emcc_args=['-sEXPORTED_FUNCTIONS=_main,___stdout_used', '-mextended-const', '-sMAIN_MODULE=2'])
+    self.do_runf(test_file('hello_world.c'), emcc_args=['-sEXPORTED_FUNCTIONS=_main,___stdout_used',
+                                                        '-mextended-const', '-sMAIN_MODULE=2',
+                                                        '-sRELOCATABLE'])
     wat = self.get_wasm_text('hello_world.wasm')
     # Test that extended-const expressions are used in the data segments.
     self.assertTrue(re.search(r'\(data (\$\S+ )?\(i32.add\s+\(global.get \$\S+\)\s+\(i32.const \d+\)', wat))
