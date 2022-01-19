@@ -23,6 +23,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import webbrowser
 import unittest
@@ -268,6 +269,10 @@ def create_file(name, contents, binary=False):
   if binary:
     name.write_bytes(contents)
   else:
+    # Dedent the contents of text files so that the files on disc all
+    # start in column 1, even if they are indented when embedded in the
+    # python test code.
+    contents = textwrap.dedent(contents)
     name.write_text(contents)
 
 
