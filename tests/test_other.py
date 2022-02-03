@@ -11483,6 +11483,17 @@ void foo() {}
     err = self.run_js('test_pthread_js_exception.js', assert_returncode=NON_ZERO)
     self.assertContained('missing is not defined', err)
 
+  @node_pthreads
+  def test_pthread_minimal_runtime(self):
+    self.set_setting('MINIMAL_RUNTIME')
+    self.set_setting('PROXY_TO_PTHREAD')
+    self.set_setting('INITIAL_MEMORY', '64mb')
+    #self.set_setting('EXIT_RUNTIME')
+    # test that the node environment can be specified by itself, and that still
+    # works with pthreads (even though we did not specify 'node,worker')
+    self.set_setting('ENVIRONMENT', 'node')
+    self.do_run_in_out_file_test('pthread/test_pthread_c11_threads.c')
+
   def test_config_closure_compiler(self):
     self.run_process([EMCC, test_file('hello_world.c'), '--closure=1'])
     with env_modify({'EM_CLOSURE_COMPILER': sys.executable}):

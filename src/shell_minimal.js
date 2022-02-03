@@ -94,6 +94,19 @@ if (ENVIRONMENT_IS_SHELL) {
 
 #endif // !SINGLE_FILE
 
+#if USE_PTHREADS && ENVIRONMENT_MAY_BE_NODE
+if (ENVIRONMENT_IS_NODE) {
+  let nodeWorkerThreads;
+  try {
+    nodeWorkerThreads = require('worker_threads');
+  } catch (e) {
+    console.error('The "worker_threads" module is not supported in this node.js build - perhaps a newer version is needed?');
+    throw e;
+  }
+  global.Worker = nodeWorkerThreads.Worker;
+}
+#endif // USE_PTHREADS && ENVIRONMENT_MAY_BE_NODE
+
 // Redefine these in a --pre-js to override behavior. If you would like to
 // remove out() or err() altogether, you can no-op it out to function() {},
 // and build with --closure 1 to get Closure optimize out all the uses

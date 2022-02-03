@@ -201,7 +201,6 @@ def generate_minimal_runtime_html(target, options, js_target, target_basename):
 
   shell = shell.replace('{{{ TARGET_BASENAME }}}', target_basename)
   shell = shell.replace('{{{ EXPORT_NAME }}}', settings.EXPORT_NAME)
-  shell = shell.replace('{{{ PTHREAD_WORKER_FILE }}}', settings.PTHREAD_WORKER_FILE)
 
   # In SINGLE_FILE build, embed the main .js file into the .html output
   if settings.SINGLE_FILE:
