@@ -945,11 +945,7 @@ LibraryManager.library = {
     return _strftime(s, maxsize, format, tm); // no locale support yet
   },
 
-  strptime__deps: ['_isLeapYear', '_arraySum', '_addDays', '_MONTH_DAYS_REGULAR', '_MONTH_DAYS_LEAP', '$jstoi_q'
-#if MINIMAL_RUNTIME
-    , '$intArrayFromString'
-#endif
-  ],
+  strptime__deps: ['_isLeapYear', '_arraySum', '_addDays', '_MONTH_DAYS_REGULAR', '_MONTH_DAYS_LEAP', '$jstoi_q'],
   strptime: function(buf, format, tm) {
     // char *strptime(const char *restrict buf, const char *restrict format, struct tm *restrict tm);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/strptime.html
@@ -1185,7 +1181,7 @@ LibraryManager.library = {
 
       // we need to convert the matched sequence into an integer array to take care of UTF-8 characters > 0x7F
       // TODO: not sure that intArrayFromString handles all unicode characters correctly
-      return buf+intArrayFromString(matches[0]).length-1;
+      return buf + lengthBytesUTF8(matches[0]);
     }
 
     return 0;
