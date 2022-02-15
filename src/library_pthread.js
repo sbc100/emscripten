@@ -526,10 +526,13 @@ var LibraryPThread = {
 #endif
         return;
       }
+      var tlsExports = {};
       for (var sym in metadata.tlsExports) {
-        metadata.tlsExports[sym] = moduleExports[sym];
+        if (Object.prototype.hasOwnProperty.call(moduleExports, sym)) {
+          tlsExports[sym] = moduleExports[sym];
+        }
       }
-      relocateExports(metadata.tlsExports, __tls_base, /*replace=*/true);
+      relocateExports(tlsExports, __tls_base, /*replace=*/true);
     }
 
     // Register this function so that its gets called for each thread on
