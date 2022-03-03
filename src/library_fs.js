@@ -55,28 +55,28 @@ var readMode = 292/*{{{ cDefine("S_IRUGO") }}}*/ | 73/*{{{ cDefine("S_IXUGO") }}
 var writeMode = 146/*{{{ cDefine("S_IWUGO") }}}*/;
 Object.defineProperties(FSNode.prototype, {
  read: {
-  get: /** @this{FSNode} */function() {
+  get: /** @this {FSNode} */function() {
    return (this.mode & readMode) === readMode;
   },
-  set: /** @this{FSNode} */function(val) {
+  set: /** @this {FSNode} */function(val) {
    val ? this.mode |= readMode : this.mode &= ~readMode;
   }
  },
  write: {
-  get: /** @this{FSNode} */function() {
+  get: /** @this {FSNode} */function() {
    return (this.mode & writeMode) === writeMode;
   },
-  set: /** @this{FSNode} */function(val) {
+  set: /** @this {FSNode} */function(val) {
    val ? this.mode |= writeMode : this.mode &= ~writeMode;
   }
  },
  isFolder: {
-  get: /** @this{FSNode} */function() {
+  get: /** @this {FSNode} */function() {
    return FS.isDir(this.mode);
   }
  },
  isDevice: {
-  get: /** @this{FSNode} */function() {
+  get: /** @this {FSNode} */function() {
    return FS.isChrdev(this.mode);
   }
  }
@@ -1410,9 +1410,10 @@ FS.staticInit();` +
     },
     ensureErrnoError: () => {
       if (FS.ErrnoError) return;
-      FS.ErrnoError = /** @this{Object} */ function ErrnoError(errno, node) {
+      /** @constructor */
+      FS.ErrnoError = function ErrnoError(errno, node) {
         this.node = node;
-        this.setErrno = /** @this{Object} */ function(errno) {
+        this.setErrno = function(errno) {
           this.errno = errno;
 #if ASSERTIONS
           for (var key in ERRNO_CODES) {
@@ -1680,7 +1681,7 @@ FS.staticInit();` +
         this.lengthKnown = false;
         this.chunks = []; // Loaded chunks. Index is the chunk number
       }
-      LazyUint8Array.prototype.get = /** @this{Object} */ function LazyUint8Array_get(idx) {
+      LazyUint8Array.prototype.get = function LazyUint8Array_get(idx) {
         if (idx > this.length-1 || idx < 0) {
           return undefined;
         }
@@ -1763,7 +1764,7 @@ FS.staticInit();` +
         var lazyArray = new LazyUint8Array();
         Object.defineProperties(lazyArray, {
           length: {
-            get: /** @this{Object} */ function() {
+            get: /** @this {Object} */ function() {
               if (!this.lengthKnown) {
                 this.cacheLength();
               }
@@ -1771,7 +1772,7 @@ FS.staticInit();` +
             }
           },
           chunkSize: {
-            get: /** @this{Object} */ function() {
+            get: /** @this {Object} */ function() {
               if (!this.lengthKnown) {
                 this.cacheLength();
               }

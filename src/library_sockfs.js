@@ -20,14 +20,14 @@ mergeInto(LibraryManager.library, {
       // object so we can register network callbacks from native JavaScript too.
       // For more documentation see system/include/emscripten/emscripten.h
       Module['websocket']._callbacks = {};
-      Module['websocket']['on'] = /** @this{Object} */ function(event, callback) {
+      Module['websocket']['on'] = /** @this {Object} */ function(event, callback) {
         if ('function' === typeof callback) {
           this._callbacks[event] = callback;
         }
         return this;
       };
 
-      Module['websocket'].emit = /** @this{Object} */ function(event, param) {
+      Module['websocket'].emit = /** @this {Object} */ function(event, param) {
         if ('function' === typeof this._callbacks[event]) {
           this._callbacks[event].call(this, param);
         }
