@@ -265,9 +265,7 @@ var LibraryGLFW = {
         case 0x5B:return (256+67); // DOM_VK_WIN -> GLFW_KEY_LSUPER
         // #define GLFW_KEY_RSUPER       (GLFW_KEY_SPECIAL+68)
         case 0x5D:return (256+69); // DOM_VK_CONTEXT_MENU -> GLFW_KEY_MENU
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
         case 0x1B:return 256; // DOM_VK_ESCAPE -> GLFW_KEY_ESCAPE
         case 0x0D:return 257; // DOM_VK_RETURN -> GLFW_KEY_ENTER
         case 0x09:return 258; // DOM_VK_TAB -> GLFW_KEY_TAB
@@ -363,9 +361,7 @@ var LibraryGLFW = {
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vii', 'GLFW.active.charFunc') }}}(charCode, 1);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
       {{{ makeDynCall('vii', 'GLFW.active.charFunc') }}}(GLFW.active.id, charCode);
 #endif
     },
@@ -376,18 +372,14 @@ var LibraryGLFW = {
       var key = GLFW.DOMToGLFWKeyCode(keyCode);
       if (key == -1) return;
 
-#if USE_GLFW == 3
-      var repeat = status && GLFW.active.keys[key];
-#endif
       GLFW.active.keys[key] = status;
       GLFW.active.domKeys[keyCode] = status;
       if (!GLFW.active.keyFunc) return;
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vii', 'GLFW.active.keyFunc') }}}(key, status);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
+      var repeat = status && GLFW.active.keys[key];
       if (repeat) status = 2; // GLFW_REPEAT
       {{{ makeDynCall('viiiii', 'GLFW.active.keyFunc') }}}(GLFW.active.id, key, keyCode, status, GLFW.getModBits(GLFW.active));
 #endif
@@ -435,9 +427,7 @@ var LibraryGLFW = {
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vii', 'GLFW.active.cursorPosFunc') }}}(Browser.mouseX, Browser.mouseY);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
       {{{ makeDynCall('vidd', 'GLFW.active.cursorPosFunc') }}}(GLFW.active.id, Browser.mouseX, Browser.mouseY);
 #endif
     },
@@ -498,9 +488,7 @@ var LibraryGLFW = {
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vii', 'GLFW.active.mouseButtonFunc') }}}(eventButton, status);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
       {{{ makeDynCall('viiii', 'GLFW.active.mouseButtonFunc') }}}(GLFW.active.id, eventButton, status, GLFW.getModBits(GLFW.active));
 #endif
     },
@@ -525,9 +513,7 @@ var LibraryGLFW = {
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vi', 'GLFW.active.scrollFunc') }}}(GLFW.wheelPos);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
       var sx = 0;
       var sy = delta;
       if (event.type == 'mousewheel') {
@@ -593,9 +579,7 @@ var LibraryGLFW = {
       callUserCallback(function() {
 #if USE_GLFW == 2
         {{{ makeDynCall('vii', 'GLFW.active.windowSizeFunc') }}}(GLFW.active.width, GLFW.active.height);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
         {{{ makeDynCall('viii', 'GLFW.active.windowSizeFunc') }}}(GLFW.active.id, GLFW.active.width, GLFW.active.height);
 #endif
       });
@@ -973,9 +957,7 @@ var LibraryGLFW = {
 
 #if USE_GLFW == 2
       {{{ makeDynCall('vii', 'win.windowSizeFunc') }}}(width, height);
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
       {{{ makeDynCall('viii', 'win.windowSizeFunc') }}}(win.id, width, height);
 #endif
     },
@@ -1171,9 +1153,7 @@ var LibraryGLFW = {
     setValue(major, 2, 'i32');
     setValue(minor, 7, 'i32');
     setValue(rev, 7, 'i32');
-#endif
-
-#if USE_GLFW == 3
+#elif USE_GLFW == 3
     setValue(major, 3, 'i32');
     setValue(minor, 2, 'i32');
     setValue(rev, 1, 'i32');
@@ -1701,10 +1681,7 @@ var LibraryGLFW = {
   glfwSwapBuffers: function(winid) {
     GLFW.swapBuffers(winid);
   },
-
-#endif // GLFW 3
-
-#if USE_GLFW == 2
+#elif USE_GLFW == 2
   glfwOpenWindow: function(width, height, redbits, greenbits, bluebits, alphabits, depthbits, stencilbits, mode) {
     GLFW.hints[0x00021001] = redbits;     // GLFW_RED_BITS
     GLFW.hints[0x00021002] = greenbits;   // GLFW_GREEN_BITS
