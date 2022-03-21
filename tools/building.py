@@ -29,7 +29,7 @@ from .shared import try_delete, run_process, check_call, exit_with_error
 from .shared import path_from_root
 from .shared import asmjs_mangle, DEBUG
 from .shared import TEMP_DIR
-from .shared import CANONICAL_TEMP_DIR, LLVM_DWARFDUMP, demangle_c_symbol_name
+from .shared import LLVM_DWARFDUMP, demangle_c_symbol_name
 from .shared import get_emscripten_temp_dir, exe_suffix, is_c_symbol
 from .utils import WINDOWS
 from .settings import settings
@@ -1545,6 +1545,6 @@ def save_intermediate(src, dst):
     global save_intermediate_counter
     dst = 'emcc-%d-%s' % (save_intermediate_counter, dst)
     save_intermediate_counter += 1
-    dst = os.path.join(CANONICAL_TEMP_DIR, dst)
+    dst = os.path.join(get_emscripten_temp_dir(), dst)
     logger.debug('saving debug copy %s' % dst)
     shutil.copyfile(src, dst)

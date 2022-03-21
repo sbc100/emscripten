@@ -74,6 +74,13 @@ diagnostics.add_warning('pthreads-mem-growth')
 diagnostics.add_warning('transpile')
 diagnostics.add_warning('limited-postlink-optimizations')
 
+TEMP_DIR = os.environ.get("EMCC_TEMP_DIR", tempfile.gettempdir())
+if not os.path.isdir(TEMP_DIR):
+  exit_with_error(f'The temporary directory `{TEMP_DIR}` does not exist! Please make sure that the path is correct.')
+CANONICAL_TEMP_DIR = os.path.join(TEMP_DIR, 'emscripten_temp')
+# Set on first call to get_emscripten_temp_dir
+EMSCRIPTEN_TEMP_DIR = None
+
 
 # TODO(sbc): Investigate switching to shlex.quote
 def shlex_quote(arg):
@@ -468,54 +475,40 @@ def get_emscripten_temp_dir():
   """Returns a path to EMSCRIPTEN_TEMP_DIR, creating one if it didn't exist."""
   global EMSCRIPTEN_TEMP_DIR
   if not EMSCRIPTEN_TEMP_DIR:
-    EMSCRIPTEN_TEMP_DIR = tempfile.mkdtemp(prefix='emscripten_temp_', dir=TEMP_DIR)
+    if DEBUG:
+      EMSCRIPTEN_TEMP_DIR = CANONICAL_TEMP_DIR
+      try:
+        safe_ensure_dirs(EMSCRIPTEN_TEMP_DIR)
+      except Exception as e:
+        exit_with_error(str(e) + f'Could not create canonical temp dir. Check definition of TEMP_DIR in {config.EM_CONFIG}')
 
-    if not DEBUG_SAVE:
-      def prepare_to_clean_temp(d):
-        def clean_temp():
-          try_delete(d)
+      # Since the canonical temp directory is, by definition, the same
+      # between all processes that run in DEBUG mode we need to use a multi
+      # process lock to prevent more than one process from writing to it.
+      # This is because emcc assumes that it can use non-unique names inside
+      # the temp directory.
+      # Sadly we need to allow child processes to access this directory
+      # though, since emcc can recursively call itself when building
+      # libraries and ports.
+      if 'EM_HAVE_TEMP_DIR_LOCK' not in os.environ:
+        filelock_name = os.path.join(EMSCRIPTEN_TEMP_DIR, 'emscripten.lock')
+        lock = filelock.FileLock(filelock_name)
+        os.environ['EM_HAVE_TEMP_DIR_LOCK'] = '1'
+        lock.acquire()
+        atexit.register(lock.release)
+    else:
+      EMSCRIPTEN_TEMP_DIR = tempfile.mkdtemp(prefix='emscripten_temp_', dir=TEMP_DIR)
 
-        atexit.register(clean_temp)
-      # this global var might change later
-      prepare_to_clean_temp(EMSCRIPTEN_TEMP_DIR)
+      if not DEBUG_SAVE:
+        def prepare_to_clean_temp(d):
+          def clean_temp():
+            try_delete(d)
+
+          atexit.register(clean_temp)
+        # this global var might change later
+        prepare_to_clean_temp(EMSCRIPTEN_TEMP_DIR)
+
   return EMSCRIPTEN_TEMP_DIR
-
-
-def get_canonical_temp_dir(temp_dir):
-  return os.path.join(temp_dir, 'emscripten_temp')
-
-
-def setup_temp_dirs():
-  global EMSCRIPTEN_TEMP_DIR, CANONICAL_TEMP_DIR, TEMP_DIR
-  EMSCRIPTEN_TEMP_DIR = None
-
-  TEMP_DIR = os.environ.get("EMCC_TEMP_DIR", tempfile.gettempdir())
-  if not os.path.isdir(TEMP_DIR):
-    exit_with_error(f'The temporary directory `{TEMP_DIR}` does not exist! Please make sure that the path is correct.')
-
-  CANONICAL_TEMP_DIR = get_canonical_temp_dir(TEMP_DIR)
-
-  if DEBUG:
-    EMSCRIPTEN_TEMP_DIR = CANONICAL_TEMP_DIR
-    try:
-      safe_ensure_dirs(EMSCRIPTEN_TEMP_DIR)
-    except Exception as e:
-      exit_with_error(str(e) + f'Could not create canonical temp dir. Check definition of TEMP_DIR in {config.EM_CONFIG}')
-
-    # Since the canonical temp directory is, by definition, the same
-    # between all processes that run in DEBUG mode we need to use a multi
-    # process lock to prevent more than one process from writing to it.
-    # This is because emcc assumes that it can use non-unique names inside
-    # the temp directory.
-    # Sadly we need to allow child processes to access this directory
-    # though, since emcc can recursively call itself when building
-    # libraries and ports.
-    if 'EM_HAVE_TEMP_DIR_LOCK' not in os.environ:
-      filelock_name = os.path.join(EMSCRIPTEN_TEMP_DIR, 'emscripten.lock')
-      lock = filelock.FileLock(filelock_name)
-      os.environ['EM_HAVE_TEMP_DIR_LOCK'] = '1'
-      lock.acquire()
-      atexit.register(lock.release)
 
 
 def get_temp_files():
@@ -708,8 +701,6 @@ EMCMAKE = bat_suffix(path_from_root('emcmake'))
 EMCONFIGURE = bat_suffix(path_from_root('emconfigure'))
 EM_NM = bat_suffix(path_from_root('emnm'))
 FILE_PACKAGER = bat_suffix(path_from_root('tools/file_packager'))
-
-setup_temp_dirs()
 
 Cache = cache.Cache(config.CACHE)
 

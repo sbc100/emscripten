@@ -32,7 +32,7 @@ import jsrun
 from tools.shared import TEMP_DIR, EMCC, EMXX, DEBUG, EMCONFIGURE, EMCMAKE
 from tools.shared import EMSCRIPTEN_TEMP_DIR
 from tools.shared import EM_BUILD_VERBOSE
-from tools.shared import get_canonical_temp_dir, try_delete, path_from_root
+from tools.shared import try_delete, path_from_root
 from tools.utils import MACOS, WINDOWS, read_file, read_binary, write_file, write_binary
 from tools import shared, line_endings, building, config
 
@@ -71,6 +71,10 @@ WEBIDL_BINDER = shared.bat_suffix(path_from_root('tools/webidl_binder'))
 EMBUILDER = shared.bat_suffix(path_from_root('embuilder'))
 EMMAKE = shared.bat_suffix(path_from_root('emmake'))
 WASM_DIS = Path(building.get_binaryen_bin(), 'wasm-dis')
+
+
+def get_canonical_temp_dir(temp_dir):
+  return os.path.join(temp_dir, 'emscripten_temp')
 
 
 def delete_contents(pathname):
@@ -357,7 +361,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   # default temporary directory settings. set_temp_dir may be called later to
   # override these
   temp_dir = TEMP_DIR
-  canonical_temp_dir = get_canonical_temp_dir(TEMP_DIR)
+  canonical_temp_dir = get_canonical_temp_dir(temp_dir)
 
   # This avoids cluttering the test runner output, which is stderr too, with compiler warnings etc.
   # Change this to None to get stderr reporting, for debugging purposes
