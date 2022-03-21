@@ -47,6 +47,11 @@ See docs/process.md for more on how version tagging works.
 - The SDL_mixer library can be configured to support MIDIs by passing "mid"
   to the SDL2_MIXER_FORMATS setting. It uses Timidity, and you must provide
   your own instrument sound files and mount them at "/etc/timidity". (#16556)
+- `pip` is now used to install python packages needed by emscripten. If you
+  use emscripten directly (e.g. via a git checkout) this means you will need
+  to run `pip install -r requirements` (as well as the existing `npm install`
+  requirement), after you checkout the code.  As with `npm install`, emsdk users
+  are not effected by this change. (#16551)
 
 3.1.7 - 03/07/2022
 -------------------
