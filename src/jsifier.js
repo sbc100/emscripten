@@ -387,8 +387,8 @@ function ${name}(${args}) {
 
     const shellFile = MINIMAL_RUNTIME ? 'shell_minimal.js' : 'shell.js';
 
-    const shellParts = read(shellFile).split('{{BODY}}');
-    print(processMacros(preprocess(shellParts[0], shellFile)));
+    const shellContents = read(shellFile);
+    print(processMacros(preprocess(shellContents, shellFile)));
     let pre;
     if (MINIMAL_RUNTIME) {
       pre = processMacros(preprocess(read('preamble_minimal.js'), 'preamble_minimal.js'));
@@ -451,8 +451,6 @@ function ${name}(${args}) {
     const postFile = MINIMAL_RUNTIME ? 'postamble_minimal.js' : 'postamble.js';
     const post = processMacros(preprocess(read(postFile), postFile));
     print(post);
-
-    print(processMacros(preprocess(shellParts[1], shellFile)));
 
     print('\n//FORWARDED_DATA:' + JSON.stringify({
       libraryFunctions: libraryFunctions,
