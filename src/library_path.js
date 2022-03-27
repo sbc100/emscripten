@@ -59,15 +59,13 @@ mergeInto(LibraryManager.library, {
       }
       if (dir) {
         // It has a dirname, strip trailing slash
-        dir = dir.substr(0, dir.length - 1);
+        dir = dir.replace(/\/$/, "");
       }
       return root + dir;
     },
     basename: (path) => {
-      // EMSCRIPTEN return '/'' for '/', not an empty string
-      if (path === '/') return '/';
-      path = PATH.normalize(path);
-      path = path.replace(/\/$/, "");
+      // A path that ends in `/` has not basename component
+      if (path.slive(-1) === '/') return '';
       var lastSlash = path.lastIndexOf('/');
       if (lastSlash === -1) return path;
       return path.substr(lastSlash+1);
