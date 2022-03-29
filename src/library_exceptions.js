@@ -5,7 +5,6 @@
  */
 
 var LibraryExceptions = {
-  $uncaughtExceptionCount: '0',
   $exceptionLast: '0',
   $exceptionCaught: ' []',
 
@@ -98,45 +97,13 @@ var LibraryExceptions = {
     };
   },
 
-  // Here, we throw an exception after recording a couple of values that we need to remember
-  // We also remember that it was the last exception thrown as we need to know that later.
-  __cxa_throw__sig: 'viii',
-  __cxa_throw__deps: ['$ExceptionInfo', '$exceptionLast', '$uncaughtExceptionCount'],
-  __cxa_throw: function(ptr, type, destructor) {
+  __cxa_throw_js__sig: 'vi',
+  __cxa_throw_js__deps: ['$ExceptionInfo'],
+  __cxa_throw_js: function(ptr) {
 #if EXCEPTION_DEBUG
-    err('__cxa_throw: ' + [ptrToString(ptr), type, ptrToString(destructor)]);
-#endif
     var info = new ExceptionInfo(ptr);
-    // Initialize ExceptionInfo content after it was allocated in __cxa_allocate_exception.
-    info.init(type, destructor);
-    exceptionLast = ptr;
-    uncaughtExceptionCount++;
-    {{{ makeThrow('ptr') }}}
-  },
-
-  // This exception will be caught twice, but while begin_catch runs twice,
-  // we early-exit from end_catch when the exception has been rethrown, so
-  // pop that here from the caught exceptions.
-  __cxa_rethrow__deps: ['$exceptionCaught', '$exceptionLast', '$uncaughtExceptionCount'],
-  __cxa_rethrow__sig: 'v',
-  __cxa_rethrow: function() {
-    var info = exceptionCaught.pop();
-    if (!info) {
-      abort('no exception to throw');
-    }
-    var ptr = info.excPtr;
-    if (!info.get_rethrown()) {
-      // Only pop if the corresponding push was through rethrow_primary_exception
-      exceptionCaught.push(info);
-      info.set_rethrown(true);
-      info.set_caught(false);
-      uncaughtExceptionCount++;
-    }
-#if EXCEPTION_DEBUG
-    err('__cxa_rethrow, popped ' +
-      [ptrToString(ptr), exceptionLast, 'stack', exceptionCaught]);
+    err('__cxa_throw_js: ' + [ptrToString(ptr), info.get_type(), ptrToString(info.get_destructor())]);
 #endif
-    exceptionLast = ptr;
     {{{ makeThrow('ptr') }}}
   },
 
@@ -144,9 +111,8 @@ var LibraryExceptions = {
     return type;
   },
 
-  __cxa_begin_catch__deps: ['$exceptionCaught', '__cxa_increment_exception_refcount',
-                            '$uncaughtExceptionCount'],
-  __cxa_begin_catch: function(ptr) {
+  __cxa_begin_catch_js__deps: ['$exceptionCaught', '__cxa_increment_exception_refcount'],
+  __cxa_begin_catch_js: function(ptr) {
     var info = new ExceptionInfo(ptr);
     if (!info.get_caught()) {
       info.set_caught(true);
@@ -190,11 +156,6 @@ var LibraryExceptions = {
     err('__cxa_get_exception_ptr ' + ptrToString(ptr) + ' -> ' + ptrToString(rtn));
 #endif
     return rtn;
-  },
-
-  __cxa_uncaught_exceptions__deps: ['$uncaughtExceptionCount'],
-  __cxa_uncaught_exceptions: function() {
-    return uncaughtExceptionCount;
   },
 
   __cxa_call_unexpected: function(exception) {

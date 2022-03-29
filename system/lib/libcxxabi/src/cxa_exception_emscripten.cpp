@@ -25,6 +25,10 @@
 #define DEBUG(...)
 #endif
 
+extern "C" {
+_LIBCXXABI_NORETURN void __cxa_throw_js(void *thrown_object);
+}
+
 namespace __cxxabiv1 {
 
 //  Utility routines
@@ -91,6 +95,33 @@ void __cxa_free_exception(void *thrown_object) _NOEXCEPT {
     __aligned_free_with_fallback((void *)raw_buffer);
 }
 
+void
+__cxa_throw(void *thrown_object, std::type_info *tinfo, void (*dest)(void *)) {
+    __cxa_eh_globals *globals = __cxa_get_globals();
+    __cxa_exception* exception_header = cxa_exception_from_thrown_object(thrown_object);
+    exception_header->exceptionType = tinfo;
+    exception_header->exceptionDestructor = dest;
+    exception_header->referenceCount = 1;  // This is a newly allocated exception, no need for thread safety.
+    globals->uncaughtExceptions += 1;   // Not atomically, since globals are thread-local
+    globals->exceptionLast = thrown_object;
+    __cxa_throw_js(thrown_object);
+}
+
+void __cxa_rethrow() {
+    __cxa_eh_globals* globals = __cxa_get_globals();
+    __cxa_exception* exception_header = globals->caughtExceptions;
+    if (NULL == exception_header)
+        std::terminate();      // throw; called outside of a exception handler
+    if (exception_header->rethrown) {
+      exception_header->rethrown = true;
+      exception_header->caught = false;
+      globals->uncaughtExceptionCount++;
+    }
+
+    globals->exceptionLast = thrown_object_from_cxa_exception(exception_header);
+    __cxa_throw_js(thrown_object_from_cxa_exception(exception_header));
+}
+
 /*
     If thrown_object is not null, atomically increment the referenceCount field
     of the __cxa_exception header associated with the thrown object referred to
@@ -132,6 +163,19 @@ void __cxa_decrement_exception_refcount(void *thrown_object) _NOEXCEPT {
             __cxa_free_exception(thrown_object);
         }
     }
+}
+
+bool
+__cxa_uncaught_exception() _NOEXCEPT { return __cxa_uncaught_exceptions() != 0; }
+
+unsigned int
+__cxa_uncaught_exceptions() _NOEXCEPT
+{
+    // This does not report foreign exceptions in flight
+    __cxa_eh_globals* globals = __cxa_get_globals_fast();
+    if (globals == 0)
+        return 0;
+    return globals->uncaughtExceptions;
 }
 
 }  // extern "C"

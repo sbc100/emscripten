@@ -1187,7 +1187,10 @@ class libcxxabi(NoExceptLibrary, MTLibrary):
     if self.eh_mode == Exceptions.NONE:
       filenames += ['cxa_noexception.cpp']
     elif self.eh_mode == Exceptions.EMSCRIPTEN:
-      filenames += ['cxa_exception_emscripten.cpp']
+      filenames += [
+        'cxa_exception_emscripten.cpp',
+        'cxa_exception_storage.cpp',
+      ]
     elif self.eh_mode == Exceptions.WASM:
       filenames += [
         'cxa_exception_storage.cpp',

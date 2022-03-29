@@ -169,6 +169,8 @@ static_assert(offsetof(__cxa_dependent_exception, primaryException) +
               "primaryException has wrong negative offset");
 #endif
 
+#endif // !__USING_EMSCRIPTEN_EXCEPTIONS__
+
 struct _LIBCXXABI_HIDDEN __cxa_eh_globals {
     __cxa_exception *   caughtExceptions;
     unsigned int        uncaughtExceptions;
@@ -182,8 +184,6 @@ extern "C" _LIBCXXABI_FUNC_VIS __cxa_eh_globals * __cxa_get_globals_fast ();
 
 extern "C" _LIBCXXABI_FUNC_VIS void * __cxa_allocate_dependent_exception ();
 extern "C" _LIBCXXABI_FUNC_VIS void __cxa_free_dependent_exception (void * dependent_exception);
-
-#endif // !__USING_EMSCRIPTEN_EXCEPTIONS__
 
 }  // namespace __cxxabiv1
 
