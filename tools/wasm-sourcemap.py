@@ -280,11 +280,13 @@ def build_sourcemap(entries, code_section_offset, prefixes, collect_sources, bas
     if prefixes.provided():
       source_name = prefixes.sources.resolve(file_name)
     else:
-      if not os.path.isabs(file_name):
-        try:
+      file_name = os.path.abspath(file_name)
+      try:
+        common = os.path.commonpath([file_name, base_path])
+        if os.path.commonpath([file_name, base_path]):
           file_name = os.path.relpath(file_name, base_path)
-        except ValueError:
-          file_name = os.path.abspath(file_name)
+      except ValueError:
+        pass
       file_name = normalize_path(file_name)
       source_name = file_name
     if source_name not in sources_map:
