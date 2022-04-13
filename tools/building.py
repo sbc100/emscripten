@@ -1211,10 +1211,12 @@ def wasm2js(js_file, wasm_file, opt_level, minify_whitespace, use_closure_compil
   return js_file
 
 
-def strip(infile, outfile, debug=False, producers=False):
+def strip(infile, outfile, dwarf=False, producers=False, names=False):
   cmd = [LLVM_OBJCOPY, infile, outfile]
-  if debug:
+  if dwarf:
     cmd += ['--remove-section=.debug*']
+  if names:
+    cmd += ['--remove-section=name']
   if producers:
     cmd += ['--remove-section=producers']
   check_call(cmd)

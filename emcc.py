@@ -3070,6 +3070,8 @@ def parse_args(newargs):
     elif arg.startswith('-g'):
       options.requested_debug = arg
       requested_level = strip_prefix(arg, '-g') or '3'
+      if requested_level.startswith('force_dwarf'):
+        exit_with_error('gforce_dwarf was a temporary option and is no longer necessary (use -g)')
       if is_int(requested_level):
         # the -gX value is the debug level (-g1, -g2, etc.)
         settings.DEBUG_LEVEL = validate_arg_level(requested_level, 4, 'invalid debug level: ' + arg)
@@ -3084,9 +3086,7 @@ def parse_args(newargs):
             settings.GENERATE_SOURCE_MAP = 1
             diagnostics.warning('deprecated', 'please replace -g4 with -gsource-map')
       else:
-        if requested_level.startswith('force_dwarf'):
-          exit_with_error('gforce_dwarf was a temporary option and is no longer necessary (use -g)')
-        elif requested_level.startswith('separate-dwarf'):
+        if requested_level.startswith('separate-dwarf'):
           # emit full DWARF but also emit it in a file on the side
           newargs[i] = '-g'
           # if a file is provided, use that; otherwise use the default location
@@ -3101,12 +3101,16 @@ def parse_args(newargs):
         elif requested_level == 'source-map':
           settings.GENERATE_SOURCE_MAP = 1
           newargs[i] = '-g'
-        # a non-integer level can be something like -gline-tables-only. keep
-        # the flag for the clang frontend to emit the appropriate DWARF info.
-        # set the emscripten debug level to 3 so that we do not remove that
-        # debug info during link (during compile, this does not make a
-        # difference).
-        settings.DEBUG_LEVEL = 3
+        if requested_level == 'names':
+          settings.EMIT_NAME_SECTION = 1
+          newargs[i] = '-g'
+        else:
+          # a non-integer level can be something like -gline-tables-only. keep
+          # the flag for the clang frontend to emit the appropriate DWARF info.
+          # set the emscripten debug level to 3 so that we do not remove that
+          # debug info during link (during compile, this does not make a
+          # difference).
+          settings.DEBUG_LEVEL = 3
     elif check_flag('-profiling') or check_flag('--profiling'):
       settings.DEBUG_LEVEL = max(settings.DEBUG_LEVEL, 2)
     elif check_flag('-profiling-funcs') or check_flag('--profiling-funcs'):
@@ -3298,8 +3302,9 @@ def phase_binaryen(target, options, wasm_target):
   # note that wasm-ld can strip DWARF info for us too (--strip-debug), but it
   # also strips the Names section. so to emit just the Names section we don't
   # tell wasm-ld to strip anything, and we do it here.
-  strip_debug = settings.DEBUG_LEVEL < 3
+  strip_dwarf = settings.DEBUG_LEVEL < 3
   strip_producers = not settings.EMIT_PRODUCERS_SECTION
+  strip_names = not settings.EMIT_NAME_SECTION
   # run wasm-opt if we have work for it: either passes, or if we are using
   # source maps (which requires some extra processing to keep the source map
   # but remove DWARF)
@@ -3307,10 +3312,17 @@ def phase_binaryen(target, options, wasm_target):
   if passes or settings.GENERATE_SOURCE_MAP:
     # if we need to strip certain sections, and we have wasm-opt passes
     # to run anyhow, do it with them.
-    if strip_debug:
+    if strip_dwarf and strip_names:
       passes += ['--strip-debug']
+      strip_dwarf = False
+      strip_names = False
+    elif strip_dwarf:
+      passes += ['--strip-dwarf']
+      strip_dwarf = False
+
     if strip_producers:
       passes += ['--strip-producers']
+      strip_producers = False
     # if asyncify is used, we will use it in the next stage, and so if it is
     # the only reason we need intermediate debug info, we can stop keeping it
     if settings.ASYNCIFY:
@@ -3323,11 +3335,12 @@ def phase_binaryen(target, options, wasm_target):
                           args=passes,
                           debug=intermediate_debug_info)
     building.save_intermediate(wasm_target, 'byn.wasm')
-  elif strip_debug or strip_producers:
+
+  if strip_dwarf or strip_producers or strip_names:
     # we are not running wasm-opt. if we need to strip certain sections
     # then do so using llvm-objcopy which is fast and does not rewrite the
     # code (which is better for debug info)
-    building.strip(wasm_target, wasm_target, debug=strip_debug, producers=strip_producers)
+    building.strip(wasm_target, wasm_target, dwarf=strip_dwarf, producers=strip_producers, names=strip_names)
     building.save_intermediate(wasm_target, 'strip.wasm')
 
   if settings.EVAL_CTORS:
