@@ -294,6 +294,9 @@ function ${name}(${args}) {
         error(`JS library directive ${ident}__deps=${deps.toString()} is of type ${typeof deps}, but it should be an array!`);
         return;
       }
+      // `__autodeps` are added to symbols during processMacros
+      const autodeps = LibraryManager.library[ident + '__autodeps'] || [];
+      deps.push(...autodeps);
       const isUserSymbol = LibraryManager.library[ident + '__user'];
       deps.forEach((dep) => {
         if (typeof snippet == 'string' && !(dep in LibraryManager.library)) {

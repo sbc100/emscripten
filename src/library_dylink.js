@@ -980,15 +980,15 @@ var LibraryDylink = {
     function errorCallback(e) {
       var filename = UTF8ToString({{{ makeGetValue('handle', C_STRUCTS.dso.name, '*') }}});
       dlSetError('Could not load dynamic lib: ' + filename + '\n' + e);
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('_emscripten_dlopen_js') }}}
       callUserCallback(function () { {{{ makeDynCall('vi', 'onerror') }}}(handle); });
     }
     function successCallback() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('_emscripten_dlopen_js') }}}
       callUserCallback(function () { {{{ makeDynCall('vii', 'onsuccess') }}}(handle); });
     }
 
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('_emscripten_dlopen_js') }}}
     var promise = dlopenInternal(handle, { loadAsync: true });
     if (promise) {
       promise.then(successCallback, errorCallback);

@@ -749,7 +749,7 @@ mergeInto(LibraryManager.library, {
 
     // FIXME(sbc): This has no corresponding Pop so will currently keep the
     // runtime alive indefinitely.
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('$_setNetworkCallback') }}}
     Module['websocket']['on'](event, callback ? _callback : null);
   },
   emscripten_set_socket_error_callback__deps: ['$_setNetworkCallback'],

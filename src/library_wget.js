@@ -20,14 +20,14 @@ var LibraryWget = {
   emscripten_async_wget__proxy: 'sync',
   emscripten_async_wget__sig: 'viiii',
   emscripten_async_wget: function(url, file, onload, onerror) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_async_wget') }}}
 
     var _url = UTF8ToString(url);
     var _file = UTF8ToString(file);
     _file = PATH_FS.resolve(_file);
     function doCallback(callback) {
       if (callback) {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_async_wget') }}}
         callUserCallback(function() {
           withStackSave(function() {
             {{{ makeDynCall('vi', 'callback') }}}(allocateUTF8OnStack(_file));
@@ -63,9 +63,9 @@ var LibraryWget = {
   emscripten_async_wget_data__proxy: 'sync',
   emscripten_async_wget_data__sig: 'viiii',
   emscripten_async_wget_data: function(url, arg, onload, onerror) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_async_wget_data') }}}
     asyncLoad(UTF8ToString(url), function(byteArray) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_wget_data') }}}
       callUserCallback(function() {
         var buffer = _malloc(byteArray.length);
         HEAPU8.set(byteArray, buffer);
@@ -74,7 +74,7 @@ var LibraryWget = {
       });
     }, function() {
       if (onerror) {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_async_wget_data') }}}
         callUserCallback(function() {
           {{{ makeDynCall('vi', 'onerror') }}}(arg);
         });
@@ -86,7 +86,7 @@ var LibraryWget = {
   emscripten_async_wget2__proxy: 'sync',
   emscripten_async_wget2__sig: 'iiiiiiiii',
   emscripten_async_wget2: function(url, file, request, param, arg, onload, onerror, onprogress) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_async_wget2') }}}
 
     var _url = UTF8ToString(url);
     var _file = UTF8ToString(file);
@@ -105,7 +105,7 @@ var LibraryWget = {
 
     // LOAD
     http.onload = function http_onload(e) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_wget2') }}}
       if (http.status >= 200 && http.status < 300) {
         // if a file exists there, we overwrite it
         try {
@@ -129,7 +129,7 @@ var LibraryWget = {
 
     // ERROR
     http.onerror = function http_onerror(e) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_wget2') }}}
       if (onerror) {{{ makeDynCall('viii', 'onerror') }}}(handle, arg, http.status);
       delete wget.wgetRequests[handle];
     };
@@ -144,7 +144,7 @@ var LibraryWget = {
 
     // ABORT
     http.onabort = function http_onabort(e) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_wget2') }}}
       delete wget.wgetRequests[handle];
     };
 

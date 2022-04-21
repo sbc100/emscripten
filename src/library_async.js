@@ -215,7 +215,7 @@ mergeInto(LibraryManager.library, {
 #if ASYNCIFY_DEBUG
         err('ASYNCIFY: stop unwind');
 #endif
-        {{{ runtimeKeepalivePush(); }}}
+        {{{ runtimeKeepalivePush('$Asyncify'); }}}
         // Keep the runtime alive so that a re-wind can be done later.
 #if ASYNCIFY == 1
         runAndAbortIfError(_asyncify_stop_unwind);
@@ -302,7 +302,7 @@ mergeInto(LibraryManager.library, {
 #endif
       // Once we have rewound and the stack we no longer need to artificially
       // keep the runtime alive.
-      {{{ runtimeKeepalivePop(); }}}
+      {{{ runtimeKeepalivePop('$Asyncify'); }}}
       return start();
 #endif
     },

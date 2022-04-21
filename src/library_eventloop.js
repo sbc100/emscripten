@@ -73,9 +73,9 @@ LibraryJSEventLoop = {
   emscripten_set_immediate__deps: ['$polyfillSetImmediate', '$callUserCallback'],
   emscripten_set_immediate: function(cb, userData) {
     polyfillSetImmediate();
-    {{{ runtimeKeepalivePush(); }}}
+    {{{ runtimeKeepalivePush('emscripten_set_immediate') }}}
     return emSetImmediate(function() {
-      {{{ runtimeKeepalivePop(); }}}
+      {{{ runtimeKeepalivePop('emscripten_set_immediate') }}}
       callUserCallback(function() {
         {{{ makeDynCall('vi', 'cb') }}}(userData);
       });
@@ -84,7 +84,7 @@ LibraryJSEventLoop = {
 
   emscripten_clear_immediate__deps: ['$polyfillSetImmediate'],
   emscripten_clear_immediate: function(id) {
-    {{{ runtimeKeepalivePop(); }}}
+    {{{ runtimeKeepalivePop('emscripten_clear_immediate') }}}
     emClearImmediate(id);
   },
 
@@ -92,23 +92,23 @@ LibraryJSEventLoop = {
   emscripten_set_immediate_loop: function(cb, userData) {
     polyfillSetImmediate();
     function tick() {
-      {{{ runtimeKeepalivePop(); }}}
+      {{{ runtimeKeepalivePop('emscripten_set_immediate_loop') }}}
       callUserCallback(function() {
         if ({{{ makeDynCall('ii', 'cb') }}}(userData)) {
-          {{{ runtimeKeepalivePush(); }}}
+          {{{ runtimeKeepalivePush('emscripten_set_immediate_loop') }}}
           emSetImmediate(tick);
         }
       });
     }
-    {{{ runtimeKeepalivePush(); }}}
+    {{{ runtimeKeepalivePush('emscripten_set_immediate_loop'); }}}
     return emSetImmediate(tick);
   },
 
   emscripten_set_timeout__deps: ['$callUserCallback'],
   emscripten_set_timeout: function(cb, msecs, userData) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_set_timeout') }}}
     return setTimeout(function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_set_timeout') }}}
       callUserCallback(function() {
         {{{ makeDynCall('vi', 'cb') }}}(userData);
       });
@@ -124,24 +124,24 @@ LibraryJSEventLoop = {
     function tick() {
       var t = performance.now();
       var n = t + msecs;
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_set_timeout_loop') }}}
       callUserCallback(function() {
         if ({{{ makeDynCall('idi', 'cb') }}}(t, userData)) {
           // Save a little bit of code space: modern browsers should treat
           // negative setTimeout as timeout of 0
           // (https://stackoverflow.com/questions/8430966/is-calling-settimeout-with-a-negative-delay-ok)
-          {{{ runtimeKeepalivePush() }}}
+          {{{ runtimeKeepalivePush('emscripten_set_timeout_loop') }}}
           setTimeout(tick, n - performance.now());
         }
       });
     }
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_set_timeout_loop') }}}
     return setTimeout(tick, 0);
   },
 
   emscripten_set_interval__deps: ['$callUserCallback'],
   emscripten_set_interval: function(cb, msecs, userData) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_set_interval') }}}
     return setInterval(function() {
       callUserCallback(function() {
         {{{ makeDynCall('vi', 'cb') }}}(userData)
@@ -150,7 +150,7 @@ LibraryJSEventLoop = {
   },
 
   emscripten_clear_interval: function(id) {
-    {{{ runtimeKeepalivePop() }}}
+    {{{ runtimeKeepalivePop('emscripten_clear_interval') }}}
     clearInterval(id);
   },
 };

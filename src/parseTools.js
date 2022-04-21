@@ -1102,12 +1102,23 @@ function makeMalloc(source, param) {
   return `abort('malloc was not included, but is needed in ${source}. Adding "_malloc" to EXPORTED_FUNCTIONS should fix that. This may be a bug in the compiler, please file an issue.');`;
 }
 
+function addDep(symbol, dep) {
+  const key = symbol + '__autodeps'
+  if (!(key in LibraryManager.library)) {
+    LibraryManager.library[key] = [];
+  }
+  LibraryManager.library[key].push(dep);
+}
+
 // Adds a call to runtimeKeepalivePush, if needed by the current build
 // configuration.
 // We skip this completely in MINIMAL_RUNTIME and also in builds that
 // don't ever need to exit the runtime.
-function runtimeKeepalivePush() {
+function runtimeKeepalivePush(symbolName) {
   if (MINIMAL_RUNTIME || (EXIT_RUNTIME == 0 && USE_PTHREADS == 0)) return '';
+  if (symbolName) {
+    addDep(symbolName, '$runtimeKeepalivePush');
+  }
   return 'runtimeKeepalivePush();';
 }
 
@@ -1115,8 +1126,11 @@ function runtimeKeepalivePush() {
 // configuration.
 // We skip this completely in MINIMAL_RUNTIME and also in builds that
 // don't ever need to exit the runtime.
-function runtimeKeepalivePop() {
+function runtimeKeepalivePop(symbolName) {
   if (MINIMAL_RUNTIME || (EXIT_RUNTIME == 0 && USE_PTHREADS == 0)) return '';
+  if (symbolName) {
+    addDep(symbolName, '$runtimeKeepalivePop');
+  }
   return 'runtimeKeepalivePop();';
 }
 

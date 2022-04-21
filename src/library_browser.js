@@ -513,9 +513,9 @@ var LibraryBrowser = {
       return safeSetTimeout(func);
     },
     safeRequestAnimationFrame: function(func) {
-      {{{ runtimeKeepalivePush() }}}
+      {{{ runtimeKeepalivePush('$Browser') }}}
       return Browser.requestAnimationFrame(function() {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('$Browser') }}}
         callUserCallback(func);
       });
     },
@@ -780,7 +780,7 @@ var LibraryBrowser = {
   emscripten_run_preload_plugins__proxy: 'sync',
   emscripten_run_preload_plugins__sig: 'iiii',
   emscripten_run_preload_plugins: function(file, onload, onerror) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_run_preload_plugins') }}}
 
     var _file = UTF8ToString(file);
     var data = FS.analyzePath(_file);
@@ -790,11 +790,11 @@ var LibraryBrowser = {
       PATH.basename(_file),
       new Uint8Array(data.object.contents), true, true,
       () => {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_run_preload_plugins') }}}
         if (onload) {{{ makeDynCall('vi', 'onload') }}}(file);
       },
       () => {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_run_preload_plugins') }}}
         if (onerror) {{{ makeDynCall('vi', 'onerror') }}}(file);
       },
       true // don'tCreateFile - it's already there
@@ -805,7 +805,7 @@ var LibraryBrowser = {
   emscripten_run_preload_plugins_data__proxy: 'sync',
   emscripten_run_preload_plugins_data__sig: 'viiiiii',
   emscripten_run_preload_plugins_data: function(data, size, suffix, arg, onload, onerror) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_run_preload_plugins_data') }}}
 
     var _suffix = UTF8ToString(suffix);
     if (!Browser.asyncPrepareDataCounter) Browser.asyncPrepareDataCounter = 0;
@@ -819,11 +819,11 @@ var LibraryBrowser = {
       {{{ makeHEAPView('U8', 'data', 'data + size') }}},
       true, true,
       () => {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_run_preload_plugins_data') }}}
         if (onload) {{{ makeDynCall('vii', 'onload') }}}(arg, cname);
       },
       () => {
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_run_preload_plugins_data') }}}
         if (onerror) {{{ makeDynCall('vi', 'onerror') }}}(arg);
       },
       true // don'tCreateFile - it's already there
@@ -850,12 +850,12 @@ var LibraryBrowser = {
       return onerror ? onerror() : undefined;
     }
 #endif
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_async_load_script') }}}
 
     assert(runDependencies === 0, 'async_load_script must be run when no other dependencies are active');
     var script = document.createElement('script');
     script.onload = function script_onload() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_load_script') }}}
       if (onload) {
         if (runDependencies > 0) {
           dependenciesFulfilled = onload;
@@ -865,7 +865,7 @@ var LibraryBrowser = {
       }
     };
     script.onerror = () => {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('emscripten_async_load_script') }}}
       if (onerror) onerror();
     };
     script.src = UTF8ToString(url);
@@ -893,7 +893,7 @@ var LibraryBrowser = {
     }
 
     if (!Browser.mainLoop.running) {
-      {{{ runtimeKeepalivePush() }}}
+      {{{ runtimeKeepalivePush('emscripten_set_main_loop_timing') }}}
       Browser.mainLoop.running = true;
     }
     if (mode == 0 /*EM_TIMING_SETTIMEOUT*/) {
@@ -986,7 +986,7 @@ var LibraryBrowser = {
 #if RUNTIME_DEBUG
         err('main loop exiting..');
 #endif
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('$setMainLoop') }}}
 #if !MINIMAL_RUNTIME
         maybeExit();
 #endif
@@ -1251,7 +1251,7 @@ var LibraryBrowser = {
       if (msg.data['finalResponse']) {
         info.awaited--;
         info.callbacks[callbackId] = null; // TODO: reuse callbackIds, compress this
-        {{{ runtimeKeepalivePop() }}}
+        {{{ runtimeKeepalivePop('emscripten_create_worker') }}}
       }
       var data = msg.data['data'];
       if (data) {
@@ -1291,7 +1291,7 @@ var LibraryBrowser = {
       // the runtime alive at least long enough to receive it.
       // The corresponding runtimeKeepalivePop is in the `finalResponse`
       // handler above.
-      {{{ runtimeKeepalivePush() }}}
+      {{{ runtimeKeepalivePush('emscripten_call_worker') }}}
       callbackId = info.callbacks.length;
       info.callbacks.push({
         func: {{{ makeDynCall('viii', 'callback') }}},

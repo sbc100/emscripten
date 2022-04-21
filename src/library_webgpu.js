@@ -759,9 +759,9 @@ var LibraryWebGPU = {
   wgpuDevicePopErrorScope__deps: ['$callUserCallback', '$allocateUTF8'],
   wgpuDevicePopErrorScope: function(deviceId, callback, userdata) {
     var device = WebGPU.mgrDevice.get(deviceId);
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('wgpuDevicePopErrorScope') }}}
     device["popErrorScope"]().then(function(gpuError) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuDevicePopErrorScope') }}}
       callUserCallback(function() {
         if (!gpuError) {
           {{{ makeDynCall('viii', 'callback') }}}(
@@ -779,7 +779,7 @@ var LibraryWebGPU = {
         }
       });
     }, function(ex) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuDevicePopErrorScope') }}}
       callUserCallback(function() {
         var messagePtr = allocateUTF8(ex.message);
         // TODO: This can mean either the device was lost or the error scope stack was empty. Figure
@@ -1491,14 +1491,14 @@ var LibraryWebGPU = {
     assert(signalValue_low === 0 && signalValue_high === 0, 'signalValue not supported, must be 0');
 #endif
 
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('wgpuQueueOnSubmittedWorkDone') }}}
     queue["onSubmittedWorkDone"]().then(function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuQueueOnSubmittedWorkDone') }}}
       callUserCallback(function() {
         {{{ makeDynCall('vii', 'callback') }}}({{{ gpu.QueueWorkDoneStatus.Success }}}, userdata);
       });
     }, function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuQueueOnSubmittedWorkDone') }}}
       callUserCallback(function() {
         {{{ makeDynCall('vii', 'callback') }}}({{{ gpu.QueueWorkDoneStatus.Error }}}, userdata);
       });
@@ -1932,14 +1932,14 @@ var LibraryWebGPU = {
 
     // `callback` takes (WGPUBufferMapAsyncStatus status, void * userdata)
 
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('wgpuBufferMapAsync') }}}
     buffer["mapAsync"](mode, offset, size).then(function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuBufferMapAsync') }}}
       callUserCallback(function() {
         {{{ makeDynCall('vii', 'callback') }}}({{{ gpu.BufferMapAsyncStatus.Success }}}, userdata);
       });
     }, function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuBufferMapAsync') }}}
       callUserCallback(function() {
         // TODO(kainino0x): Figure out how to pick other error status values.
         {{{ makeDynCall('vii', 'callback') }}}({{{ gpu.BufferMapAsyncStatus.Error }}}, userdata);
@@ -2452,9 +2452,9 @@ var LibraryWebGPU = {
       return;
     }
 
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('wgpuInstanceRequestAdapter') }}}
     navigator["gpu"]["requestAdapter"](opts).then(function(adapter) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuInstanceRequestAdapter') }}}
       callUserCallback(function() {
         if (adapter) {
           var adapterId = WebGPU.mgrAdapter.create(adapter);
@@ -2466,7 +2466,7 @@ var LibraryWebGPU = {
         }
       });
     }, function(ex) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuInstanceRequestAdapter') }}}
       callUserCallback(function() {
         var messagePtr = allocateUTF8(ex.message);
         {{{ makeDynCall('viiii', 'callback') }}}({{{ gpu.RequestAdapterStatus.Error }}}, 0, messagePtr, userdata);
@@ -2589,16 +2589,16 @@ var LibraryWebGPU = {
       if (labelPtr) desc["label"] = UTF8ToString(labelPtr);
     }
 
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('wgpuAdapterRequestDevice') }}}
     adapter["requestDevice"](desc).then(function(device) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuAdapterRequestDevice') }}}
       callUserCallback(function() {
         var deviceWrapper = { queueId: WebGPU.mgrQueue.create(device["queue"]) };
         var deviceId = WebGPU.mgrDevice.create(device, deviceWrapper);
         {{{ makeDynCall('viiii', 'callback') }}}({{{ gpu.RequestDeviceStatus.Success }}}, deviceId, 0, userdata);
       });
     }, function(ex) {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('wgpuAdapterRequestDevice') }}}
       callUserCallback(function() {
         var messagePtr = allocateUTF8(ex.message);
         {{{ makeDynCall('viiii', 'callback') }}}({{{ gpu.RequestDeviceStatus.Error }}}, 0, messagePtr, userdata);

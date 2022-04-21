@@ -118,6 +118,7 @@ function isJsLibraryConfigIdentifier(ident) {
     '__asm',
     '__inline',
     '__deps',
+    '__autodeps',
     '__postset',
     '__docs',
     '__nothrow',

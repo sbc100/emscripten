@@ -3334,7 +3334,7 @@ mergeInto(LibraryManager.library, {
   // Callable in pthread without __proxy needed.
   emscripten_exit_with_live_runtime__sig: 'v',
   emscripten_exit_with_live_runtime: function() {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('emscripten_exit_with_live_runtime') }}}
     throw 'unwind';
   },
 
@@ -3543,9 +3543,9 @@ mergeInto(LibraryManager.library, {
   $safeSetTimeout__deps: ['$callUserCallback'],
   $safeSetTimeout__docs: '/** @param {number=} timeout */',
   $safeSetTimeout: function(func, timeout) {
-    {{{ runtimeKeepalivePush() }}}
+    {{{ runtimeKeepalivePush('$safeSetTimeout') }}}
     return setTimeout(function() {
-      {{{ runtimeKeepalivePop() }}}
+      {{{ runtimeKeepalivePop('$safeSetTimeout') }}}
       callUserCallback(func);
     }, timeout);
   },
@@ -3657,13 +3657,13 @@ mergeInto(LibraryManager.library, {
 });
 
 function autoAddDeps(object, name) {
-  for (var item in object) {
-    if (item.substr(-6) != '__deps') {
-      if (!object[item + '__deps']) {
-        object[item + '__deps'] = [name];
-      } else {
-        object[item + '__deps'].push(name); // add to existing list
+  for (const item of Object.keys(object)) {
+    if (!isJsLibraryConfigIdentifier(item)) {
+      const key = item + '__deps'
+      if (!(key in object)) {
+        object[key] = [];
       }
+      object[key].push(name);
     }
   }
 }
