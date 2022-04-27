@@ -316,7 +316,7 @@ function asmEnsureFloat(value, type) {
 }
 
 function asmCoercion(value, type) {
-  assert(arguments.length == 2, 'asmCoercion takes exactly two arguments');
+  assert(arguments.length === 2, 'makeGetValue takes exactly 2 arguments');
   if (type == 'void') {
     return value;
   }
@@ -336,41 +336,20 @@ function asmFloatToInt(x) {
   return '(~~(' + x + '))';
 }
 
-function makeGetTempDouble(i, type, forSet) { // get an aliased part of the tempDouble temporary storage
-  // Cannot use makeGetValue because it uses us
-  // this is a unique case where we *can* use HEAPF64
-  const heap = getHeapForType(type);
-  const ptr = getFastValue('tempDoublePtr', '+', Runtime.getNativeTypeSize(type) * i);
-  let offset;
-  if (type == 'double') {
-    offset = '(' + ptr + ')>>3';
-  } else {
-    offset = getHeapOffset(ptr, type);
-  }
-  let ret = heap + '[' + offset + ']';
-  if (!forSet) ret = asmCoercion(ret, type);
-  return ret;
-}
-
-function makeSetTempDouble(i, type, value) {
-  return makeGetTempDouble(i, type, true) + '=' + asmEnsureFloat(value, type);
-}
-
 // See makeSetValue
-function makeGetValue(ptr, pos, type, noNeedFirst, unsigned, ignore, align) {
-  assert(typeof align === 'undefined', 'makeGetValue no longer supports align parameter');
+function makeGetValue(ptr, pos, type, _ignored, unsigned) {
+  assert(arguments.length <= 5, 'makeGetValue takes at most 5 arguments');
+  assert(!_ignored);
   if (typeof unsigned !== 'undefined') {
     // TODO(sbc): make this into an error at some point.
     printErr('makeGetValue: Please use u8/u16/u32/u64 unsigned types in favor of additional argument');
-    if (unsigned && type.startsWith('i')) {
+    if (unsigned) {
+      assert(type.startsWith('i'));
       type = 'u' + type.slice(1);
     }
-  } else if (type.startsWith('u')) {
-    // Set `unsigned` based on the type name.
-    unsigned = true;
   }
 
-  const offset = calcFastOffset(ptr, pos, noNeedFirst);
+  const offset = calcFastOffset(ptr, pos);
   if (type === 'i53' || type === 'u53') {
     return 'readI53From' + (unsigned ? 'U' : 'I') + '64(' + offset + ')';
   }
@@ -384,59 +363,30 @@ function makeGetValue(ptr, pos, type, noNeedFirst, unsigned, ignore, align) {
 }
 
 /**
- * @param {nunber} ptr The pointer. Used to find both the slab and the offset in that slab. If the pointer
+ * @param {number} ptr The pointer. Used to find both the slab and the offset in that slab. If the pointer
  *            is just an integer, then this is almost redundant, but in general the pointer type
  *            may in the future include information about which slab as well. So, for now it is
  *            possible to put |0| here, but if a pointer is available, that is more future-proof.
- * @param {nunber} pos The position in that slab - the offset. Added to any offset in the pointer itself.
+ * @param {number} pos The position in that slab - the offset. Added to any offset in the pointer itself.
  * @param {number} value The value to set.
  * @param {string} type A string defining the type. Used to find the slab (HEAPU8, HEAP16, HEAPU32, etc.).
  *             which means we should write to all slabs, ignore type differences if any on reads, etc.
- * @param {bool} noNeedFirst Whether to ignore the offset in the pointer itself.
- * @param {bool} ignore: legacy, ignored.
- * @param {number} align: legacy, ignored.
- * @param {string} sep: TODO
- * @return {TODO}
+ * @return {string}
  */
-function makeSetValue(ptr, pos, value, type, noNeedFirst, ignore, align, sep = ';') {
-  assert(typeof align === 'undefined', 'makeSetValue no longer supports align parameter');
-  if (type == 'double' && (align < 8)) {
-    return '(' + makeSetTempDouble(0, 'double', value) + ',' +
-            makeSetValue(ptr, pos, makeGetTempDouble(0, 'i32'), 'i32', noNeedFirst, ignore, align, ',') + ',' +
-            makeSetValue(ptr, getFastValue(pos, '+', Runtime.getNativeTypeSize('i32')), makeGetTempDouble(1, 'i32'), 'i32', noNeedFirst, ignore, align, ',') + ')';
-  } else if (type == 'i64' && (!WASM_BIGINT || !MEMORY64)) {
+function makeSetValue(ptr, pos, value, type) {
+  assert(arguments.length <= 4, 'makeSetValue takes at most 4 arguments');
+
+  if (type == 'i64' && (!WASM_BIGINT || !MEMORY64)) {
     // If we lack either BigInt support or Memory64 then we must fall back to an
     // unaligned read of a 64-bit value: without BigInt we do not have HEAP64,
     // and without Memory64 i64 fields are not guaranteed to be aligned to 64
     // bits, so HEAP64[ptr>>3] might be broken.
     return '(tempI64 = [' + splitI64(value) + '],' +
-            makeSetValue(ptr, pos, 'tempI64[0]', 'i32', noNeedFirst, ignore, align, ',') + ',' +
-            makeSetValue(ptr, getFastValue(pos, '+', Runtime.getNativeTypeSize('i32')), 'tempI64[1]', 'i32', noNeedFirst, ignore, align, ',') + ')';
+            makeSetValue(ptr, pos, 'tempI64[0]', 'i32') + ',' +
+            makeSetValue(ptr, getFastValue(pos, '+', Runtime.getNativeTypeSize('i32')), 'tempI64[1]', 'i32') + ')';
   }
 
-  const bits = getBits(type);
-  const needSplitting = bits > 0 && !isPowerOfTwo(bits); // an unnatural type like i24
-  if (needSplitting) {
-    // Alignment is important here, or we need to split this up for other reasons.
-    const bytes = Runtime.getNativeTypeSize(type);
-    if (needSplitting) {
-      let ret = '';
-      if (isIntImplemented(type)) {
-        ret += 'tempBigInt=' + value + sep;
-        for (let i = 0; i < bytes; i++) {
-          ret += makeSetValue(ptr, getFastValue(pos, '+', i), 'tempBigInt&0xff', 'i8', noNeedFirst, ignore, 1);
-          if (i < bytes - 1) ret += sep + 'tempBigInt = tempBigInt>>8' + sep;
-        }
-      } else {
-        ret += makeSetValue('tempDoublePtr', 0, value, type, noNeedFirst, ignore, 8) + sep;
-        ret += makeCopyValues(getFastValue(ptr, '+', pos), 'tempDoublePtr', Runtime.getNativeTypeSize(type), type, null, align, sep);
-      }
-      return ret;
-    }
-  }
-
-  const offset = calcFastOffset(ptr, pos, noNeedFirst);
-
+  const offset = calcFastOffset(ptr, pos);
   const slab = getHeapForType(type);
   if (slab == 'HEAPU64' || slab == 'HEAP64') {
     value = `BigInt(${value})`;
@@ -594,8 +544,8 @@ function getFastValue(a, op, b, type) {
   return `(${a})${op}(${b})`;
 }
 
-function calcFastOffset(ptr, pos, noNeedFirst) {
-  assert(!noNeedFirst);
+function calcFastOffset(ptr, pos) {
+  assert(arguments.length === 2, 'calcFastOffset takes exactly 2 arguments');
   if (typeof ptr == 'bigint') ptr = Number(ptr);
   if (typeof pos == 'bigint') pos = Number(pos);
   return getFastValue(ptr, '+', pos, 'i32');
