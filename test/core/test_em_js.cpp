@@ -93,6 +93,11 @@ EM_JS(int, _prefixed, (void), {
   return 1;
 });
 
+EM_JS(int, unused_function, (void), {
+  out("unused function");
+  return 42;
+});
+
 int main() {
   printf("BEGIN\n");
   noarg();

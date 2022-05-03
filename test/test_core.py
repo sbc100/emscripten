@@ -2251,7 +2251,8 @@ int main(int argc, char **argv) {
       self.setup_node_pthreads()
 
     self.do_core_test('test_em_js.cpp', force_c=force_c)
-    self.assertContained("no args returning int", read_file('test_em_js.js'))
+    self.assertContained('no args returning int', read_file('test_em_js.js'))
+    self.assertNotContained('unused function', read_file('test_em_js.js'))
 
   @no_wasm2js('WASM_BIGINT is not compatible with wasm2js')
   def test_em_js_i64(self):

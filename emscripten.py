@@ -400,13 +400,13 @@ def emscript(in_wasm, out_wasm, outfile_js, memfile):
     pre = apply_static_code_hooks(forwarded_json, pre)
 
   asm_consts = create_asm_consts(metadata)
-  em_js_funcs = create_em_js(metadata)
+  em_js_funcs, em_js_bodies = create_em_js(out_wasm, metadata)
   asm_const_pairs = ['%s: %s' % (key, value) for key, value in asm_consts]
   asm_const_map = 'var ASM_CONSTS = {\n  ' + ',  \n '.join(asm_const_pairs) + '\n};\n'
   pre = pre.replace(
     '// === Body ===',
     ('// === Body ===\n\n' + asm_const_map +
-     '\n'.join(em_js_funcs) + '\n'))
+     '\n'.join(em_js_bodies) + '\n'))
 
   with open(outfile_js, 'w', encoding='utf-8') as out:
     out.write(normalize_line_endings(pre))
@@ -574,10 +574,18 @@ def create_asm_consts(metadata):
   return asm_consts
 
 
-def create_em_js(metadata):
+def create_em_js(wasm_file, metadata):
+  if not metadata['emJsFuncs']:
+    return [], []
   em_js_funcs = []
+  em_js_bodies = []
   separator = '<::>'
-  for name, raw in metadata.get('emJsFuncs', {}).items():
+  imports = webassembly.Module(wasm_file).get_imports()
+  import_names = [i.field for i in imports]
+  for name, raw in metadata['emJsFuncs'].items():
+    # Skip over emJsFuncs that are not actually importe/used
+    if name not in import_names:
+      continue
     assert separator in raw
     args, body = raw.split(separator, 1)
     args = args[1:-1]
@@ -588,9 +596,10 @@ def create_em_js(metadata):
     arg_names = [arg.split()[-1].replace("*", "") for arg in args if arg]
     args = ','.join(arg_names)
     func = f'function {name}({args}) {body}'
-    em_js_funcs.append(func)
+    em_js_bodies.append(func)
+    em_js_funcs.append(name)
 
-  return em_js_funcs
+  return em_js_funcs, em_js_bodies
 
 
 def add_standard_wasm_imports(send_items_map):
