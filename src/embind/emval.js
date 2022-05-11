@@ -123,6 +123,7 @@ var LibraryEmVal = {
 
   _emval_new_array__sig: 'p',
   _emval_new_array__deps: ['$Emval'],
+  _emval_new_array__sig: 'p',
   _emval_new_array: function() {
     return Emval.toHandle([]);
   },
@@ -139,6 +140,7 @@ var LibraryEmVal = {
 
   _emval_new_object__sig: 'p',
   _emval_new_object__deps: ['$Emval'],
+  _emval_new_object__sig: 'p',
   _emval_new_object: function() {
     return Emval.toHandle({});
   },

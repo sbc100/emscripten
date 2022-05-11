@@ -93,7 +93,7 @@ typedef struct {
     union {
         int __i[10];
         volatile int __vi[10];
-        unsigned __s[10];
+        unsigned long __s[10];
     } __u;
 #ifdef __EMSCRIPTEN__
     // For canvas transfer implementation in Emscripten, use an extra control field
@@ -294,7 +294,7 @@ typedef int clockid_t;
 #endif
 
 #if defined(__NEED_clock_t) && !defined(__DEFINED_clock_t)
-typedef int clock_t;  /* XXX EMSCRIPTEN: ensure it's always 32-bits even in wasm64 */
+typedef long clock_t;
 #define __DEFINED_clock_t
 #endif
 

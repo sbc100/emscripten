@@ -1195,6 +1195,7 @@ var LibraryEmbind = {
     '$craftInvokerFunction', '$exposePublicSymbol', '$heap32VectorToArray',
     '$readLatin1String', '$replacePublicSymbol', '$embind__requireFunction',
     '$throwUnboundTypeError', '$whenDependentTypesAreResolved'],
+  _embind_register_function__sig: 'vpipppp',
   _embind_register_function: function(name, argCount, rawArgTypesAddr, signature, rawInvoker, fn) {
     var argTypes = heap32VectorToArray(argCount, rawArgTypesAddr);
     name = readLatin1String(name);
@@ -2000,6 +2001,7 @@ var LibraryEmbind = {
     '$RegisteredClass', '$RegisteredPointer', '$replacePublicSymbol',
     '$embind__requireFunction', '$throwUnboundTypeError',
     '$whenDependentTypesAreResolved'],
+  _embind_register_class__sig: 'vppppppppppppp',
   _embind_register_class: function(rawType,
                                    rawPointerType,
                                    rawConstPointerType,
