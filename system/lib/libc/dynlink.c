@@ -219,7 +219,7 @@ int dladdr(const void* addr, Dl_info* info) {
 
 #ifdef _REENTRANT
 void _emscripten_thread_sync_code() {
-  // This function is called from emscripten_yeild which itself is called
+  // This function is called from emscripten_yield which itself is called
   // whenever we block on a futex.  We need to check to avoid infinite
   // recursion when taking the lock below.
   static thread_local bool syncing = false;

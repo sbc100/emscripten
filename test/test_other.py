@@ -1741,44 +1741,124 @@ int f() {
     #   the memory is zero-initialized only once (and not once per thread).
     # * The global object must have a constructor to make sure that it is
     #   constructed only once (and not once per thread).
-    create_file('side.cpp', r'''
-      struct Data {
-          Data() : value(42) {}
-          int value;
-      } data;
-      int * get_address() {
-          return &data.value;
+    create_file('side.c', r'''
+      #include <stdio.h>
+
+      static int data = 42;
+
+      __attribute__((__constructor__)) void ctor(void) {
+        printf("side module ctor: %d\n", data);
+        data++;
+      }
+
+      int* get_address(void) {
+        return &data;
       }
       ''')
-    self.run_process([
-      EMCC,
-      '-o', 'side.wasm',
-      'side.cpp',
-      '-pthread', '-Wno-experimental',
-      '-sSIDE_MODULE=1'])
+    self.run_process([EMCC, '-o', 'side.wasm', 'side.c', '-pthread',
+                      '-Wno-experimental', '-sSIDE_MODULE'])
 
-    create_file('main.cpp', r'''
+    create_file('main.c', r'''
       #include <stdio.h>
-      #include <thread>
-      int * get_address();
+      #include <pthread.h>
+
+      int* get_address(void);
+
+      void* thread_main(void* arg) {
+        printf("thread_main: %d\n", *get_address());
+        return NULL;
+      }
+
       int main(void) {
-          *get_address() = 123;
-          std::thread([]{
-            printf("%d\n", *get_address());
-          }).join();
-          return 0;
+        printf("main\n");
+        int* addr = get_address();
+        printf("%d\n", *addr);
+        *addr += 1;
+
+        pthread_t t;
+        pthread_create(&t, NULL, thread_main, NULL);
+        pthread_join(t, NULL);
+
+        return 0;
       }
       ''')
 
     self.do_runf(
-      'main.cpp',
-      '123',
+      'main.c',
+      'side module ctor: 42\nmain\n43\nthread_main: 44',
       emcc_args=[
         '-pthread', '-Wno-experimental',
         '-sPROXY_TO_PTHREAD',
         '-sEXIT_RUNTIME',
         '-sMAIN_MODULE=2',
         'side.wasm',
+      ])
+
+  @node_pthreads
+  def test_dylink_pthread_dlopen_ctors(self):
+    # Similar to test_dylink_pthread_static_data but using dlopen to
+    # load the side module.
+    create_file('side.c', r'''
+      #include <stdio.h>
+
+      static int data = 42;
+
+      __attribute__((__constructor__)) void ctor(void) {
+        printf("side module ctor: %d\n", data);
+        data++;
+      }
+
+      int* get_address(void) {
+        return &data;
+      }
+      ''')
+    self.run_process([EMCC, '-o', 'side.wasm', 'side.c', '-pthread',
+                      '-Wno-experimental', '-sSIDE_MODULE'])
+
+    create_file('main.c', r'''
+      #include <stdio.h>
+      #include <pthread.h>
+      #include <dlfcn.h>
+      #include <sched.h>
+
+      int* (*get_address)(void);
+
+      __attribute__((__constructor__)) void ctor(void) {
+        printf("main module ctor\n");
+      }
+
+      void* thread_main(void* arg) {
+        printf("thread main\n");
+        void* handle = dlopen("side.wasm", RTLD_NOW);
+        get_address = (int* (*)(void))dlsym(handle, "get_address");
+        int* addr = get_address();
+        printf("thread main: %d\n", *addr);
+        return NULL;
+      }
+
+      int main(void) {
+        printf("main\n");
+        pthread_t t;
+        pthread_create(&t, NULL, thread_main, NULL);
+        pthread_join(t, NULL);
+        /*
+        printf("calling side module function from main thread: %p\n", get_address);
+        sched_yield();
+        printf("%d\n", *get_address());
+        */
+        return 0;
+      }
+      ''')
+
+    self.do_runf(
+      'main.c',
+      'main module ctor\nmain\nthread main\nside module ctor: 42\nthread main: 43',
+      emcc_args=[
+        '-pthread', '-Wno-experimental',
+        '-sPROXY_TO_PTHREAD',
+        '-sEXIT_RUNTIME',
+        '-sMAIN_MODULE',
+        #'-sEXPORTED_FUNCTIONS=_main,_printf',
       ])
 
   def test_dylink_pthread_warning(self):
