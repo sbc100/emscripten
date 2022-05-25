@@ -4619,16 +4619,28 @@ dir
       #include <stdio.h>
       #include <emscripten/version.h>
       int main() {
+        printf("major: %d\n", EMSCRIPTEN_VERSION_MAJOR);
+        printf("minor: %d\n", EMSCRIPTEN_VERSION_MINOR);
+        printf("patch: %d\n", EMSCRIPTEN_VERSION_PATCH);
+        // Old names
         printf("major: %d\n", __EMSCRIPTEN_major__);
         printf("minor: %d\n", __EMSCRIPTEN_minor__);
-        printf("tiny: %d\n", __EMSCRIPTEN_tiny__);
+        printf("patch: %d\n", __EMSCRIPTEN_tiny__);
       }
     ''')
     expected = '''\
 major: %d
 minor: %d
-tiny: %d
-''' % (shared.EMSCRIPTEN_VERSION_MAJOR, shared.EMSCRIPTEN_VERSION_MINOR, shared.EMSCRIPTEN_VERSION_TINY)
+patch: %d
+major: %d
+minor: %d
+patch: %d
+''' % (shared.EMSCRIPTEN_VERSION_MAJOR,
+       shared.EMSCRIPTEN_VERSION_MINOR,
+       shared.EMSCRIPTEN_VERSION_PATCH,
+       shared.EMSCRIPTEN_VERSION_MAJOR,
+       shared.EMSCRIPTEN_VERSION_MINOR,
+       shared.EMSCRIPTEN_VERSION_PATCH)
     self.do_runf('src.cpp', expected)
     self.do_runf('src.cpp', expected, emcc_args=['-sSTRICT'])
 
@@ -4689,13 +4701,13 @@ int main() {
 
   def test_dashE(self):
     create_file('src.cpp', r'''#include <emscripten.h>
-__EMSCRIPTEN_major__ __EMSCRIPTEN_minor__ __EMSCRIPTEN_tiny__ EMSCRIPTEN_KEEPALIVE
+EMSCRIPTEN_VERSION_MAJOR EMSCRIPTEN_VERSION_MINOT EMSCRIPTEN_VERSION_PATCH EMSCRIPTEN_KEEPALIVE
 ''')
 
     def test(args):
       print(args)
       out = self.run_process([EMXX, 'src.cpp', '-E'] + args, stdout=PIPE).stdout
-      self.assertContained('%d %d %d __attribute__((used))' % (shared.EMSCRIPTEN_VERSION_MAJOR, shared.EMSCRIPTEN_VERSION_MINOR, shared.EMSCRIPTEN_VERSION_TINY), out)
+      self.assertContained('%d %d %d __attribute__((used))' % (shared.EMSCRIPTEN_VERSION_MAJOR, shared.EMSCRIPTEN_VERSION_MINOR, shared.EMSCRIPTEN_VERSION_PATCH), out)
 
     test([])
     test(['-lembind'])

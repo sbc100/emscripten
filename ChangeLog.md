@@ -189,6 +189,11 @@ See docs/process.md for more on how version tagging works.
   (types ending in `*`) with getValue/setValue library functions. (#17028)
 - Fix possible deadlock in multi-threaded builds that use EXIT_RUNTIME=0 with
   ASSERTIONS enabled. This was introduced in 3.1.3 as part of #16130. (#17044)
+- More standard version macro names `EMSCRIPTEN_VERSION_MAJOR`,
+  `EMSCRIPTEN_VERSION_MINOR` and `EMSCRIPTEN_VERSION_PATCH` are now defined
+  in `emscripten/version.h` designed to replace the less standard
+  `__EMSCRIPTEN_major__`, `__EMSCRIPTEN_minor__`, `__EMSCRIPTEN_tiny__`. The
+  old macro names remain available of backwards compatability.
 
 3.1.11 - 05/21/2022
 -------------------

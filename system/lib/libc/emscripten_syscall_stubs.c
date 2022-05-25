@@ -50,9 +50,9 @@ int __syscall_uname(intptr_t buf) {
   if (!buf) {
     return -EFAULT;
   }
-  const char* full_version = STR(__EMSCRIPTEN_major__) "." \
-                             STR(__EMSCRIPTEN_minor__) "." \
-                             STR(__EMSCRIPTEN_tiny__);
+  const char* full_version = STR(EMSCRIPTEN_VERSION_MAJOR) "." \
+                             STR(EMSCRIPTEN_VERSION_MINOR) "." \
+                             STR(EMSCRIPTEN_VERSION_PATCH);
 
   struct utsname *utsname = (struct utsname *)buf;
 
