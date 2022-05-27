@@ -725,23 +725,18 @@ def create_receiving(exports):
   # with WASM_ASYNC_COMPILATION that asm object may not exist at this point in time
   # so we need to support delayed assignment.
   delay_assignment = settings.WASM_ASYNC_COMPILATION and not settings.MINIMAL_RUNTIME
-  if not delay_assignment:
-    if settings.MINIMAL_RUNTIME:
-      # In Wasm exports are assigned inside a function to variables
-      # existing in top level JS scope, i.e.
-      # var _main;
-      # WebAssembly.instantiate(Module["wasm"], imports).then((function(output) {
-      # var asm = output.instance.exports;
-      # _main = asm["_main"];
-      generate_dyncall_assignment = settings.DYNCALLS and '$dynCall' in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
-      exports_that_are_not_initializers = [x for x in exports if x != building.WASM_CALL_CTORS]
-
-      for s in exports_that_are_not_initializers:
-        mangled = asmjs_mangle(s)
-        dynCallAssignment = ('dynCalls["' + s.replace('dynCall_', '') + '"] = ') if generate_dyncall_assignment and mangled.startswith('dynCall_') else ''
-        receiving += [dynCallAssignment + mangled + ' = asm["' + s + '"];']
-    else:
-      receiving += make_export_wrappers(exports, delay_assignment)
+  if settings.MINIMAL_RUNTIME and not delay_assignment:
+    # In Wasm exports are assigned inside a function to variables
+    # existing in top level JS scope, i.e.
+    # var _main;
+    # WebAssembly.instantiate(Module["wasm"], imports).then((function(output) {
+    #   var asm = output.instance.exports;
+    #   _main = asm["_main"];
+    generate_dyncall_assignment = settings.DYNCALLS and '$dynCall' in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
+    for s in exports_that_are_not_initializers:
+      mangled = asmjs_mangle(s)
+      dynCallAssignment = ('dynCalls["' + s.replace('dynCall_', '') + '"] = ') if generate_dyncall_assignment and mangled.startswith('dynCall_') else ''
+      receiving += [dynCallAssignment + mangled + ' = asm["' + s + '"];']
   else:
     receiving += make_export_wrappers(exports, delay_assignment)
 
