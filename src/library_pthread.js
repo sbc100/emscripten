@@ -806,25 +806,17 @@ var LibraryPThread = {
   // that the entire process should exit.
   // This function is always called from a pthread, but is executed on the
   // main thread due the __proxy attribute.
-  $exitOnMainThread__deps: ['exit',
-#if !MINIMAL_RUNTIME
-    '$handleException',
-#endif
-  ],
+  $exitOnMainThread__deps: ['exit', '$handleException'],
   $exitOnMainThread__proxy: 'async',
   $exitOnMainThread: function(returnCode) {
 #if PTHREADS_DEBUG
     err('exitOnMainThread');
 #endif
-#if MINIMAL_RUNTIME
-    _exit(returnCode);
-#else
     try {
       _exit(returnCode);
     } catch (e) {
       handleException(e);
     }
-#endif
   },
 
   emscripten_proxy_to_main_thread_js__deps: ['$withStackSave', 'emscripten_run_in_main_runtime_thread_js'],
@@ -952,7 +944,7 @@ var LibraryPThread = {
 #endif
   },
 
-  $invokeEntryPoint__deps: ['_emscripten_thread_exit'],
+  $invokeEntryPoint__deps: ['$handleException'],
   $invokeEntryPoint: function(ptr, arg) {
 #if PTHREADS_DEBUG
     err('invokeEntryPoint: ' + ptrToString(ptr));
@@ -972,22 +964,23 @@ var LibraryPThread = {
     // *ThreadMain(void *arg) form, or try linking with the Emscripten linker
     // flag -sEMULATE_FUNCTION_POINTER_CASTS to add in emulation for this x86
     // ABI extension.
-    var result = {{{ makeDynCall('ii', 'ptr') }}}(arg);
+    try {
+      var result = {{{ makeDynCall('ii', 'ptr') }}}(arg);
 #if STACK_OVERFLOW_CHECK
-    checkStackCookie();
+      checkStackCookie();
 #endif
 #if MINIMAL_RUNTIME
-    // In MINIMAL_RUNTIME the noExitRuntime concept does not apply to
-    // pthreads. To exit a pthread with live runtime, use the function
-    // emscripten_unwind_to_js_event_loop() in the pthread body.
-    __emscripten_thread_exit(result);
-#else
-    if (keepRuntimeAlive()) {
-      PThread.setExitStatus(result);
-    } else {
       __emscripten_thread_exit(result);
-    }
+#else
+      if (keepRuntimeAlive()) {
+        PThread.setExitStatus(result);
+      } else {
+        __emscripten_thread_exit(result);
+      }
 #endif
+    } catch (e) {
+      handleException(e);
+    }
   },
 
   $executeNotifiedProxyingQueue: function(queue) {

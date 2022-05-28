@@ -3422,23 +3422,33 @@ mergeInto(LibraryManager.library, {
     throw UTF8ToString(str);
   },
 
-#if !MINIMAL_RUNTIME
   $handleException: function(e) {
     // Certain exception types we do not treat as errors since they are used for
     // internal control flow.
     // 1. ExitStatus, which is thrown by exit()
     // 2. "unwind", which is thrown by emscripten_unwind_to_js_event_loop() and others
     //    that wish to return to JS event loop.
+#if MINIMAL_RUNTIME
+    if (e != 'unwind') {
+      throw e;
+    }
+#else
     if (e instanceof ExitStatus || e == 'unwind') {
       return EXITSTATUS;
     }
-#if MINIMAL_RUNTIME
-    throw e;
-#else
+#if USE_PTHREADS
+    if (ENVIRONMENT_IS_PTHREAD) {
+      // In pthreads we allow exceptions to flow all the way
+      // out the top level where the top-level handler reports
+      // them back the main thread.
+      throw e;
+    }
+#endif
     quit_(1, e);
 #endif
   },
 
+#if !MINIMAL_RUNTIME
   // Callable in pthread without __proxy needed.
   $runtimeKeepalivePush__sig: 'v',
   $runtimeKeepalivePush: function() {
