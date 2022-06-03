@@ -17,7 +17,7 @@
 
 // FIXME: Merge with unlink test
 
-int main() {
+int main(int argc, char* argv[]) {
   // Try to make a directory under the root directory.
   errno = 0;
   mkdir("/working", 0777);

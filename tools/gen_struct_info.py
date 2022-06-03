@@ -204,7 +204,7 @@ def inspect_headers(headers, cflags):
   for header in headers:
     code.append('#include "' + header['name'] + '"')
 
-  code.append('int main() {')
+  code.append('int main(int argc, char* argv[]) {')
   c_descent('structs', code)
   for header in headers:
     for name, struct in header['structs'].items():
@@ -266,7 +266,7 @@ def inspect_headers(headers, cflags):
                                '-O0',
                                '-Werror',
                                '-Wno-format',
-                               '-nostdlib',
+                               '-nodefaultlibs',
                                compiler_rt,
                                '-sBOOTSTRAPPING_STRUCT_INFO=1',
                                '-sLLD_REPORT_UNDEFINED=1',

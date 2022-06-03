@@ -4076,9 +4076,7 @@ ok
 
     if need_reverse:
       print('flip')
-      # Test the reverse as well.  There we flip the role of the side module and main module.
-      # - We add --no-entry since the side module doesn't have a `main`
-      self.dylink_testf(side, main, expected, force_c, main_emcc_args + ['--no-entry'],
+      self.dylink_testf(side, main, expected, force_c, main_emcc_args,
                         need_reverse=False, **kwargs)
 
   def do_basic_dylink_test(self, **kwargs):

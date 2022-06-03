@@ -109,20 +109,10 @@ function callMain(args) {
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 #endif
 
-#if STANDALONE_WASM
-#if EXPECT_MAIN
-  var entryFunction = Module['__start'];
-#else
+#if STANDALONE_WASM && !EXPECT_MAIN
   var entryFunction = Module['__initialize'];
-#endif
 #else
-#if PROXY_TO_PTHREAD
-  // User requested the PROXY_TO_PTHREAD option, so call a stub main which pthread_create()s a new thread
-  // that will call the user's real main() for the application.
-  var entryFunction = Module['__emscripten_proxy_main'];
-#else
-  var entryFunction = Module['_main'];
-#endif
+  var entryFunction = Module['__start'];
 #endif
 
 #if MAIN_MODULE
@@ -178,7 +168,7 @@ function callMain(args) {
     // execution is asynchronously handed off to a pthread.
 #if PROXY_TO_PTHREAD
 #if ASSERTIONS
-    assert(ret == 0, '_emscripten_proxy_main failed to start proxy thread: ' + ret);
+    assert(ret == 0, 'PROXY_TO_PTHREAD failed to start proxy thread: ' + ret);
 #endif
 #else
 #if ASYNCIFY == 2
@@ -330,7 +320,7 @@ function run(args) {
     if (shouldRunNow) callMain(args);
 #else
 #if ASSERTIONS
-    assert(!Module['_main'], 'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');
+    assert(!Module['__start'], 'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');
 #endif // ASSERTIONS
 #endif // HAS_MAIN
 

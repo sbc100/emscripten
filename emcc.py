@@ -1783,11 +1783,14 @@ def phase_linker_setup(options, state, newargs, user_settings):
       exit_with_error('Explictly setting EXIT_RUNTIME not compatible with STANDALONE_WASM.  EXIT_RUNTIME will always be True for programs (with a main function) and False for reactors (not main function).')
     settings.EXIT_RUNTIME = settings.EXPECT_MAIN
 
+  if not settings.SIDE_MODULE:
+    if '_main' in settings.EXPORTED_FUNCTIONS:
+      settings.EXPORTED_FUNCTIONS.remove('_main')
+      settings.EXPORTED_FUNCTIONS.append('__start')
+    settings.EXPORT_IF_DEFINED += ['__main_void', '__main_argc_argv']
+
   # Note the exports the user requested
   building.user_requested_exports.update(settings.EXPORTED_FUNCTIONS)
-
-  if '_main' in settings.EXPORTED_FUNCTIONS:
-    settings.EXPORT_IF_DEFINED.append('__main_argc_argv')
 
   # -sASSERTIONS implies basic stack overflow checks, and ASSERTIONS=2
   # implies full stack overflow checks.
@@ -2132,7 +2135,7 @@ def phase_linker_setup(options, state, newargs, user_settings):
 
   settings.REQUIRED_EXPORTS += ['stackSave', 'stackRestore', 'stackAlloc']
 
-  if not settings.STANDALONE_WASM:
+  if settings.SIDE_MODULE:
     # in standalone mode, crt1 will call the constructors from inside the wasm
     settings.REQUIRED_EXPORTS.append('__wasm_call_ctors')
 

@@ -7,11 +7,17 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <wasi/api.h>
 
 #include <emscripten.h>
 #include <emscripten/stack.h>
 #include <emscripten/threading.h>
 #include <emscripten/eventloop.h>
+
+
+__attribute__((__weak__)) void __wasm_call_ctors(void);
+__attribute__((__weak__)) int __main_argc_argv(int argc, char* argv[]);
+__attribute__((__weak__)) int __main_void();
 
 static int _main_argc;
 static char** _main_argv;
@@ -33,7 +39,15 @@ static void* _main_thread(void* param) {
   return NULL;
 }
 
-EMSCRIPTEN_KEEPALIVE int _emscripten_proxy_main(int argc, char** argv) {
+int _start(int argc, char* argv[]) {
+  if (__wasm_call_ctors) {
+    __wasm_call_ctors();
+  }
+
+  /*
+   * Will either end up calling the applications's __main_argc_argv function
+   * or our weakly defined __main_argc_argv.
+   */
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

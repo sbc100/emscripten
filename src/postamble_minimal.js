@@ -15,14 +15,12 @@ function run() {
 
   <<< ATMAINS >>>
 
-#if PROXY_TO_PTHREAD
+  var ret = __start();
+
+#if !PROXY_TO_PTHREAD
   // User requested the PROXY_TO_PTHREAD option, so call a stub main which
   // pthread_create()s a new thread that will call the user's real main() for
   // the application.
-  var ret = __emscripten_proxy_main();
-#else
-  var ret = _main();
-
 #if EXIT_RUNTIME
   callRuntimeCallbacks(__ATEXIT__);
   <<< ATEXITS >>>
@@ -30,7 +28,7 @@ function run() {
   PThread.terminateAllThreads();
 #endif
 
-#endif
+#endif // EXIT_RUNTIME
 
 #if IN_TEST_HARNESS && hasExportedSymbol('flush')
   // flush any stdio streams for test harness, since there are existing
@@ -86,10 +84,6 @@ function initRuntime(asm) {
 
 #if USE_PTHREADS
   PThread.tlsInitFunctions.push(asm['_emscripten_tls_init']);
-#endif
-
-#if hasExportedSymbol('__wasm_call_ctors')
-  asm['__wasm_call_ctors']();
 #endif
 
   <<< ATINITS >>>

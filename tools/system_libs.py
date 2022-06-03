@@ -1166,6 +1166,34 @@ class crt1(MuslInternalLibrary):
     return '.o'
 
   def can_use(self):
+    return super().can_use() and not settings.STANDALONE_WASM
+
+
+class crt1_proxy_main(MuslInternalLibrary):
+  name = 'crt1_proxy_main'
+  src_dir = 'system/lib/libc'
+  src_files = ['crt1_proxy_main.c']
+
+  force_object_files = True
+
+  def get_ext(self):
+    return '.o'
+
+  def can_use(self):
+    return super().can_use() and settings.PROXY_TO_PTHREAD
+
+
+class crt1_standalone(MuslInternalLibrary):
+  name = 'crt1_standalone'
+  src_dir = 'system/lib/libc'
+  src_files = ['crt1_standalone.c']
+
+  force_object_files = True
+
+  def get_ext(self):
+    return '.o'
+
+  def can_use(self):
     return super().can_use() and settings.STANDALONE_WASM
 
 
@@ -1751,20 +1779,6 @@ class libstubs(DebugLibrary):
   src_files = ['emscripten_syscall_stubs.c', 'emscripten_libc_stubs.c']
 
 
-# If main() is not in EXPORTED_FUNCTIONS, it may be dce'd out. This can be
-# confusing, so issue a warning.
-def warn_on_unexported_main(symbolses):
-  # In STANDALONE_WASM we don't expect main to be explictly exported.
-  # In PROXY_TO_PTHREAD we export emscripten_proxy_main instead of main.
-  if settings.STANDALONE_WASM or settings.PROXY_TO_PTHREAD:
-    return
-  if '_main' not in settings.EXPORTED_FUNCTIONS:
-    for symbols in symbolses:
-      if 'main' in symbols['defs']:
-        logger.warning('main() is in the input files, but "_main" is not in EXPORTED_FUNCTIONS, which means it may be eliminated as dead code. Export it if you want main() to run.')
-        return
-
-
 def handle_reverse_deps(input_files):
   if settings.REVERSE_DEPS == 'none' or settings.SIDE_MODULE:
     return
@@ -1796,8 +1810,6 @@ def handle_reverse_deps(input_files):
 
   # Scan symbols
   symbolses = building.llvm_nm_multiple([os.path.abspath(t) for t in input_files])
-
-  warn_on_unexported_main(symbolses)
 
   if len(symbolses) == 0:
     symbolses.append({'defs': set(), 'undefs': set()})
@@ -1854,11 +1866,13 @@ def get_libs_to_link(args, forced, only_forced):
     if not settings.SIDE_MODULE:
       if settings.STANDALONE_WASM:
         if settings.EXPECT_MAIN:
-          add_library('crt1')
+          add_library('crt1_standalone')
         else:
           add_library('crt1_reactor')
       elif settings.PROXY_TO_PTHREAD:
         add_library('crt1_proxy_main')
+      else:
+        add_library('crt1')
 
   if settings.SIDE_MODULE:
     return libs_to_link

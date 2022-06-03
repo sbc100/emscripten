@@ -10,22 +10,19 @@
 
 __attribute__((__weak__)) void __wasm_call_ctors(void);
 
-__attribute__((__weak__)) int __main_argc_argv(int argc, char* argv[]);
-__attribute__((__weak__)) int __main_void();
+int __main_void(void);
 
-int _start(int argc, char* argv[]) {
+void _start(void) {
   if (__wasm_call_ctors) {
     __wasm_call_ctors();
   }
 
   /*
-   * Will either end up calling the applications's __main_argc_argv function
-   * or our weakly defined __main_argc_argv.
+   * Will either end up calling the user's original zero argument main directly
+   * or our __original_main fallback in __original_main.c which handles
+   * populating argv.
    */
-  if (__main_argc_argv) {
-    return __main_argc_argv(argc, argv);
-  } else if (__main_void) {
-    return __main_void();
-  }
-  return 0;
+  int r = __main_void();
+
+  exit(r);
 }

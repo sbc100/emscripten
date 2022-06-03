@@ -36,21 +36,22 @@ logger = logging.getLogger('emscripten')
 
 
 def compute_minimal_runtime_initializer_and_exports(post, exports, receiving):
-  # Declare all exports out to global JS scope so that JS library functions can access them in a
-  # way that minifies well with Closure
+  # Declare all exports out to global JS scope so that JS library functions can
+  # access them in a way that minifies well with Closure
   # e.g. var a,b,c,d,e,f;
-  exports_that_are_not_initializers = [x for x in exports if x not in building.WASM_CALL_CTORS]
-  # In Wasm backend the exports are still unmangled at this point, so mangle the names here
-  exports_that_are_not_initializers = [asmjs_mangle(x) for x in exports_that_are_not_initializers]
+  # In Wasm backend the exports are still unmangled at this point, so mangle
+  # the names here.
+  exports = [asmjs_mangle(x) for x in exports]
 
   # Decide whether we should generate the global dynCalls dictionary for the dynCall() function?
-  if settings.DYNCALLS and '$dynCall' in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE and len([x for x in exports_that_are_not_initializers if x.startswith('dynCall_')]) > 0:
-    exports_that_are_not_initializers += ['dynCalls = {}']
+  if settings.DYNCALLS and '$dynCall' in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE and len([x for x in exports if x.startswith('dynCall_')]) > 0:
+    exports += ['dynCalls = {}']
 
-  declares = 'var ' + ',\n '.join(exports_that_are_not_initializers) + ';'
+  declares = 'var ' + ',\n '.join(exports) + ';'
   post = shared.do_replace(post, '<<< WASM_MODULE_EXPORTS_DECLARES >>>', declares)
 
-  # Generate assignments from all wasm exports out to the JS variables above: e.g. a = asm['a']; b = asm['b'];
+  # Generate assignments from all wasm exports out to the JS variables above:
+  # e.g. a = asm['a']; b = asm['b'];
   post = shared.do_replace(post, '<<< WASM_MODULE_EXPORTS >>>', receiving)
   return post
 
@@ -149,7 +150,7 @@ def update_settings_glue(wasm_file, metadata):
   if settings.MEMORY64:
     assert '--enable-memory64' in settings.BINARYEN_FEATURES
 
-  settings.HAS_MAIN = bool(settings.MAIN_MODULE) or settings.PROXY_TO_PTHREAD or settings.STANDALONE_WASM or 'main' in settings.WASM_EXPORTS or '__main_argc_argv' in settings.WASM_EXPORTS
+  settings.HAS_MAIN = bool(settings.MAIN_MODULE) or settings.STANDALONE_WASM or '_start' in settings.WASM_EXPORTS
   if settings.HAS_MAIN and not settings.MINIMAL_RUNTIME:
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$exitJS']
 
@@ -217,7 +218,8 @@ def report_missing_symbols(js_library_funcs):
   defined_symbols = set(asmjs_mangle(e) for e in settings.WASM_EXPORTS).union(js_library_funcs)
   missing = set(settings.USER_EXPORTED_FUNCTIONS) - defined_symbols
   for symbol in sorted(missing):
-    diagnostics.warning('undefined', f'undefined exported symbol: "{symbol}"')
+    if symbol != '_main':
+      diagnostics.warning('undefined', f'undefined exported symbol: "{symbol}"')
 
   # Special hanlding for the `_main` symbol
 
@@ -231,7 +233,7 @@ def report_missing_symbols(js_library_funcs):
     # maximum compatibility.
     return
 
-  if settings.EXPECT_MAIN and 'main' not in settings.WASM_EXPORTS and '__main_argc_argv' not in settings.WASM_EXPORTS:
+  if settings.EXPECT_MAIN and '_start' not in settings.WASM_EXPORTS:
     # For compatibility with the output of wasm-ld we use the same wording here in our
     # error message as if wasm-ld had failed (i.e. in LLD_REPORT_UNDEFINED mode).
     exit_with_error('entry symbol not defined (pass --no-entry to suppress): main')
@@ -734,9 +736,8 @@ def create_receiving(exports):
       # var asm = output.instance.exports;
       # _main = asm["_main"];
       generate_dyncall_assignment = settings.DYNCALLS and '$dynCall' in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
-      exports_that_are_not_initializers = [x for x in exports if x != building.WASM_CALL_CTORS]
 
-      for s in exports_that_are_not_initializers:
+      for s in exports:
         mangled = asmjs_mangle(s)
         dynCallAssignment = ('dynCalls["' + s.replace('dynCall_', '') + '"] = ') if generate_dyncall_assignment and mangled.startswith('dynCall_') else ''
         receiving += [dynCallAssignment + mangled + ' = asm["' + s + '"];']
