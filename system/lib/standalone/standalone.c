@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -81,22 +82,76 @@ __attribute__((__weak__)) int _munmap_js(
   return -ENOSYS;
 }
 
+static char *cwd = "/";
+
+__attribute__((__weak__))
+int __syscall_getcwd(intptr_t buf, size_t size) {
+  strncpy((char*)buf, cwd, size);
+  return strlen(cwd);
+}
+
 // open(), etc. - we just support the standard streams, with no
 // corner case error checking; everything else is not permitted.
 // TODO: full file support for WASI, or an option for it
 // open()
 __attribute__((__weak__))
-int __syscall_openat(int dirfd, intptr_t path, int flags, ...) {
-  if (!strcmp((const char*)path, "/dev/stdin")) {
-    return STDIN_FILENO;
+int __syscall_openat(int dirfd, intptr_t path_, int flags, ...) {
+  if (dirfd == AT_FDCWD || path[0] != '/') {
+    // path is relative to cwd
+  } else {
+    const char* path = (const char*)path_;
+    if (!strcmp((const char*)path, "/dev/stdin")) {
+      return STDIN_FILENO;
+    }
+    if (!strcmp((const char*)path, "/dev/stdout")) {
+      return STDOUT_FILENO;
+    }
+    if (!strcmp((const char*)path, "/dev/stderr")) {
+      return STDERR_FILENO;
+    }
   }
-  if (!strcmp((const char*)path, "/dev/stdout")) {
-    return STDOUT_FILENO;
+
+  __wasi_rights_t max =
+    ~(__WASI_RIGHTS_FD_DATASYNC | __WASI_RIGHTS_FD_READ |
+      __WASI_RIGHTS_FD_WRITE | __WASI_RIGHTS_FD_ALLOCATE |
+      __WASI_RIGHTS_FD_READDIR | __WASI_RIGHTS_FD_FILESTAT_SET_SIZE);
+
+  switch (flags & O_ACCMODE) {
+    case O_RDONLY:
+    case O_RDWR:
+    case O_WRONLY:
+      if ((flags & O_RDONLY) != 0) {
+        max |= __WASI_RIGHTS_FD_READ | __WASI_RIGHTS_FD_READDIR;
+      }
+      if ((flags & O_WRONLY) != 0) {
+        max |= __WASI_RIGHTS_FD_DATASYNC | __WASI_RIGHTS_FD_WRITE |
+               __WASI_RIGHTS_FD_ALLOCATE |
+               __WASI_RIGHTS_FD_FILESTAT_SET_SIZE;
+      }
+      break;
+    case O_EXEC:
+      break;
+    default:
+      return -EINVAL;
   }
-  if (!strcmp((const char*)path, "/dev/stderr")) {
-    return STDERR_FILENO;
-  }
-  return -EPERM;
+
+  __wasi_lookupflags_t lookup_flags = 0;
+  __wasi_fdflags_t fs_flags = flags & 0xfff;
+  __wasi_fd_t newfd;
+  __wasi_rights_t fs_rights_base = max;
+  __wasi_rights_t fs_rights_inheriting = max;
+  int error = __wasi_path_open(dirfd,
+                               lookup_flags,
+                               path,
+                               strlen(path) + 1,
+                               (flags >> 12) & 0xfff,
+                               fs_rights_base,
+                               fs_rights_inheriting,
+                               fs_flags,
+                               &newfd);
+  if (error)
+    return -error;
+  return newfd;
 }
 
 __attribute__((__weak__)) int __syscall_ioctl(int fd, int op, ...) {

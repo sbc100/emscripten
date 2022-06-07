@@ -428,6 +428,15 @@ var WasiLibrary = {
     return {{{ cDefine('ENOSYS') }}};
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
+
+  path_open__sig: 'iiippiiiip',
+  path_open: function(fd, dirflags, path, path_len, oflags,
+                      fs_rights_base, fs_rights_inherting,
+                      fdflags, opened_fd) {
+    err(arguments);
+    assert(false, 'wasi_snapshot_preview1.path_open is unimplenented');
+    return {{{ cDefine('ENOSYS') }}};
+  },
 };
 
 for (var x in WasiLibrary) {
