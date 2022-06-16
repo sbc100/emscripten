@@ -3654,6 +3654,27 @@ mergeInto(LibraryManager.library, {
     err('done preloading data files');
 #endif
   },
+
+#if MAIN_MODULE
+  _emscripten_ctors_done__deps: ['$sideModuleCtors'],
+#endif
+  _emscripten_ctors_done__sig: 'v',
+  _emscripten_ctors_done: function() {
+#if MAIN_MODULE
+#if DYLINK_DEBUG
+    err('_emscripten_ctors_done');
+#endif
+    sideModuleCtors.forEach((func) => {
+#if DYLINK_DEBUG
+      err('calling side module ctor func: ' << func);
+#endif
+      func();
+    });
+#endif // MAIN_MODULE
+#if expectToReceiveOnModule('onRuntimeInitialized')
+    if (Module['onRuntimeInitialized']) Module['onRuntimeInitialized']();
+#endif
+  },
 });
 
 function autoAddDeps(object, name) {

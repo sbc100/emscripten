@@ -18,6 +18,7 @@ static char** _main_argv;
 
 int __main_argc_argv(int argc, char *argv[]);
 weak void __wasm_call_ctors(void);
+int _emscripten_ctors_done(void);
 
 weak int __main_void(void) {
   return __main_argc_argv(_main_argc, _main_argv);
@@ -38,6 +39,7 @@ EMSCRIPTEN_KEEPALIVE int _emscripten_start(int argc, char** argv) {
   if (__wasm_call_ctors) {
     __wasm_call_ctors();
   }
+  _emscripten_ctors_done();
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

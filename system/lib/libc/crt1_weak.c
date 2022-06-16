@@ -13,10 +13,7 @@ static char** _main_argv;
 
 weak int __main_argc_argv(int argc, char *argv[]);
 weak void __wasm_call_ctors(void);
-
-#ifdef __PIC__
-int _emscripten_side_module_ctors(void);
-#endif
+int _emscripten_ctors_done(void);
 
 weak int __main_void(void) {
   if (__main_argc_argv) {
@@ -29,9 +26,7 @@ EMSCRIPTEN_KEEPALIVE int _emscripten_start(int argc, char** argv) {
   if (__wasm_call_ctors) {
     __wasm_call_ctors();
   }
-#ifdef __PIC__
-  _emscripten_side_module_ctors();
-#endif
+  _emscripten_ctors_done();
   _main_argc = argc;
   _main_argv = argv;
   // Will either call user's __main_void or weak version above.

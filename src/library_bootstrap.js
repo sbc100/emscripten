@@ -14,6 +14,7 @@ assert(false, "library_bootstrap.js only designed for use with BOOTSTRAPPING_STR
 assert(Object.keys(LibraryManager.library).length === 0);
 mergeInto(LibraryManager.library, {
   $callRuntimeCallbacks: function() {},
+  _emscripten_ctors_done: function() {},
 
   $ExitStatus__docs: '/** @constructor */',
   $ExitStatus: function(status) {

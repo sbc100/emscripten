@@ -1059,19 +1059,6 @@ var LibraryDylink = {
     return result;
   },
 
-  _emscripten_side_module_ctors__deps: ['$sideModuleCtors'],
-  _emscripten_side_module_ctors: function() {
-#if DYLINK_DEBUG
-    err('_emscripten_side_module_ctors');
-#endif
-    sideModuleCtors.forEach((func) => {
-#if DYLINK_DEBUG
-      err('calling side module ctor func: ' << func);
-#endif
-      func();
-    });
-  },
-
   _dlinit: function(main_dso_handle) {
     var dso = {
       refcount: Infinity,   // = nodelete

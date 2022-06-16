@@ -316,9 +316,6 @@ function run(args) {
 #if MODULARIZE
     readyPromiseResolve(Module);
 #endif
-#if expectToReceiveOnModule('onRuntimeInitialized')
-    if (Module['onRuntimeInitialized']) Module['onRuntimeInitialized']();
-#endif
 
 #if HAS_MAIN
     if (shouldRunNow) callMain(args);
