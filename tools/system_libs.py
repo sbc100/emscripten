@@ -1180,7 +1180,35 @@ class crt1_weak(MuslInternalLibrary):
     return '.o'
 
   def can_use(self):
-    return super().can_use() and not settings.STANDALONE_WASM and (not settings.EXPECT_MAIN or settings.IGNORE_MISSING_MAIN)
+    return super().can_use() and not settings.STANDALONE_WASM and settings.IGNORE_MISSING_MAIN
+
+
+class crt1_reactor(MuslInternalLibrary):
+  name = 'crt1_reactor'
+  src_dir = 'system/lib/libc'
+  src_files = ['crt1_reactor.c']
+
+  force_object_files = True
+
+  def get_ext(self):
+    return '.o'
+
+  def can_use(self):
+    return super().can_use() and not settings.STANDALONE_WASM and not settings.EXPECT_MAIN
+
+
+class crt1_proxy_main(MuslInternalLibrary):
+  name = 'crt1_proxy_main'
+  src_dir = 'system/lib/libc'
+  src_files = ['crt1_proxy_main.c']
+
+  force_object_files = True
+
+  def get_ext(self):
+    return '.o'
+
+  def can_use(self):
+    return super().can_use() and settings.PROXY_TO_PTHREAD
 
 
 class crt1_standalone(MuslInternalLibrary):
@@ -1197,10 +1225,10 @@ class crt1_standalone(MuslInternalLibrary):
     return super().can_use() and settings.STANDALONE_WASM
 
 
-class crt1_reactor(MuslInternalLibrary):
-  name = 'crt1_reactor'
+class crt1_standalone_reactor(MuslInternalLibrary):
+  name = 'crt1_standalone_reactor'
   src_dir = 'system/lib/libc'
-  src_files = ['crt1_reactor.c']
+  src_files = ['crt1_standalone_reactor.c']
 
   force_object_files = True
 
@@ -1209,20 +1237,6 @@ class crt1_reactor(MuslInternalLibrary):
 
   def can_use(self):
     return super().can_use() and settings.STANDALONE_WASM
-
-
-class crt1_proxy_main(MuslInternalLibrary):
-  name = 'crt1_proxy_main'
-  src_dir = 'system/lib/libc'
-  src_files = ['crt1_proxy_main.c']
-
-  force_object_files = True
-
-  def get_ext(self):
-    return '.o'
-
-  def can_use(self):
-    return super().can_use() and settings.PROXY_TO_PTHREAD
 
 
 class crtbegin(MuslInternalLibrary):
@@ -1884,14 +1898,12 @@ def get_libs_to_link(args, forced, only_forced):
         if settings.EXPECT_MAIN:
           add_library('crt1_standalone')
         else:
-          add_library('crt1_reactor')
+          add_library('crt1_standalone_reactor')
       elif settings.PROXY_TO_PTHREAD:
         add_library('crt1_proxy_main')
       else:
         if not settings.EXPECT_MAIN:
-          # No crt1 used in this case.
-          # TODO(sbc): Update this once we merge __wasm_call_ctors into _emscripten_start
-          pass
+          add_library('crt1_reactor')
         elif settings.IGNORE_MISSING_MAIN:
           add_library('crt1_weak')
         else:

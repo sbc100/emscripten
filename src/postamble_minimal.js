@@ -86,10 +86,6 @@ function initRuntime(asm) {
   PThread.tlsInitFunctions.push(asm['_emscripten_tls_init']);
 #endif
 
-#if hasExportedSymbol('__wasm_call_ctors')
-  asm['__wasm_call_ctors']();
-#endif
-
   <<< ATINITS >>>
 }
 

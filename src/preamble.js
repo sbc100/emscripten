@@ -912,10 +912,6 @@ function createWasm() {
 #endif
 #endif
 
-#if hasExportedSymbol('__wasm_call_ctors')
-    addOnInit(Module['asm']['__wasm_call_ctors']);
-#endif
-
 #if hasExportedSymbol('__wasm_apply_data_relocs')
     __RELOC_FUNCS__.push(Module['asm']['__wasm_apply_data_relocs']);
 #endif

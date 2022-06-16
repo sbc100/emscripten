@@ -652,57 +652,26 @@ def acorn_optimizer(filename, passes, extra_info=None, return_output=False):
   return output
 
 
-WASM_CALL_CTORS = '__wasm_call_ctors'
-
-
 # evals ctors. if binaryen_bin is provided, it is the dir of the binaryen tool
 # for this, and we are in wasm mode
 def eval_ctors(js_file, wasm_file, debug_info):
-  if settings.MINIMAL_RUNTIME:
-    CTOR_ADD_PATTERN = f"asm['{WASM_CALL_CTORS}']();" # TODO test
-  else:
-    CTOR_ADD_PATTERN = f"addOnInit(Module['asm']['{WASM_CALL_CTORS}']);"
-
   js = utils.read_file(js_file)
-
-  has_wasm_call_ctors = False
 
   # eval the ctor caller as well as main, or, in standalone mode, the proper
   # entry/init function
   if not settings.STANDALONE_WASM:
-    ctors = []
-    kept_ctors = []
-    has_wasm_call_ctors = CTOR_ADD_PATTERN in js
-    if has_wasm_call_ctors:
-      ctors += [WASM_CALL_CTORS]
-    if settings.HAS_MAIN:
-      main = '_emscripten_start'
-      if '_start' in settings.WASM_EXPORTS:
-        main = '_start'
-      ctors += [main]
-      # TODO perhaps remove the call to main from the JS? or is this an abi
-      #      we want to preserve?
-      kept_ctors += [main]
-    if not ctors:
-      logger.info('ctor_evaller: no ctors')
-      return
-    args = ['--ctors=' + ','.join(ctors)]
-    if kept_ctors:
-      args += ['--kept-exports=' + ','.join(kept_ctors)]
+    ctor = '_emscripten_start'
   else:
     if settings.EXPECT_MAIN:
       ctor = '_start'
     else:
       ctor = '_initialize'
-    args = ['--ctors=' + ctor, '--kept-exports=' + ctor]
+  args = ['--ctors=' + ctor, '--kept-exports=' + ctor]
   if settings.EVAL_CTORS == 2:
     args += ['--ignore-external-input']
   logger.info('ctor_evaller: trying to eval global ctors (' + ' '.join(args) + ')')
   out = run_binaryen_command('wasm-ctor-eval', wasm_file, wasm_file, args=args, stdout=PIPE, debug=debug_info)
   logger.info('\n\n' + out)
-  num_successful = out.count('success on')
-  if num_successful and has_wasm_call_ctors:
-    js = js.replace(CTOR_ADD_PATTERN, '')
   utils.write_file(js_file, js)
 
 

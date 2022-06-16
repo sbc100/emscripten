@@ -2134,10 +2134,6 @@ def phase_linker_setup(options, state, newargs, user_settings):
 
   settings.REQUIRED_EXPORTS += ['stackSave', 'stackRestore', 'stackAlloc']
 
-  if not settings.STANDALONE_WASM:
-    # in standalone mode, crt1 will call the constructors from inside the wasm
-    settings.REQUIRED_EXPORTS.append('__wasm_call_ctors')
-
   if settings.RELOCATABLE:
     # TODO(https://reviews.llvm.org/D128515): Make this mandatory once
     # llvm change lands

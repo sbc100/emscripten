@@ -5,12 +5,11 @@
  * found in the LICENSE file.
  */
 
-#include <emscripten.h>
 #include <features.h>
 
 weak void __wasm_call_ctors(void);
 
-EMSCRIPTEN_KEEPALIVE void _emscripten_start(void) {
+void _initialize(void) {
   if (__wasm_call_ctors) {
     __wasm_call_ctors();
   }
