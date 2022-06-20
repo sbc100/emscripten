@@ -194,25 +194,16 @@ var LibraryEmbind = {
   },
 
 
-  // from https://github.com/imvu/imvujs/blob/master/src/function.js
   $createNamedFunction__deps: ['$makeLegalFunctionName'],
   $createNamedFunction: function(name, body) {
     name = makeLegalFunctionName(name);
-#if DYNAMIC_EXECUTION == 0
-    return function() {
+    // Use ES6 "computed property names" here to give the function a name,
+    // avoiding `new Function`.  This transpiles nicely to ES5 via closure
+    // compiler.
+    return { [name]: function() {
       "use strict";
       return body.apply(this, arguments);
-    };
-#else
-    /*jshint evil:true*/
-    return new Function(
-        "body",
-        "return function " + name + "() {\n" +
-        "    \"use strict\";" +
-        "    return body.apply(this, arguments);\n" +
-        "};\n"
-    )(body);
-#endif
+    }}[name];
   },
 
   $embindRepr: function(v) {
