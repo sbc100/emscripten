@@ -223,7 +223,7 @@ var LibraryEmbind = {
     if (t === 'object' || t === 'array' || t === 'function') {
         return v.toString();
     } else {
-        return '' + v;
+        return '' + v + ' (' + t + ')';
     }
   },
 
