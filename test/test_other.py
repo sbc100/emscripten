@@ -1850,7 +1850,6 @@ int f() {
       side = 'main.cpp'
       main = 'side.cpp'
     else:
-      self.skipTest('https://reviews.llvm.org/D128515')
       side = 'side.cpp'
       main = 'main.cpp'
     self.run_process([
