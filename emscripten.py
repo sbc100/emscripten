@@ -684,7 +684,7 @@ def make_export_wrappers(exports, delay_assignment):
     # runtimeInitialized.
     # Likewise `__trap` can occur before the runtime is initialized since it is used in
     # abort.
-    if settings.ASSERTIONS and not name.startswith('emscripten_stack_') and name != '__trap':
+    if settings.ASSERTIONS and not name.startswith('emscripten_stack_') and name != '__trap' and name not in ('stackSave', 'stackRestore'):
       # With assertions enabled we create a wrapper that are calls get routed through, for
       # the lifetime of the program.
       if delay_assignment:

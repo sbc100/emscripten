@@ -165,6 +165,23 @@ function ${name}(${args}) {
 }`);
     }
 
+    if (ASSERTIONS && !isJsOnlyIdentifier(ident)) {
+      snippet = modifyFunction(snippet, (name, args, body) => `\
+function ${name}(${args}) {
+  if (runtimeInitialized) {
+    var origSP = stackSave();
+  }
+  var ret = (function() {
+    ${body}
+  }).apply(this, arguments);
+  if (runtimeInitialized) {
+    assert(origSP == stackSave(), '${name} failed to restore stack pointer');
+  }
+  return ret;
+}
+`);
+    }
+
     if (MEMORY64) {
       const sig = LibraryManager.library[ident + '__sig'];
       if (sig && sig.includes('p')) {
