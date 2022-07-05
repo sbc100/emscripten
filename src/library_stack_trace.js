@@ -5,7 +5,9 @@
  */
 
 var LibraryStackTrace = {
+#if DEMANGLE_SUPPORT
   $demangle__deps: ['$withStackSave'],
+#endif
   $demangle: function(func) {
 #if DEMANGLE_SUPPORT
     // If demangle has failed before, stop demangling any further function names

@@ -23,7 +23,6 @@ global.librarySymbols = [];
 global.LibraryManager = {
   library: {},
   structs: {},
-  loaded: false,
   libraries: [],
 
   has: function(name) {
@@ -31,9 +30,6 @@ global.LibraryManager = {
   },
 
   load: function() {
-    assert(!this.loaded);
-    this.loaded = true;
-
     // Core system libraries (always linked against)
     let libraries = [
       'library.js',

@@ -174,4 +174,3 @@ var LibraryIDBStore = {
 
 autoAddDeps(LibraryIDBStore, '$IDBStore');
 mergeInto(LibraryManager.library, LibraryIDBStore);
-
