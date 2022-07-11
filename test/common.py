@@ -490,7 +490,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   def setUpClass(cls):
     super().setUpClass()
     print('(checking sanity from test runner)') # do this after we set env stuff
-    shared.check_sanity(force=True)
+    shared.perform_sanify_checks()
 
   def setUp(self):
     super().setUp()

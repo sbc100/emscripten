@@ -3311,7 +3311,7 @@ def parse_args(newargs):
       should_exit = True
     elif check_flag('--check'):
       print(version_string(), file=sys.stderr)
-      shared.check_sanity(force=True)
+      shared.perform_sanity_checks()
       should_exit = True
     elif check_flag('--show-ports'):
       ports.show_ports()

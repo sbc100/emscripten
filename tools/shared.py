@@ -389,7 +389,7 @@ def perform_sanity_checks():
 
 
 @ToolchainProfiler.profile()
-def check_sanity(force=False):
+def check_sanity():
   """Check that basic stuff we need (a JS engine to compile, Node.js, and Clang
   and LLVM) exists.
 
@@ -398,7 +398,7 @@ def check_sanity(force=False):
   EM_CONFIG (so, we re-check sanity when the settings are changed).  We also
   re-check sanity and clear the cache when the version changes.
   """
-  if not force and os.environ.get('EMCC_SKIP_SANITY_CHECK') == '1':
+  if os.environ.get('EMCC_SKIP_SANITY_CHECK') == '1':
     return
 
   # We set EMCC_SKIP_SANITY_CHECK so that any subprocesses that we launch will
@@ -411,8 +411,6 @@ def check_sanity(force=False):
     force = True
 
   if config.FROZEN_CACHE:
-    if force:
-      perform_sanity_checks()
     return
 
   if os.environ.get('EM_IGNORE_SANITY'):
@@ -457,8 +455,9 @@ def check_sanity(force=False):
     else:
       logger.debug(f'sanity file not found: {sanity_file}')
 
-    perform_sanity_checks()
+  perform_sanity_checks()
 
+  with Cache.lock('sanity'):
     # Only create/update this file if the sanity check succeeded, i.e., we got here
     utils.write_file(sanity_file, expected)
 
