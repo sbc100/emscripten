@@ -77,13 +77,13 @@ global.LibraryManager = {
 
     if (FILESYSTEM) {
       // Core filesystem libraries (always linked against, unless -sFILESYSTEM=0 is specified)
-      libraries = libraries.concat([
-        'library_fs.js',
-        'library_memfs.js',
-        'library_tty.js',
-        'library_pipefs.js', // ok to include it by default since it's only used if the syscall is used
-        'library_sockfs.js', // ok to include it by default since it's only used if the syscall is used
-      ]);
+      libraries.push(
+          'library_fs.js',
+          'library_memfs.js',
+          'library_tty.js',
+          'library_pipefs.js', // ok to include it by default since it's only used if the syscall is used
+          'library_sockfs.js', // ok to include it by default since it's only used if the syscall is used
+      );
 
       if (NODERAWFS) {
         // NODERAWFS requires NODEFS
@@ -103,20 +103,20 @@ global.LibraryManager = {
 
     // Additional JS libraries (without AUTO_JS_LIBRARIES, link to these explicitly via -lxxx.js)
     if (AUTO_JS_LIBRARIES) {
-      libraries = libraries.concat([
-        'library_webgl.js',
-        'library_html5_webgl.js',
-        'library_openal.js',
-        'library_sdl.js',
-        'library_glut.js',
-        'library_xlib.js',
-        'library_egl.js',
-        'library_glfw.js',
-        'library_uuid.js',
-        'library_glew.js',
-        'library_idbstore.js',
-        'library_async.js',
-      ]);
+      libraries.push(
+          'library_webgl.js',
+          'library_html5_webgl.js',
+          'library_openal.js',
+          'library_sdl.js',
+          'library_glut.js',
+          'library_xlib.js',
+          'library_egl.js',
+          'library_glfw.js',
+          'library_uuid.js',
+          'library_glew.js',
+          'library_idbstore.js',
+          'library_async.js',
+      );
     } else {
       if (ASYNCIFY) {
         libraries.push('library_async.js');
@@ -174,7 +174,7 @@ global.LibraryManager = {
     // These must be added last after all Emscripten-provided system libraries
     // above, so that users can override built-in JS library symbols in their
     // own code.
-    libraries = libraries.concat(JS_LIBRARIES);
+    libraries.push(...JS_LIBRARIES);
 
     // Deduplicate libraries to avoid processing any library file multiple times
     libraries = libraries.filter((item, pos) => libraries.indexOf(item) == pos);
@@ -374,16 +374,16 @@ function exportRuntime() {
   runtimeElements = runtimeElements.concat(WASM_SYSTEM_EXPORTS);
 
   if (USE_PTHREADS && ALLOW_MEMORY_GROWTH) {
-    runtimeElements = runtimeElements.concat([
-      'GROWABLE_HEAP_I8',
-      'GROWABLE_HEAP_U8',
-      'GROWABLE_HEAP_I16',
-      'GROWABLE_HEAP_U16',
-      'GROWABLE_HEAP_I32',
-      'GROWABLE_HEAP_U32',
-      'GROWABLE_HEAP_F32',
-      'GROWABLE_HEAP_F64',
-    ]);
+    runtimeElements.push(
+        'GROWABLE_HEAP_I8',
+        'GROWABLE_HEAP_U8',
+        'GROWABLE_HEAP_I16',
+        'GROWABLE_HEAP_U16',
+        'GROWABLE_HEAP_I32',
+        'GROWABLE_HEAP_U32',
+        'GROWABLE_HEAP_F32',
+        'GROWABLE_HEAP_F64',
+    );
   }
   if (USE_OFFSET_CONVERTER) {
     runtimeElements.push('WasmOffsetConverter');
