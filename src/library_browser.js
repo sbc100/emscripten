@@ -692,10 +692,14 @@ var LibraryBrowser = {
 
     resizeListeners: [],
 
-    updateResizeListeners: function() {
+    updateResizeListeners: function(fromEventLoop) {
       var canvas = Module['canvas'];
-      Browser.resizeListeners.forEach(function(listener) {
-        listener(canvas.width, canvas.height);
+      Browser.resizeListeners.forEach((listener) => {
+        if (fromEventLoop) {
+          callUserCallback(() => listener(canvas.width, canvas.height));
+        } else {
+          listener(canvas.width, canvas.height);
+        }
       });
     },
 
@@ -715,7 +719,7 @@ var LibraryBrowser = {
         {{{ makeSetValue('SDL.screen', '0', 'flags', 'i32') }}};
       }
       Browser.updateCanvasDimensions(Module['canvas']);
-      Browser.updateResizeListeners();
+      Browser.updateResizeListeners(true);
     },
 
     setWindowedCanvasSize: function() {
@@ -726,7 +730,7 @@ var LibraryBrowser = {
         {{{ makeSetValue('SDL.screen', '0', 'flags', 'i32') }}};
       }
       Browser.updateCanvasDimensions(Module['canvas']);
-      Browser.updateResizeListeners();
+      Browser.updateResizeListeners(true);
     },
 
     updateCanvasDimensions : function(canvas, wNative, hNative) {

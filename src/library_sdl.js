@@ -1478,7 +1478,7 @@ var LibrarySDL = {
 
     if (!SDL.addedResizeListener) {
       SDL.addedResizeListener = true;
-      Browser.resizeListeners.push(function(w, h) {
+      Browser.resizeListeners.push((w, h) => {
         if (!SDL.settingVideoMode) {
           SDL.receiveEvent({
             type: 'resize',

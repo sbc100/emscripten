@@ -338,7 +338,7 @@ var LibraryGLUT = {
     // Firefox
     window.addEventListener("DOMMouseScroll", GLUT.onMouseWheel, true);
 
-    Browser.resizeListeners.push(function(width, height) {
+    Browser.resizeListeners.push((width, height) => {
       if (GLUT.reshapeFunc) {
         {{{ makeDynCall('vii', 'GLUT.reshapeFunc') }}}(width, height);
       }
