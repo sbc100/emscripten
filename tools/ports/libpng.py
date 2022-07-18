@@ -33,9 +33,9 @@ def get(ports, settings, shared):
     Path(source_path, 'pnglibconf.h').write_text(pnglibconf_h)
     ports.install_headers(source_path)
 
-    flags = ['-sUSE_ZLIB=1']
+    flags = ['-sUSE_ZLIB']
     if settings.USE_PTHREADS:
-      flags += ['-sUSE_PTHREADS=1']
+      flags += ['-pthread']
 
     ports.build_port(source_path, final, 'libpng', flags=flags, exclude_files=['pngtest'], exclude_dirs=['scripts', 'contrib'])
 

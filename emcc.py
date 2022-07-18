@@ -397,6 +397,10 @@ def apply_settings(user_settings):
     if key == 'WASM_OBJECT_FILES':
       settings.LTO = 0 if value else 'full'
 
+    if key == 'USE_PTHREADS':
+      # Do this check here rather than using LEGACY_SETTINGS since the setting itself
+      # is still used internally.
+      diagnostics.warning('deprecated', 'use of legacy USE_PTHREADS setting; Use -pthread instead')
 
 # apply minimum browser version defaults based on user settings. if
 # a user requests a feature that we know is only supported in browsers
@@ -2205,7 +2209,7 @@ def phase_linker_setup(options, state, newargs, user_settings):
     settings.JS_LIBRARIES.append((0, 'library_pthread.js'))
   else:
     if settings.PROXY_TO_PTHREAD:
-      exit_with_error('-sPROXY_TO_PTHREAD requires -sUSE_PTHREADS to work!')
+      exit_with_error('-sPROXY_TO_PTHREAD requires -pthread to work!')
     settings.JS_LIBRARIES.append((0, 'library_pthread_stub.js'))
 
   # TODO: Move this into the library JS file once it becomes possible.
@@ -3372,7 +3376,7 @@ def parse_args(newargs):
         exit_with_error(f'Invalid value "{style}" to --output_eol!')
     # Record USE_PTHREADS setting because it controls whether --shared-memory is passed to lld
     elif arg == '-pthread':
-      settings_changes.append('USE_PTHREADS=1')
+      settings.USE_PTHREADS = 1
     elif arg in ('-fno-diagnostics-color', '-fdiagnostics-color=never'):
       colored_logger.disable()
       diagnostics.color_enabled = False

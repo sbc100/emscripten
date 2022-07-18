@@ -66,7 +66,7 @@ def get(ports, settings, shared):
     ]
     if settings.USE_PTHREADS:
       flags += [
-        '-sUSE_PTHREADS',
+        '-pthread',
         '-DSQLITE_THREADSAFE=1',
       ]
     else:

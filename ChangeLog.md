@@ -93,6 +93,7 @@ See docs/process.md for more on how version tagging works.
   untested.
 - Removed unused `calledMain` global variable from the JS runtime.  Folks who
   want to know when main is done can use `Module[postRun]`.
+- `-sUSE_PTHREADS` is now deprecated in favor of the standard `-pthreads` flag.
 
 3.1.16 - 07/14/2022
 -------------------

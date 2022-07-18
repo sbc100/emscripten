@@ -482,7 +482,7 @@ class MTLibrary(Library):
   def get_cflags(self):
     cflags = super().get_cflags()
     if self.is_mt:
-      cflags += ['-sUSE_PTHREADS', '-sWASM_WORKERS']
+      cflags += ['-pthread', '-sWASM_WORKERS']
     if self.is_ww:
       cflags += ['-sWASM_WORKERS']
     return cflags
@@ -1199,7 +1199,7 @@ class crt1_proxy_main(MuslInternalLibrary):
 
 class crtbegin(MuslInternalLibrary):
   name = 'crtbegin'
-  cflags = ['-sUSE_PTHREADS']
+  cflags = ['-pthread']
   src_dir = 'system/lib/pthread'
   src_files = ['emscripten_tls_init.c']
 

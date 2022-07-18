@@ -2590,7 +2590,7 @@ var LibraryHTML5 = {
     if (!canvas.controlTransferredOffscreen) {
       {{{ makeSetValue('width', 0, 'canvas.width', 'i32') }}};
       {{{ makeSetValue('height', 0, 'canvas.height', 'i32') }}};
-    } else {
+mscripten_get_canvas_element_size    } else {
 #if GL_DEBUG
       err('canvas.controlTransferredOffscreen but we do not own the canvas, and do not know who has (no canvas.canvasSharedPtr present, an internal bug?)!\n');
 #endif
