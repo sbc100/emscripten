@@ -15,16 +15,16 @@ var LibraryBrowser = {
   ],
   $Browser__postset: `
     // exports
-    Module["requestFullscreen"] = function Module_requestFullscreen(lockPointer, resizeCanvas) { Browser.requestFullscreen(lockPointer, resizeCanvas) };
+    Module['requestFullscreen'] = Browser.requestFullscreen;
 #if ASSERTIONS
-    Module["requestFullScreen"] = function Module_requestFullScreen() { Browser.requestFullScreen() };
+    Module['requestFullScreen'] = Browser.requestFullScreen;
 #endif
-    Module["requestAnimationFrame"] = function Module_requestAnimationFrame(func) { Browser.requestAnimationFrame(func) };
-    Module["setCanvasSize"] = function Module_setCanvasSize(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
-    Module["pauseMainLoop"] = function Module_pauseMainLoop() { Browser.mainLoop.pause() };
-    Module["resumeMainLoop"] = function Module_resumeMainLoop() { Browser.mainLoop.resume() };
-    Module["getUserMedia"] = function Module_getUserMedia() { Browser.getUserMedia() };
-    Module["createContext"] = function Module_createContext(canvas, useWebGL, setInModule, webGLContextAttributes) { return Browser.createContext(canvas, useWebGL, setInModule, webGLContextAttributes) };
+    Module['requestAnimationFrame'] = Browser.requestAnimationFrame;
+    Module['setCanvasSize'] = Browser.setCanvasSize;
+    Module['pauseMainLoop'] = Browser.mainLoop.pause;
+    Module['resumeMainLoop'] = Browser.mainLoop.resume;
+    Module['getUserMedia'] = Browser.getUserMedia;
+    Module['createContext'] = Browser.createContext;
 #if MAIN_MODULE
     var preloadedWasm = {};
 #endif
