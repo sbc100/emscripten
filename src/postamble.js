@@ -161,6 +161,11 @@ function callMain(args) {
     abortWrapperDepth += 1;
 #endif
 
+#if ASSERTIONS
+    // TODO(sbc): Have `callMain` use `callUserCallback` to avoid duplicating
+    // this tracking.
+    userCodeEntriesOnStack += 1;
+#endif
 #if STANDALONE_WASM
     entryFunction();
     // _start (in crt1.c) will call exit() if main return non-zero.  So we know
@@ -199,11 +204,15 @@ function callMain(args) {
   catch (e) {
     return handleException(e);
   }
-#endif // !PROXY_TO_PTHREAD
-#if ABORT_ON_WASM_EXCEPTIONS
+#if ABORT_ON_WASM_EXCEPTIONS || ASSERTIONS
   finally {
+#if ASSERTIONS
+    userCodeEntriesOnStack -= 1;
+#endif
+#if ABORT_ON_WASM_EXCEPTIONS
     // See abortWrapperDepth in preamble.js!
     abortWrapperDepth -= 1;
+#endif
   }
 #endif
 }
