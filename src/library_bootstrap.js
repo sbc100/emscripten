@@ -22,8 +22,8 @@ mergeInto(LibraryManager.library, {
     this.status = status;
   },
 
-  $exitJS__deps: ['$ExitStatus'],
-  $exitJS: function(code) {
+  $doExit: ['$ExitStatus'],
+  $doExit: function(code) {
     quit_(code, new ExitStatus(code));
   },
 

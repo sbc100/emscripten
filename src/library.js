@@ -58,38 +58,16 @@ mergeInto(LibraryManager.library, {
   },
 
 #if !MINIMAL_RUNTIME
-  $exitJS__docs: '/** @param {boolean|number=} implicit */',
-  $exitJS__deps: ['proc_exit'],
-  $exitJS: function(status, implicit) {
+  $doExit__deps: ['proc_exit'],
+  $doExit: function(status) {
+#if RUNTIME_DEBUG
+    err('doExit:' + status);
+#endif
     EXITSTATUS = status;
 
 #if ASSERTIONS && !EXIT_RUNTIME
     checkUnflushedContent();
 #endif // ASSERTIONS && !EXIT_RUNTIME
-
-#if USE_PTHREADS
-    if (!implicit) {
-      if (ENVIRONMENT_IS_PTHREAD) {
-#if PTHREADS_DEBUG
-        err('Pthread 0x' + _pthread_self().toString(16) + ' called exit(), posting exitOnMainThread.');
-#endif
-        // When running in a pthread we propagate the exit back to the main thread
-        // where it can decide if the whole process should be shut down or not.
-        // The pthread may have decided not to exit its own runtime, for example
-        // because it runs a main loop, but that doesn't affect the main thread.
-        exitOnMainThread(status);
-        throw 'unwind';
-      } else {
-#if PTHREADS_DEBUG
-#if EXIT_RUNTIME
-        err('main thread called exit: keepRuntimeAlive=' + keepRuntimeAlive() + ' (counter=' + runtimeKeepaliveCounter + ')');
-#else
-        err('main thread called exit: keepRuntimeAlive=' + keepRuntimeAlive());
-#endif
-#endif
-      }
-    }
-#endif
 
 #if EXIT_RUNTIME
     if (!keepRuntimeAlive()) {
@@ -97,9 +75,39 @@ mergeInto(LibraryManager.library, {
     }
 #endif
 
+    _proc_exit(status);
+  },
+
+  $doExitExplicit__deps: ['$doExit'],
+  $doExitExplicit: function(status) {
+#if RUNTIME_DEBUG
+    err('doExitExplicit:' + status);
+#endif
+#if USE_PTHREADS
+    if (ENVIRONMENT_IS_PTHREAD) {
+#if PTHREADS_DEBUG
+      err('Pthread 0x' + _pthread_self().toString(16) + ' called exit(), posting exitOnMainThread.');
+#endif
+      // When running in a pthread we propagate the exit back to the main thread
+      // where it can decide if the whole process should be shut down or not.
+      // The pthread may have decided not to exit its own runtime, for example
+      // because it runs a main loop, but that doesn't affect the main thread.
+      exitOnMainThread(status);
+      throw 'unwind';
+    } else {
+#if PTHREADS_DEBUG
+#if EXIT_RUNTIME
+      err('main thread called exit: keepRuntimeAlive=' + keepRuntimeAlive() + ' (counter=' + runtimeKeepaliveCounter + ')');
+#else
+      err('main thread called exit: keepRuntimeAlive=' + keepRuntimeAlive());
+#endif
+#endif
+    }
+#endif
+
 #if ASSERTIONS
     // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
-    if (keepRuntimeAlive() && !implicit) {
+    if (keepRuntimeAlive()) {
 #if !EXIT_RUNTIME
       var msg = 'program exited (with status: ' + status + '), but EXIT_RUNTIME is not set, so halting execution but not exiting the runtime or preventing further async execution (build with EXIT_RUNTIME=1, if you want a true shutdown)';
 #else
@@ -112,7 +120,7 @@ mergeInto(LibraryManager.library, {
     }
 #endif // ASSERTIONS
 
-    _proc_exit(status);
+    doExit(status);
   },
 #endif
 
@@ -122,7 +130,7 @@ mergeInto(LibraryManager.library, {
   // map exit directly to the lower-level proc_exit syscall.
   exit: 'proc_exit',
 #else
-  exit: '$exitJS',
+  exit: '$doExitExplicit',
 #endif
 
   // Returns a pointer ('p'), which means an i32 on wasm32 and an i64 wasm64

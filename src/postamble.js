@@ -192,7 +192,7 @@ function callMain(args) {
     });
 #else
     // if we're not running an evented main loop, it's time to exit
-    exitJS(ret, /* implicit = */ true);
+    doExit(ret);
 #endif // ASYNCIFY == 2
     return ret;
   }
