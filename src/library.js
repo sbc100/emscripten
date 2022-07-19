@@ -3503,13 +3503,14 @@ mergeInto(LibraryManager.library, {
       return;
     }
     try {
-      func();
+      let rtn = func();
 #if EXIT_RUNTIME || USE_PTHREADS
 #if USE_PTHREADS && !EXIT_RUNTIME
       if (ENVIRONMENT_IS_PTHREAD)
 #endif
         maybeExit();
 #endif
+      return rtn;
     } catch (e) {
       handleException(e);
     }

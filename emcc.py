@@ -2157,8 +2157,8 @@ def phase_linker_setup(options, state, newargs, user_settings):
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$Browser']
 
   if settings.BOOTSTRAPPING_STRUCT_INFO:
-    # Called by `callMain` to handle exceptions
-    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$handleException']
+    # Needed by `callMain`
+    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$callUserCallback']
   else:
     if not settings.MINIMAL_RUNTIME:
       # In non-MINIMAL_RUNTIME, the core runtime depends on these functions to be present. (In MINIMAL_RUNTIME, they are
@@ -2168,8 +2168,8 @@ def phase_linker_setup(options, state, newargs, user_settings):
         '$demangleAll',
         '$jsStackTrace',
         '$stackTrace',
-        # Called by `callMain` to handle exceptions
-        '$handleException',
+        # Needed by `callMain`
+        '$callUserCallback',
         # Needed by ccall (remove this once ccall itself is a library function)
         '$writeArrayToMemory',
       ]

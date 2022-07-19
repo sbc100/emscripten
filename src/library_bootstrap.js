@@ -27,10 +27,8 @@ mergeInto(LibraryManager.library, {
     quit_(code, new ExitStatus(code));
   },
 
-  $handleException: function(e) {
-    if (e !== 'unwind') {
-      throw e;
-    }
+  $callUserCallback: function(f) {
+    return f();
   },
 
   // printf/puts implementations for when musl is not pulled in - very

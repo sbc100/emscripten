@@ -149,63 +149,55 @@ function callMain(args) {
   var argv = 0;
 #endif // MAIN_READS_PARAMS
 
-#if ABORT_ON_WASM_EXCEPTIONS || !PROXY_TO_PTHREAD
-  try {
-#endif
-#if BENCHMARK
-    var start = Date.now();
+#if ABORT_ON_WASM_EXCEPTIONS
+  // See abortWrapperDepth in preamble.js!
+  abortWrapperDepth += 1;
 #endif
 
-#if ABORT_ON_WASM_EXCEPTIONS
-    // See abortWrapperDepth in preamble.js!
-    abortWrapperDepth += 1;
+#if BENCHMARK
+  var start = Date.now();
 #endif
 
 #if STANDALONE_WASM
-    entryFunction();
-    // _start (in crt1.c) will call exit() if main return non-zero.  So we know
-    // that if we get here main returned zero.
-    var ret = 0;
+  // _start (in crt1.c) will call exit() if main return non-zero.  So we know
+  // that if we get here main returned zero.
+  var ret = 0;
+  callUserCallback(entryFunction);
 #else
-    var ret = entryFunction(argc, argv);
+  var ret = callUserCallback(() => entryFunction(argc, argv));
 #endif // STANDALONE_WASM
 
-#if BENCHMARK
-    Module.realPrint('main() took ' + (Date.now() - start) + ' milliseconds');
+#if ABORT_ON_WASM_EXCEPTIONS
+  // See abortWrapperDepth in preamble.js!
+  abortWrapperDepth -= 1;
 #endif
 
-    // In PROXY_TO_PTHREAD builds, we should never exit the runtime below, as
-    // execution is asynchronously handed off to a pthread.
+#if RUNTIME_DEBUG
+  err('main returned: ' + ret);
+#endif
+
+#if BENCHMARK
+  Module.realPrint('main() took ' + (Date.now() - start) + ' milliseconds');
+#endif
+
+  // In PROXY_TO_PTHREAD builds, we should never exit the runtime below, as
+  // execution is asynchronously handed off to a pthread.
 #if PROXY_TO_PTHREAD
 #if ASSERTIONS
-    assert(ret == 0, '_emscripten_proxy_main failed to start proxy thread: ' + ret);
+  assert(ret == 0, '_emscripten_proxy_main failed to start proxy thread: ' + ret);
 #endif
 #else
 #if ASYNCIFY == 2
-    // The current spec of JSPI returns a promise only if the function suspends
-    // and a plain value otherwise. This will likely change:
-    // https://github.com/WebAssembly/js-promise-integration/issues/11
-    Promise.resolve(ret).then((result) => {
-      exitJS(result, /* implicit = */ true);
-    }).catch((e) => {
-      handleException(e);
-    });
-#else
-    // if we're not running an evented main loop, it's time to exit
-    doExit(ret);
-#endif // ASYNCIFY == 2
-    return ret;
-  }
-  catch (e) {
-    return handleException(e);
-  }
+  // The current spec of JSPI returns a promise only if the function suspends
+  // and a plain value otherwise. This will likely change:
+  // https://github.com/WebAssembly/js-promise-integration/issues/11
+  Promise.resolve(ret).then((result) => {
+    exitJS(result, /* implicit = */ true);
+  }).catch((e) => {
+    handleException(e);
+  });
+  return ret;
 #endif // !PROXY_TO_PTHREAD
-#if ABORT_ON_WASM_EXCEPTIONS
-  finally {
-    // See abortWrapperDepth in preamble.js!
-    abortWrapperDepth -= 1;
-  }
-#endif
 }
 #endif // HAS_MAIN
 
