@@ -2,7 +2,6 @@
 #define _SDL_config_emscripten_h
 
 #include "SDL_platform.h"
-#include "SDL_config_minimal.h"
 
 #define HAVE_GCC_ATOMICS	1
 
@@ -72,5 +71,7 @@
 #define HAVE_SINF	1
 #define HAVE_SQRT	1
 #define HAVE_NANOSLEEP	1
+
+#include "SDL_config_minimal.h"
 
 #endif /* _SDL_config_emscripten_h */

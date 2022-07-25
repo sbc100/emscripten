@@ -1,48 +1,48 @@
 /*
-  Simple DirectMedia Layer
-  Copyright (C) 1997-2011 Sam Lantinga <slouken@libsdl.org>
+    SDL - Simple DirectMedia Layer
+    Copyright (C) 1997-2012 Sam Lantinga
 
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Sam Lantinga
+    slouken@libsdl.org
 */
 
-#ifndef _SDL_config_windows_h
-#define _SDL_config_windows_h
+#ifndef _SDL_config_win32_h
+#define _SDL_config_win32_h
 
 #include "SDL_platform.h"
 
 /* This is a set of defines to configure the SDL features */
 
-#if !defined(_STDINT_H_) && (!defined(HAVE_STDINT_H) || !_HAVE_STDINT_H)
-#if defined(__GNUC__) || defined(__DMC__) || defined(__WATCOMC__)
+#if defined(__GNUC__) || defined(__DMC__)
 #define HAVE_STDINT_H	1
 #elif defined(_MSC_VER)
-typedef signed __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-typedef signed __int16 int16_t;
-typedef unsigned __int16 uint16_t;
-typedef signed __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef signed __int64 int64_t;
-typedef unsigned __int64 uint64_t;
+typedef signed __int8		int8_t;
+typedef unsigned __int8		uint8_t;
+typedef signed __int16		int16_t;
+typedef unsigned __int16	uint16_t;
+typedef signed __int32		int32_t;
+typedef unsigned __int32	uint32_t;
+typedef signed __int64		int64_t;
+typedef unsigned __int64	uint64_t;
 #ifndef _UINTPTR_T_DEFINED
 #ifdef  _WIN64
-typedef unsigned __int64 uintptr_t;
+typedef unsigned __int64    uintptr_t;
 #else
-typedef unsigned int uintptr_t;
+typedef unsigned int   uintptr_t;
 #endif
 #define _UINTPTR_T_DEFINED
 #endif
@@ -53,7 +53,7 @@ typedef unsigned int uintptr_t;
 #if ((_MSC_VER <= 1200) && (!defined(LONG_PTR)))
 #define LONG_PTR LONG
 #endif
-#else /* !__GNUC__ && !_MSC_VER */
+#else	/* !__GNUC__ && !_MSC_VER */
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef signed short int16_t;
@@ -68,16 +68,10 @@ typedef unsigned int size_t;
 #endif
 typedef unsigned int uintptr_t;
 #endif /* __GNUC__ || _MSC_VER */
-#endif /* !_STDINT_H_ && !HAVE_STDINT_H */
-
-#ifdef _WIN64
-# define SIZEOF_VOIDP 8
-#else
-# define SIZEOF_VOIDP 4
-#endif
+#define SDL_HAS_64BIT_TYPE	1
 
 /* Enabled for SDL 1.2 (binary compatibility) */
-//#define HAVE_LIBC     1
+#define HAVE_LIBC	1
 #ifdef HAVE_LIBC
 /* Useful headers */
 #define HAVE_STDIO_H 1
@@ -122,21 +116,6 @@ typedef unsigned int uintptr_t;
 #define HAVE__STRICMP 1
 #define HAVE__STRNICMP 1
 #define HAVE_SSCANF 1
-#define HAVE_M_PI 1
-#define HAVE_ATAN 1
-#define HAVE_ATAN2 1
-#define HAVE_CEIL 1
-#define HAVE_COPYSIGN 1
-#define HAVE_COS 1
-#define HAVE_COSF 1
-#define HAVE_FABS 1
-#define HAVE_FLOOR 1
-#define HAVE_LOG 1
-#define HAVE_POW 1
-#define HAVE_SCALBN 1
-#define HAVE_SIN 1
-#define HAVE_SINF 1
-#define HAVE_SQRT 1
 #else
 #define HAVE_STDARG_H	1
 #define HAVE_STDDEF_H	1
@@ -145,63 +124,60 @@ typedef unsigned int uintptr_t;
 /* Enable various audio drivers */
 #ifndef _WIN32_WCE
 #define SDL_AUDIO_DRIVER_DSOUND	1
-#define SDL_AUDIO_DRIVER_XAUDIO2	1
 #endif
-#define SDL_AUDIO_DRIVER_WINMM	1
+#define SDL_AUDIO_DRIVER_WAVEOUT	1
 #define SDL_AUDIO_DRIVER_DISK	1
 #define SDL_AUDIO_DRIVER_DUMMY	1
 
+/* Enable various cdrom drivers */
+#ifdef _WIN32_WCE
+#define SDL_CDROM_DISABLED      1
+#else
+#define SDL_CDROM_WIN32		1
+#endif
+
 /* Enable various input drivers */
 #ifdef _WIN32_WCE
-#define SDL_JOYSTICK_DISABLED	1
-#define SDL_HAPTIC_DUMMY	1
+#define SDL_JOYSTICK_DISABLED   1
 #else
-#define SDL_JOYSTICK_DINPUT	1
-#define SDL_HAPTIC_DINPUT	1
+#define SDL_JOYSTICK_WINMM	1
 #endif
 
 /* Enable various shared object loading systems */
-#define SDL_LOADSO_WINDOWS	1
+#define SDL_LOADSO_WIN32	1
 
 /* Enable various threading systems */
-#define SDL_THREAD_WINDOWS	1
+#define SDL_THREAD_WIN32	1
 
 /* Enable various timer systems */
 #ifdef _WIN32_WCE
 #define SDL_TIMER_WINCE	1
 #else
-#define SDL_TIMER_WINDOWS	1
+#define SDL_TIMER_WIN32	1
 #endif
 
 /* Enable various video drivers */
-#define SDL_VIDEO_DRIVER_DUMMY	1
-#define SDL_VIDEO_DRIVER_WINDOWS	1
-
+#ifdef _WIN32_WCE
+#define SDL_VIDEO_DRIVER_GAPI	1
+#endif
 #ifndef _WIN32_WCE
-#ifndef SDL_VIDEO_RENDER_D3D
-#define SDL_VIDEO_RENDER_D3D	1
+#define SDL_VIDEO_DRIVER_DDRAW	1
 #endif
-#endif
+#define SDL_VIDEO_DRIVER_DUMMY	1
+#define SDL_VIDEO_DRIVER_WINDIB	1
 
 /* Enable OpenGL support */
 #ifndef _WIN32_WCE
-#ifndef SDL_VIDEO_OPENGL
 #define SDL_VIDEO_OPENGL	1
-#endif
-#ifndef SDL_VIDEO_OPENGL_WGL
 #define SDL_VIDEO_OPENGL_WGL	1
 #endif
-#ifndef SDL_VIDEO_RENDER_OGL
-#define SDL_VIDEO_RENDER_OGL	1
-#endif
-#endif
 
-/* Enable system power support */
-#define SDL_POWER_WINDOWS 1
+/* Disable screensaver */
+#define SDL_VIDEO_DISABLE_SCREENSAVER	1
 
 /* Enable assembly routines (Win64 doesn't have inline asm) */
 #ifndef _WIN64
 #define SDL_ASSEMBLY_ROUTINES	1
 #endif
 
-#endif /* _SDL_config_windows_h */
+#endif /* _SDL_config_win32_h */

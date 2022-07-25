@@ -483,22 +483,47 @@
     // SDL
     // ===========================================
     {
-        "file": "SDL/SDL_compat.h",
+        "file": "SDL/SDL_video.h",
         "structs": {
             "SDL_VideoInfo": [
                 "current_w",
                 "current_h"
-            ]
-        }
-    },
-    {
-        "file": "SDL/SDL_rect.h",
-        "structs": {
+            ],
             "SDL_Rect": [
                 "x",
                 "y",
                 "w",
                 "h"
+            ],
+            "SDL_PixelFormat": [
+                "palette",
+                "BitsPerPixel",
+                "BytesPerPixel",
+                "Rmask",
+                "Gmask",
+                "Bmask",
+                "Amask",
+                "Rloss",
+                "Gloss",
+                "Bloss",
+                "Aloss",
+                "Rshift",
+                "Gshift",
+                "Bshift",
+                "Ashift"
+            ],
+            "SDL_Surface": [
+                "flags",
+                "format",
+                "w",
+                "h",
+                "pitch",
+                "pixels",
+                "locked",
+                "lock_data",
+                "clip_rect",
+                "map",
+                "refcount"
             ]
         }
     },
@@ -514,37 +539,6 @@
         }
     },
     {
-        "file": "SDL/SDL_pixels.h",
-        "defines": ["SDL_PIXELFORMAT_RGBA8888"],
-        "structs": {
-            "SDL_PixelFormat": [
-                "format",
-                "palette",
-                "BitsPerPixel",
-                "BytesPerPixel",
-                "Rmask",
-                "Gmask",
-                "Bmask",
-                "Amask"
-            ]
-        }
-    },
-    {
-        "file": "SDL/SDL_surface.h",
-        "structs": {
-            "SDL_Surface": [
-                "flags",
-                "format",
-                "w",
-                "h",
-                "pitch",
-                "pixels",
-                "clip_rect",
-                "refcount"
-            ]
-        }
-    },
-    {
         "file": "SDL/SDL_events.h",
         "structs": {
             "SDL_WindowEvent": [
@@ -555,7 +549,6 @@
             "SDL_KeyboardEvent": [
                 "type",
                 "state",
-                "repeat",
                 "keysym"
             ],
             "SDL_TextInputEvent": [
@@ -616,10 +609,6 @@
                 "h"
             ]
         }
-    },
-    {
-        "file": "SDL/SDL_touch.h",
-        "defines": ["SDL_TOUCH_MOUSEID"]
     },
     {
         "file": "SDL/SDL_audio.h",
