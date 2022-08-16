@@ -62,12 +62,11 @@ static em_queued_call* em_queued_call_create(EM_FUNC_SIGNATURE sig,
                                              void* satellite,
                                              va_list args) {
   em_queued_call* call = em_queued_call_malloc();
-  if (call) {
-    call->functionEnum = sig;
-    call->functionPtr = func;
-    call->satelliteData = satellite;
-    init_em_queued_call_args(call, sig, args);
-  }
+  if (!call) return NULL;
+  call->functionEnum = sig;
+  call->functionPtr = func;
+  call->satelliteData = satellite;
+  init_em_queued_call_args(call, sig, args);
   return call;
 }
 
@@ -415,6 +414,7 @@ double emscripten_run_in_main_runtime_thread_js(int index, int num_args, int64_t
     c = &q;
   } else {
     c = em_queued_call_malloc();
+    if (!c) return 0;
   }
   c->calleeDelete = 1-sync;
   c->functionEnum = EM_PROXIED_JS_FUNCTION;
@@ -434,19 +434,18 @@ double emscripten_run_in_main_runtime_thread_js(int index, int num_args, int64_t
     emscripten_sync_run_in_main_thread(&q);
     // TODO: support BigInt return values somehow.
     return q.returnValue.d;
-  } else {
-    // 'async' runs are fire and forget, where the caller detaches itself from the call object after
-    // returning here, and it is the callee's responsibility to free up the memory after the call
-    // has been performed.
-    emscripten_async_run_in_main_thread(c);
-    return 0;
   }
+
+  // 'async' runs are fire and forget, where the caller detaches itself from the
+  // call object after returning here, and it is the callee's responsibility to
+  // free up the memory after the call has been performed.
+  emscripten_async_run_in_main_thread(c);
+  return 0;
 }
 
 void emscripten_async_run_in_main_runtime_thread_(EM_FUNC_SIGNATURE sig, void* func_ptr, ...) {
   em_queued_call* q = em_queued_call_malloc();
-  if (!q)
-    return;
+  if (!q) return;
   q->functionEnum = sig;
   q->functionPtr = func_ptr;
 
@@ -464,8 +463,7 @@ void emscripten_async_run_in_main_runtime_thread_(EM_FUNC_SIGNATURE sig, void* f
 em_queued_call* emscripten_async_waitable_run_in_main_runtime_thread_(
   EM_FUNC_SIGNATURE sig, void* func_ptr, ...) {
   em_queued_call* q = em_queued_call_malloc();
-  if (!q)
-    return NULL;
+  if (!q) return NULL;
   q->functionEnum = sig;
   q->functionPtr = func_ptr;
 
