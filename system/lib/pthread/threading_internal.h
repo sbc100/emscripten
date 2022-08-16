@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <stdint.h>
+
+#include <emscripten/threading.h>
+
 typedef union em_variant_val
 {
   int i;

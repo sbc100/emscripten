@@ -38,9 +38,9 @@ $dlmalloc
 $do_dispatch_to_thread
 $em_queued_call_malloc
 $emscripten_async_run_in_main_thread
-$emscripten_current_thread_process_queued_calls
 $emscripten_futex_wait
 $emscripten_futex_wake
+$emscripten_proxy_execute_queue
 $emscripten_run_in_main_runtime_thread_js
 $emscripten_stack_set_limits
 $get_tasks_for_thread
