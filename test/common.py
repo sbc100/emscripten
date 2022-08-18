@@ -1019,18 +1019,21 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     if EMSCRIPTEN_TEMP_DIR:
       utils.delete_contents(EMSCRIPTEN_TEMP_DIR)
 
-  def run_process(self, cmd, check=True, **args):
+  def run_process(self, cmd, check=True, expect_fail=False, **args):
     # Wrapper around shared.run_process.  This is desirable so that the tests
     # can fail (in the unittest sense) rather than error'ing.
     # In the long run it would nice to completely remove the dependency on
     # core emscripten code (shared.py) here.
-    try:
-      return shared.run_process(cmd, check=check, **args)
-    except subprocess.CalledProcessError as e:
-      if check and e.returncode != 0:
-        print(e.stdout)
-        print(e.stderr)
-        self.fail(f'subprocess exited with non-zero return code({e.returncode}): `{shared.shlex_join(cmd)}`')
+    proc = shared.run_process(cmd, check=False, **args)
+    did_fail = proc.returncode != 0
+    if check and (bool(expect_fail) != did_fail):
+      print(proc.stdout)
+      print(proc.stderr)
+      if expect_fail:
+        self.fail(f'subprocess unexpectedly succeeded. stderr:\n' + proc.stderr)
+      else:
+        self.fail(f'subprocess exited with non-zero return code({proc.returncode}): `{shared.shlex_join(cmd)}`')
+    return proc
 
   def emcc(self, filename, args=[], output_filename=None, **kwargs):  # noqa
     cmd = [compiler_for(filename), filename] + self.get_emcc_args(ldflags='-c' not in args) + args
@@ -1045,8 +1048,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
 
     Return the stderr of the subprocess.
     """
-    proc = self.run_process(cmd, check=False, stderr=PIPE, **args)
-    self.assertNotEqual(proc.returncode, 0, 'subprocess unexpectedly succeeded. stderr:\n' + proc.stderr)
+    proc = self.run_process(cmd, expect_fail=True, stderr=PIPE, **args)
     # When we check for failure we expect a user-visible error, not a traceback.
     # However, on windows a python traceback can happen randomly sometimes,
     # due to "Access is denied" https://github.com/emscripten-core/emscripten/issues/718

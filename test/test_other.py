@@ -2106,30 +2106,26 @@ int f() {
         delete_file('a.out.js')
         print('checking "%s" %s' % (args, value))
         extra = ['-s', action + '_ON_UNDEFINED_SYMBOLS=%d' % value] if action else []
-        proc = self.run_process([EMXX, 'main.cpp'] + extra + args, stderr=PIPE, check=False)
+        expect_fail = value or action is None
+        proc = self.run_process([EMXX, 'main.cpp'] + extra + args, stderr=PIPE, expect_fail=expect_fail)
         print(proc.stderr)
         if value or action is None:
           # The default is that we error in undefined symbols
           self.assertContained('error: undefined symbol: something', proc.stderr)
           self.assertContained('error: undefined symbol: elsey', proc.stderr)
-          check_success = False
         elif action == 'ERROR' and not value:
           # Error disables, should only warn
           self.assertContained('warning: undefined symbol: something', proc.stderr)
           self.assertContained('warning: undefined symbol: elsey', proc.stderr)
           self.assertNotContained('undefined symbol: emscripten_', proc.stderr)
-          check_success = True
         elif action == 'WARN' and not value:
           # Disabled warning should imply disabling errors
           self.assertNotContained('undefined symbol', proc.stderr)
-          check_success = True
 
-        if check_success:
-          self.assertEqual(proc.returncode, 0)
-          self.assertTrue(os.path.exists('a.out.js'))
+        if expect_fail:
+          self.assertNotExists('a.out.js')
         else:
-          self.assertNotEqual(proc.returncode, 0)
-          self.assertFalse(os.path.exists('a.out.js'))
+          self.assertExists('a.out.js')
 
   def test_undefined_data_symbols(self):
     create_file('main.c', r'''
@@ -4207,7 +4203,7 @@ int main() {
       self.clear()
       cmd = [EMCC, test_file('hello_world.c'), '-sEXPORTED_FUNCTIONS=["' + m + '_main"]']
       print(cmd)
-      stderr = self.run_process(cmd, stderr=PIPE, check=False).stderr
+      stderr = self.run_process(cmd, stderr=PIPE, expect_fail=m).stderr
       if m:
         self.assertContained('undefined exported symbol: " _main"', stderr)
       else:
