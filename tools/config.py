@@ -114,6 +114,7 @@ def parse_config_file():
   CONFIG_KEYS = (
     'NODE_JS',
     'BINARYEN_ROOT',
+    'WABT_ROOT',
     'SPIDERMONKEY_ENGINE',
     'V8_ENGINE',
     'LLVM_ROOT',
@@ -131,6 +132,27 @@ def parse_config_file():
     'PORTS',
     'COMPILER_WRAPPER',
   )
+
+  # In that absence of explict configuration we look for tools in the PATH
+  if 'LLVM_ROOT' not in config:
+    llvm_dis = which('llvm-dis')
+    if llvm_dis:
+      config['LLVM_ROOT'] = os.path.dirname(llvm_dis)
+
+  if 'BINARYEN_ROOT' not in config:
+    wasm_opt = which('wasm-opt')
+    if wasm_opt:
+      config['BINARYEN_ROOT'] = os.path.dirname(os.path.dirname(wasm_opt))
+
+  if 'NODE_JS' not in config:
+    node = which('node')
+    if node:
+      config['NODE_JS'] = node
+
+  if 'WABT_ROOT' not in config:
+    wasm2c = which('wasm2c')
+    if wasm2c:
+      config['WABT_ROOT'] = os.path.dirname(os.path.dirname(wasm2c))
 
   # Only propagate certain settings from the config file.
   for key in CONFIG_KEYS:

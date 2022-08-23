@@ -1,7 +1,7 @@
 static int main_argc;
 static char** main_argv;
 
-IMPORT_IMPL(u32, Z_wasi_snapshot_preview1Z_args_sizes_getZ_iii, (u32 pargc, u32 pargv_buf_size), {
+IMPORT_IMPL(u32, Z_wasi_snapshot_preview1Z_args_sizes_get, (u32 pargc, u32 pargv_buf_size), {
   wasm_i32_store(pargc, main_argc);
   u32 buf_size = 0;
   for (u32 i = 0; i < main_argc; i++) {
@@ -11,7 +11,7 @@ IMPORT_IMPL(u32, Z_wasi_snapshot_preview1Z_args_sizes_getZ_iii, (u32 pargc, u32 
   return 0;
 });
 
-IMPORT_IMPL(u32, Z_wasi_snapshot_preview1Z_args_getZ_iii, (u32 argv, u32 argv_buf), {
+IMPORT_IMPL(u32, Z_wasi_snapshot_preview1Z_args_get, (u32 argv, u32 argv_buf), {
   u32 buf_size = 0;
   for (u32 i = 0; i < main_argc; i++) {
     u32 ptr = argv_buf + buf_size;
@@ -29,14 +29,14 @@ int main(int argc, char** argv) {
 
   init_fds();
 
-  init();
+  Z_test_hello_world_init();
 
   int trap_code;
-  if ((trap_code = setjmp(g_jmp_buf))) {
+  if ((trap_code = setjmp(wasm_rt_jmp_buf))) {
     printf("[wasm trap %d, halting]\n", trap_code);
     return 1;
   } else {
-    WASM_RT_ADD_PREFIX(Z__startZ_vv)();
+    Z_test_hello_worldZ__start();
   }
   return 0;
 }
