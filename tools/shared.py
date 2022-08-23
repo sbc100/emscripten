@@ -360,7 +360,8 @@ def set_version_globals():
 
 
 def generate_sanity():
-  sanity_file_content = f'{EMSCRIPTEN_VERSION}|{config.LLVM_ROOT}|{get_clang_version()}'
+  llvm_root = os.path.normcase(config.LLVM_ROOT)
+  sanity_file_content = f'{EMSCRIPTEN_VERSION}|{llvm_root}|{get_clang_version()}'
   config_data = utils.read_file(config.EM_CONFIG)
   checksum = binascii.crc32(config_data.encode())
   sanity_file_content += '|%#x\n' % checksum
