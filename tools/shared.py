@@ -711,6 +711,15 @@ def get_llvm_target():
     return 'wasm32-unknown-emscripten'
 
 
+def should_run_binaryen_optimizer():
+  # run the binaryen optimizer in -O2+. in -O0 we don't need it obviously, while
+  # in -O1 we don't run it as the LLVM optimizer has been run, and it does the
+  # great majority of the work; not running the binaryen optimizer in that case
+  # keeps -O1 mostly-optimized while compiling quickly and without rewriting
+  # DWARF etc.
+  return settings.OPT_LEVEL >= 2
+
+
 # ============================================================================
 # End declarations.
 # ============================================================================

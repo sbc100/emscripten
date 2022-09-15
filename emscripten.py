@@ -428,12 +428,6 @@ def emscript(in_wasm, out_wasm, outfile_js, memfile):
     module = None
 
 
-def remove_trailing_zeros(memfile):
-  mem_data = utils.read_binary(memfile)
-  mem_data = mem_data.rstrip(b'\0')
-  utils.write_binary(memfile, mem_data)
-
-
 @ToolchainProfiler.profile()
 def get_metadata(infile, outfile, modify_wasm, args):
   metadata = extract_metadata.extract_metadata(infile)
@@ -505,6 +499,8 @@ def finalize_wasm(infile, outfile, memfile):
   if memfile:
     args.append(f'--separate-data-segments={memfile}')
     args.append(f'--global-base={settings.GLOBAL_BASE}')
+    if shared.should_run_binaryen_optimizer():
+      args.append('--pack-memory')
     modify_wasm = True
   if settings.SIDE_MODULE:
     args.append('--side-module')
@@ -524,13 +520,6 @@ def finalize_wasm(infile, outfile, memfile):
     shutil.copy(infile, outfile)
   if settings.GENERATE_SOURCE_MAP:
     building.save_intermediate(infile + '.map', 'post_finalize.map')
-
-  if memfile:
-    # we have a separate .mem file. binaryen did not strip any trailing zeros,
-    # because it's an ABI question as to whether it is valid to do so or not.
-    # we can do so here, since we make sure to zero out that memory (even in
-    # the dynamic linking case, our loader zeros it out)
-    remove_trailing_zeros(memfile)
 
   expected_exports = set(settings.EXPORTED_FUNCTIONS)
   expected_exports.update(asmjs_mangle(s) for s in settings.REQUIRED_EXPORTS)

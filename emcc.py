@@ -529,18 +529,10 @@ def cxx_to_c_compiler(cxx):
   return os.path.join(dirname, basename)
 
 
-def should_run_binaryen_optimizer():
-  # run the binaryen optimizer in -O2+. in -O0 we don't need it obviously, while
-  # in -O1 we don't run it as the LLVM optimizer has been run, and it does the
-  # great majority of the work; not running the binaryen optimizer in that case
-  # keeps -O1 mostly-optimized while compiling quickly and without rewriting
-  # DWARF etc.
-  return settings.OPT_LEVEL >= 2
-
 
 def get_binaryen_passes():
   passes = []
-  optimizing = should_run_binaryen_optimizer()
+  optimizing = shared.should_run_binaryen_optimizer()
   # safe heap must run before post-emscripten, so post-emscripten can apply the sbrk ptr
   if settings.SAFE_HEAP:
     passes += ['--safe-heap']
@@ -607,10 +599,7 @@ def get_binaryen_passes():
   # normally we can assume the memory, if imported, has not been modified
   # beforehand (in fact, in most cases the memory is not even imported anyhow,
   # but it is still safe to pass the flag), and is therefore filled with zeros.
-  # the one exception is dynamic linking of a side module: the main module is ok
-  # as it is loaded first, but the side module may be assigned memory that was
-  # previously used.
-  if optimizing and not settings.SIDE_MODULE:
+  if optimizing:
     passes += ['--zero-filled-memory']
   # LLVM output always has immutable initial table contents: the table is
   # fixed and may only be appended to at runtime (that is true even in
