@@ -327,7 +327,7 @@ if config.V8_ENGINE and config.V8_ENGINE in config.JS_ENGINES:
   default_v8_name = os.environ.get('EMBENCH_NAME') or 'v8'
   if common.EMTEST_FORCE64:
     benchmarkers += [
-      EmscriptenBenchmarker(default_v8_name, aot_v8, ['-sMEMORY64=2']),
+      #EmscriptenBenchmarker(default_v8_name, aot_v8, ['-sMEMORY64=2']),
     ]
   else:
     benchmarkers += [
@@ -353,11 +353,11 @@ if config.SPIDERMONKEY_ENGINE and config.SPIDERMONKEY_ENGINE in config.JS_ENGINE
 if config.NODE_JS and config.NODE_JS in config.JS_ENGINES:
   if common.EMTEST_FORCE64:
     benchmarkers += [
-      EmscriptenBenchmarker('Node.js', config.NODE_JS, ['-sMEMORY64=2']),
+      #EmscriptenBenchmarker('Node.js', config.NODE_JS, ['-sMEMORY64=2']),
     ]
   else:
     benchmarkers += [
-      # EmscriptenBenchmarker('Node.js', config.NODE_JS),
+      #EmscriptenBenchmarker('Node.js', config.NODE_JS),
     ]
 
 
@@ -404,8 +404,7 @@ class benchmark(common.RunnerCore):
   def do_benchmark(self, name, src, expected_output='FAIL', args=None,
                    emcc_args=None, native_args=None, shared_args=None,
                    force_c=False, reps=TEST_REPS, native_exec=None,
-                   output_parser=None, args_processor=None, lib_builder=None,
-                   skip_native=False):
+                   output_parser=None, args_processor=None, lib_builder=None):
     if not benchmarkers:
       raise Exception('error, no benchmarkers')
 
@@ -422,8 +421,6 @@ class benchmark(common.RunnerCore):
     print()
     baseline = None
     for b in benchmarkers:
-      if skip_native and isinstance(b, NativeBenchmarker):
-        continue
       baseline = b
       print('Running benchmarker: %s: %s' % (b.__class__.__name__, b.name))
       b.build(self, filename, args, shared_args, emcc_args, native_args, native_exec, lib_builder, has_output_parser=output_parser is not None)
@@ -1064,9 +1061,8 @@ class benchmark(common.RunnerCore):
       ''' % DEFAULT_ARG)
 
     def lib_builder(name, native, env_init):
-      return self.get_poppler_library(env_init=env_init)
+      return self.get_poppler_library(env_init=env_init, native=native)
 
-    # TODO: Fix poppler native build and remove skip_native=True
     self.do_benchmark('poppler', '', 'hashed printout',
                       shared_args=['-I' + test_file('poppler/include'),
                                    '-I' + test_file('freetype/include')],
@@ -1074,4 +1070,4 @@ class benchmark(common.RunnerCore):
                                  test_file('poppler/emscripten_html5.pdf') + '@input.pdf',
                                  '-sERROR_ON_UNDEFINED_SYMBOLS=0',
                                  '-sMINIMAL_RUNTIME=0'], # not minimal because of files
-                      lib_builder=lib_builder, skip_native=True)
+                      lib_builder=lib_builder)

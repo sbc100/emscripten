@@ -1142,10 +1142,12 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
 
   def get_library(self, name, generated_libs, configure=['sh', './configure'],  # noqa
                   configure_args=None, make=None, make_args=None,
-                  env_init=None, cache_name_extra='', native=False,
+                  env_init=None, cache_name_extra='', native=False, cflags=None):
                   force_rebuild=False):
     if make is None:
       make = ['make']
+    if cflags is None:
+      cflags = []
     if env_init is None:
       env_init = {}
     if make_args is None:
@@ -1454,35 +1456,32 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
           raise
     return js_output
 
-  def get_freetype_library(self):
-    self.emcc_args += [
-      '-Wno-misleading-indentation',
-      '-Wno-unused-but-set-variable',
-      '-Wno-pointer-bool-conversion',
-      '-Wno-shift-negative-value',
-      '-Wno-gnu-offsetof-extensions',
-      # And becuase gnu-offsetof-extensions is a new warning:
-      '-Wno-unknown-warning-option',
-    ]
+  def get_freetype_library(self, native=False):
     return self.get_library(os.path.join('third_party', 'freetype'),
                             os.path.join('objs', '.libs', 'libfreetype.a'),
-                            configure_args=['--disable-shared', '--without-zlib'])
+                            configure_args=['--disable-shared', '--without-zlib'],
+                            cflags=[
+                              '-Wno-misleading-indentation',
+                              '-Wno-unused-but-set-variable',
+                              '-Wno-pointer-bool-conversion',
+                              '-Wno-shift-negative-value',
+                              '-Wno-gnu-offsetof-extensions',
+                              # And becuase gnu-offsetof-extensions is a new warning:
+                              '-Wno-unknown-warning-option'],
+                            native=native)
 
-  def get_poppler_library(self, env_init=None):
-    freetype = self.get_freetype_library()
+  def get_poppler_library(self, env_init=None, native=False):
+    freetype = self.get_freetype_library(native=native)
 
     # The fontconfig symbols are all missing from the poppler build
     # e.g. FcConfigSubstitute
     self.set_setting('ERROR_ON_UNDEFINED_SYMBOLS', 0)
 
-    self.emcc_args += [
+    cflags = [
       '-I' + test_file('third_party/freetype/include'),
-      '-I' + test_file('third_party/poppler/include')
-    ]
-
-    # Poppler has some pretty glaring warning.  Suppress them to keep the
-    # test output readable.
-    self.emcc_args += [
+      '-I' + test_file('third_party/poppler/include'),
+      # Poppler has some pretty glaring warning.  Suppress them to keep the
+      # test output readable.
       '-Wno-sentinel',
       '-Wno-logical-not-parentheses',
       '-Wno-unused-private-field',
@@ -1490,6 +1489,10 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       '-Wno-unknown-pragmas',
       '-Wno-shift-negative-value',
       '-Wno-dynamic-class-memaccess',
+      '-Wno-unused-but-set-variable',
+    ]
+
+    self.emcc_args += [
       # Avoid warning about ERROR_ON_UNDEFINED_SYMBOLS being used at compile time
       '-Wno-unused-command-line-argument',
       '-Wno-js-compiler',
@@ -1497,12 +1500,18 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     env_init = env_init.copy() if env_init else {}
     env_init['FONTCONFIG_CFLAGS'] = ' '
     env_init['FONTCONFIG_LIBS'] = ' '
+    if native:
+      env_init['LIBS'] = freetype[0]
 
     poppler = self.get_library(
         os.path.join('third_party', 'poppler'),
         [os.path.join('utils', 'pdftoppm.o'), os.path.join('utils', 'parseargs.o'), os.path.join('poppler', '.libs', 'libpoppler.a')],
         env_init=env_init,
-        configure_args=['--disable-libjpeg', '--disable-libpng', '--disable-poppler-qt', '--disable-poppler-qt4', '--disable-cms', '--disable-cairo-output', '--disable-abiword-output', '--disable-shared'])
+        configure_args=['--disable-libjpeg', '--disable-libpng', '--disable-poppler-qt',
+                        '--disable-poppler-qt4', '--disable-cms', '--disable-cairo-output',
+                        '--disable-abiword-output', '--disable-shared', '--disable-utils'],
+        native=native,
+        cflags=cflags)
 
     return poppler + freetype
 
