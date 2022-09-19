@@ -1143,11 +1143,14 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   def get_library(self, name, generated_libs, configure=['sh', './configure'],  # noqa
                   configure_args=None, make=None, make_args=None,
                   env_init=None, cache_name_extra='', native=False,
+                  env_init=None, cache_name_extra='', native=False, cflags=None,
                   force_rebuild=False):
     if make is None:
       make = ['make']
     if env_init is None:
       env_init = {}
+    if cflags is None:
+      cflags = []
     if make_args is None:
       make_args = ['-j', str(shared.get_num_cores())]
 
@@ -1157,12 +1160,14 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     # get_library() is used to compile libraries, and not link executables,
     # so we don't want to pass linker flags here (emscripten warns if you
     # try to pass linker settings when compiling).
-    emcc_args = []
-    if not native:
+    if native:
+      cache_name = name
+    else:
       emcc_args = self.get_emcc_args(ldflags=False)
+      cflags += emcc_args
 
-    hash_input = (str(emcc_args) + ' $ ' + str(env_init)).encode('utf-8')
-    cache_name = name + ','.join([opt for opt in emcc_args if len(opt) < 7]) + '_' + hashlib.md5(hash_input).hexdigest() + cache_name_extra
+      hash_input = (str(emcc_args) + ' $ ' + str(env_init)).encode('utf-8')
+      cache_name = name + ','.join([opt for opt in emcc_args if len(opt) < 7]) + '_' + hashlib.md5(hash_input).hexdigest() + cache_name_extra
 
     valid_chars = "_%s%s" % (string.ascii_letters, string.digits)
     cache_name = ''.join([(c if c in valid_chars else '_') for c in cache_name])
@@ -1182,9 +1187,11 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       configure = list(configure)
       configure += configure_args
 
-    cflags = ' '.join(emcc_args)
-    env_init.setdefault('CFLAGS', cflags)
-    env_init.setdefault('CXXFLAGS', cflags)
+    cflags = ' '.join(cflags)
+    env_init.setdefault('CFLAGS', '')
+    env_init.setdefault('CXXFLAGS', '')
+    env_init['CFLAGS'] += ' ' + cflags
+    env_init['CXXFLAGS'] += ' ' + cflags
     return build_library(name, build_dir, output_dir, generated_libs, configure,
                          make, make_args, self.library_cache,
                          cache_name, env_init=env_init, native=native)
@@ -1454,36 +1461,35 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
           raise
     return js_output
 
-  def get_freetype_library(self):
-    self.emcc_args += [
-      '-Wno-misleading-indentation',
+  def get_freetype_library(self, native=False):
+    cflags = [
+      '-Wno-shift-negative-value',
       '-Wno-unused-but-set-variable',
       '-Wno-pointer-bool-conversion',
-      '-Wno-shift-negative-value',
+      '-Wno-misleading-indentation',
       '-Wno-gnu-offsetof-extensions',
       # And becuase gnu-offsetof-extensions is a new warning:
       '-Wno-unknown-warning-option',
     ]
     return self.get_library(os.path.join('third_party', 'freetype'),
                             os.path.join('objs', '.libs', 'libfreetype.a'),
-                            configure_args=['--disable-shared', '--without-zlib'])
+                            configure_args=['--disable-shared', '--without-zlib'],
+                            native=native,
+                            cflags=cflags)
 
-  def get_poppler_library(self, env_init=None):
-    freetype = self.get_freetype_library()
+  def get_poppler_library(self, env_init=None, native=False):
+    freetype = self.get_freetype_library(native=native)
 
     # The fontconfig symbols are all missing from the poppler build
     # e.g. FcConfigSubstitute
     self.set_setting('ERROR_ON_UNDEFINED_SYMBOLS', 0)
 
-    self.emcc_args += [
+    cflags = [
       '-I' + test_file('third_party/freetype/include'),
-      '-I' + test_file('third_party/poppler/include')
-    ]
-
-    # Poppler has some pretty glaring warning.  Suppress them to keep the
-    # test output readable.
-    self.emcc_args += [
+      '-I' + test_file('third_party/poppler/include'),
+      '-Wno-unused-command-line-argument',
       '-Wno-sentinel',
+      '-Wno-unused-but-set-variable',
       '-Wno-logical-not-parentheses',
       '-Wno-unused-private-field',
       '-Wno-tautological-compare',
@@ -1494,6 +1500,11 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       '-Wno-unused-command-line-argument',
       '-Wno-js-compiler',
     ]
+
+    # Poppler has some pretty glaring warning.  Suppress them to keep the
+    # test output readable.
+    if '-Werror' in self.emcc_args:
+      self.emcc_args.remove('-Werror')
     env_init = env_init.copy() if env_init else {}
     env_init['FONTCONFIG_CFLAGS'] = ' '
     env_init['FONTCONFIG_LIBS'] = ' '
@@ -1502,7 +1513,12 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
         os.path.join('third_party', 'poppler'),
         [os.path.join('utils', 'pdftoppm.o'), os.path.join('utils', 'parseargs.o'), os.path.join('poppler', '.libs', 'libpoppler.a')],
         env_init=env_init,
-        configure_args=['--disable-libjpeg', '--disable-libpng', '--disable-poppler-qt', '--disable-poppler-qt4', '--disable-cms', '--disable-cairo-output', '--disable-abiword-output', '--disable-shared'])
+        configure_args=['--disable-libjpeg', '--disable-libpng', '--disable-poppler-qt',
+                        '--disable-poppler-qt4', '--disable-cms', '--disable-cairo-output',
+                        '--disable-abiword-output', '--disable-shared'],
+        native=native,
+        cflags=cflags,
+        )
 
     return poppler + freetype
 

@@ -1137,6 +1137,7 @@ void testset_debug1(void){
 }
 
 int main(int argc, char **argv){
+  printf("Starting speedtest1\n");
   int doAutovac = 0;            /* True for --autovacuum */
   int cacheSize = 0;            /* Desired cache size.  0 means default */
   int doExclusive = 0;          /* True for --exclusive */

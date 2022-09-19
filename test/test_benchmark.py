@@ -21,8 +21,8 @@ import clang_native
 import jsrun
 import common
 from tools.shared import CLANG_CC, CLANG_CXX
-from common import test_file, read_file, read_binary
-from tools.shared import run_process, PIPE, EMCC, config
+from common import test_file, read_file, read_binary, create_file
+from tools.shared import run_process, PIPE, EMCC, config, unsuffixed_basename
 from tools import building, utils, shared
 
 # standard arguments for timing:
@@ -153,9 +153,11 @@ class NativeBenchmarker(Benchmarker):
       shutil.copyfile(native_exec, filename + '.native')
       shutil.copymode(native_exec, filename + '.native')
 
-    final = os.path.dirname(filename) + os.path.sep + self.name + '_' + os.path.basename(filename) + '.native'
+    final = unsuffixed_basename(filename)
+    if self.name:
+      final = self.name + '_' + final
     shutil.move(filename + '.native', final)
-    self.filename = final
+    self.filename = os.path.abspath(final)
 
   def run(self, args):
     return run_process([self.filename] + args, stdout=PIPE, stderr=PIPE, check=False).stdout
@@ -190,7 +192,7 @@ class EmscriptenBenchmarker(Benchmarker):
     self.filename = filename
     llvm_root = self.env.get('LLVM') or config.LLVM_ROOT
     if lib_builder:
-      env_init = self.env.copy()
+      env_init = {}
       # Note that we need to pass in all the flags here because some build
       # systems (like zlib) if they see a CFLAGS it will override all their
       # default flags, including optimizations.
@@ -198,9 +200,9 @@ class EmscriptenBenchmarker(Benchmarker):
       # This shouldn't be 'emcc_args += ...', because emcc_args is passed in as
       # a parameter and changes will be visible to the caller.
       emcc_args = emcc_args + lib_builder('js_' + llvm_root, native=False, env_init=env_init)
-    final = os.path.dirname(filename) + os.path.sep + self.name + ('_' if self.name else '') + os.path.basename(filename) + '.js'
-    final = final.replace('.cpp', '')
-    utils.delete_file(final)
+    final = unsuffixed_basename(filename)
+    if self.name:
+      final = self.name + '_' + final
     cmd = [
       EMCC, filename,
       OPTIMIZATIONS,
@@ -315,7 +317,7 @@ benchmarkers: List[Benchmarker] = []
 
 if not common.EMTEST_FORCE64:
   benchmarkers += [
-    NativeBenchmarker('clang', [CLANG_CC], [CLANG_CXX]),
+    # NativeBenchmarker('clang', [CLANG_CC], [CLANG_CXX]),
     # NativeBenchmarker('gcc',   ['gcc', '-no-pie'],  ['g++', '-no-pie'])
   ]
 
@@ -327,7 +329,7 @@ if config.V8_ENGINE and config.V8_ENGINE in config.JS_ENGINES:
   default_v8_name = os.environ.get('EMBENCH_NAME') or 'v8'
   if common.EMTEST_FORCE64:
     benchmarkers += [
-      EmscriptenBenchmarker(default_v8_name, aot_v8, ['-sMEMORY64=2']),
+      # EmscriptenBenchmarker(default_v8_name, aot_v8, ['-sMEMORY64=2']),
     ]
   else:
     benchmarkers += [
@@ -353,11 +355,11 @@ if config.SPIDERMONKEY_ENGINE and config.SPIDERMONKEY_ENGINE in config.JS_ENGINE
 if config.NODE_JS and config.NODE_JS in config.JS_ENGINES:
   if common.EMTEST_FORCE64:
     benchmarkers += [
-      EmscriptenBenchmarker('Node.js', config.NODE_JS, ['-sMEMORY64=2']),
+      #EmscriptenBenchmarker('Node.js', config.NODE_JS, ['-sMEMORY64=2']),
     ]
   else:
     benchmarkers += [
-      # EmscriptenBenchmarker('Node.js', config.NODE_JS),
+      EmscriptenBenchmarker('Node.js', config.NODE_JS),
     ]
 
 
@@ -413,11 +415,13 @@ class benchmark(common.RunnerCore):
     if args_processor:
       args = args_processor(args)
 
-    dirname = self.get_dir()
-    filename = os.path.join(dirname, name + '.c' + ('' if force_c else 'pp'))
+    if force_c:
+      ext = '.c'
+    else:
+      ext = '.cpp'
     src = self.hardcode_arguments(src)
-    with open(filename, 'w') as f:
-      f.write(src)
+    filename = name + ext
+    create_file(filename, src)
 
     print()
     baseline = None
@@ -1009,23 +1013,22 @@ class benchmark(common.RunnerCore):
   def test_zzz_lzma(self):
     src = read_file(test_file('benchmark/test_lzma_benchmark.c'))
 
-    def lib_builder(name, native, env_init):
-      return self.get_library(os.path.join('third_party', 'lzma'), [os.path.join('lzma.a')], configure=None, native=native, cache_name_extra=name, env_init=env_init)
+    def lib_builder(name, native, env_init, cflags):
+      return self.get_library(os.path.join('third_party', 'lzma'), [os.path.join('lzma.a')], configure=None, native=native, cache_name_extra=name, env_init=env_init, cflags=cflags)
 
     self.do_benchmark('lzma', src, 'ok.', shared_args=['-I' + test_file('third_party/lzma')], lib_builder=lib_builder)
 
   def test_zzz_sqlite(self):
-    src = read_file(test_file('third_party/sqlite/sqlite3.c')) + read_file(test_file('sqlite/speedtest1.c'))
+    src = read_file(test_file('sqlite/speedtest1.c'))
     self.do_benchmark('sqlite', src, 'TOTAL...',
                       native_args=['-ldl', '-pthread'],
-                      shared_args=['-I' + test_file('third_party/sqlite')],
+                      shared_args=[test_file('third_party/sqlite/sqlite3.c'), '-I' + test_file('third_party/sqlite')],
                       # not minimal because of files
                       emcc_args=['-sFILESYSTEM', '-sMINIMAL_RUNTIME=0'],
                       force_c=True)
 
   def test_zzz_poppler(self):
-    with open('pre.js', 'w') as f:
-      f.write('''
+    create_file('pre.js', '''
         var benchmarkArgument = %s;
         var benchmarkArgumentToPageCount = {
           '0': 0,
@@ -1064,9 +1067,8 @@ class benchmark(common.RunnerCore):
       ''' % DEFAULT_ARG)
 
     def lib_builder(name, native, env_init):
-      return self.get_poppler_library(env_init=env_init)
+      return self.get_poppler_library(env_init=env_init, native=native)
 
-    # TODO: Fix poppler native build and remove skip_native=True
     self.do_benchmark('poppler', '', 'hashed printout',
                       shared_args=['-I' + test_file('poppler/include'),
                                    '-I' + test_file('freetype/include')],
@@ -1074,4 +1076,4 @@ class benchmark(common.RunnerCore):
                                  test_file('poppler/emscripten_html5.pdf') + '@input.pdf',
                                  '-sERROR_ON_UNDEFINED_SYMBOLS=0',
                                  '-sMINIMAL_RUNTIME=0'], # not minimal because of files
-                      lib_builder=lib_builder, skip_native=True)
+                      lib_builder=lib_builder)
