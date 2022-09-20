@@ -2378,7 +2378,10 @@ def phase_linker_setup(options, state, newargs):
     if sym in settings.EXPORTED_RUNTIME_METHODS:
       settings.REQUIRED_EXPORTS.append(sym)
 
-  settings.REQUIRED_EXPORTS += ['stackSave', 'stackRestore', 'stackAlloc']
+  if settings.STANDALONE_WASM:
+    settings.EXPORT_IF_DEFINED += ['stackSave', 'stackRestore', 'stackAlloc']
+  else:
+    settings.REQUIRED_EXPORTS += ['stackSave', 'stackRestore', 'stackAlloc']
 
   if settings.RELOCATABLE:
     # TODO(https://reviews.llvm.org/D128515): Make this mandatory once
@@ -2404,8 +2407,12 @@ def phase_linker_setup(options, state, newargs):
       settings.EXPORT_IF_DEFINED += ['fflush']
 
     if settings.SUPPORT_ERRNO:
+
       # so setErrNo JS library function can report errno back to C
-      settings.REQUIRED_EXPORTS += ['__errno_location']
+      if settings.STANDALONE_WASM:
+        settings.EXPORT_IF_DEFINED += ['__errno_location']
+      else:
+        settings.REQUIRED_EXPORTS += ['__errno_location']
 
   if settings.SAFE_HEAP:
     # SAFE_HEAP check includes calling emscripten_get_sbrk_ptr() from wasm
