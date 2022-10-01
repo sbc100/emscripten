@@ -8209,6 +8209,26 @@ int main() {
 
     self.do_runf('main.c', 'hello 0\nhello 1\nhello 2\nhello 3\nhello 4\n')
 
+  @with_asyncify_and_stack_switching
+  def test_async_bigint(self):
+    self.set_setting('WASM_BIGINT')
+    self.node_args += ['--experimental-wasm-bigint']
+    create_file('main.c',  r'''
+#include <stdint.h>
+#include <stdio.h>
+#include <emscripten.h>
+
+EMSCRIPTEN_KEEPALIVE
+void foo(uint64_t arg) {
+  printf("in foo: %lld\n", arg);
+  emscripten_sleep(100);
+  printf("back in foo: %lld\n", arg);
+}
+''')
+
+    create_file('pre.js', 'Module["onRuntimeInitialized"] = () => Module._foo(42n);')
+    self.do_runf('main.c', 'in foo: 42\nback in foo: 42\n', emcc_args=['--pre-js', 'pre.js'])
+
   @requires_v8
   @no_wasm64('TODO: asyncify for wasm64')
   def test_async_hello_v8(self):
