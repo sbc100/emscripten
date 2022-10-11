@@ -21,7 +21,7 @@ import clang_native
 import jsrun
 import common
 from tools.shared import CLANG_CC, CLANG_CXX
-from common import test_file, read_file, read_binary
+from common import test_file, read_file, read_binary, create_file
 from tools.shared import run_process, PIPE, EMCC, config
 from tools import building, utils, shared
 
@@ -153,7 +153,7 @@ class NativeBenchmarker(Benchmarker):
       shutil.copyfile(native_exec, filename + '.native')
       shutil.copymode(native_exec, filename + '.native')
 
-    final = os.path.dirname(filename) + os.path.sep + self.name + '_' + os.path.basename(filename) + '.native'
+    final = self.name + '_' + os.path.basename(filename) + '.native'
     shutil.move(filename + '.native', final)
     self.filename = final
 
@@ -198,7 +198,7 @@ class EmscriptenBenchmarker(Benchmarker):
       # This shouldn't be 'emcc_args += ...', because emcc_args is passed in as
       # a parameter and changes will be visible to the caller.
       emcc_args = emcc_args + lib_builder('js_' + llvm_root, native=False, env_init=env_init)
-    final = os.path.dirname(filename) + os.path.sep + self.name + ('_' if self.name else '') + os.path.basename(filename) + '.js'
+    final = self.name + ('_' if self.name else '') + os.path.basename(filename) + '.js'
     final = final.replace('.cpp', '')
     utils.delete_file(final)
     cmd = [
@@ -413,11 +413,9 @@ class benchmark(common.RunnerCore):
     if args_processor:
       args = args_processor(args)
 
-    dirname = self.get_dir()
-    filename = os.path.join(dirname, name + '.c' + ('' if force_c else 'pp'))
+    filename = name + '.c' + ('' if force_c else 'pp')
     src = self.hardcode_arguments(src)
-    with open(filename, 'w') as f:
-      f.write(src)
+    create_file(filename, src)
 
     print()
     baseline = None
@@ -982,11 +980,11 @@ class benchmark(common.RunnerCore):
     def lib_builder(name, native, env_init):
       return self.get_library(os.path.join('third_party', 'box2d'), ['box2d.a'], configure=None, native=native, cache_name_extra=name, env_init=env_init)
 
-    self.do_benchmark('box2d', src, 'frame averages', shared_args=['-I' + test_file('third_party/box2d')], lib_builder=lib_builder)
+    self.do_benchmark('box2d', src, 'frame averages', shared_args=['-Wno-integer-overflow', '-I' + test_file('third_party/box2d')], lib_builder=lib_builder)
 
   def test_zzz_bullet(self):
     self.emcc_args.remove('-Werror')
-    self.emcc_args += ['-Wno-c++11-narrowing', '-Wno-deprecated-register', '-Wno-writable-strings']
+    self.emcc_args += ['-Wno-c++11-narrowing', '-Wno-deprecated-register', '-Wno-writable-strings', '-Wno-shift-negative-value']
     src = read_file(test_file('third_party/bullet/Demos/Benchmarks/BenchmarkDemo.cpp'))
     src += read_file(test_file('third_party/bullet/Demos/Benchmarks/main.cpp'))
 
@@ -1024,44 +1022,45 @@ class benchmark(common.RunnerCore):
                       force_c=True)
 
   def test_zzz_poppler(self):
-    with open('pre.js', 'w') as f:
-      f.write('''
-        var benchmarkArgument = %s;
-        var benchmarkArgumentToPageCount = {
-          '0': 0,
-          '1': 1,
-          '2': 5,
-          '3': 15,
-          '4': 26,
-          '5': 55,
-        };
-        if (benchmarkArgument === 0) {
-          Module['arguments'] = ['-?'];
-          Module['printErr'] = function(){};
-        } else {
-          // Add 'filename' after 'input.pdf' to write the output so it can be verified.
-          Module['arguments'] = ['-scale-to', '1024', 'input.pdf',  '-f', '1', '-l', '' + benchmarkArgumentToPageCount[benchmarkArgument]];
-          Module['postRun'] = function() {
-            var files = [];
-            for (var x in FS.root.contents) {
-              if (x.startsWith('filename-')) {
-                files.push(x);
-              }
+    create_file('pre.js', '''
+      var benchmarkArgument = %s;
+      var benchmarkArgumentToPageCount = {
+        '0': 0,
+        '1': 1,
+        '2': 5,
+        '3': 15,
+        '4': 26,
+        '5': 55,
+      };
+      if (benchmarkArgument === 0) {
+        Module['arguments'] = ['-?'];
+        Module['printErr'] = function(){};
+      } else {
+        // Add 'filename' after 'input.pdf' to write the output so it can be verified.
+        Module['arguments'] = ['-scale-to', '1024', 'input.pdf',  '-f', '1', '-l', '' + benchmarkArgumentToPageCount[benchmarkArgument]];
+        Module['postRun'] = function() {
+          var files = [];
+          for (var x in FS.root.contents) {
+            if (x.startsWith('filename-')) {
+              files.push(x);
             }
-            files.sort();
-            var hash = 5381;
-            var totalSize = 0;
-            files.forEach(function(file) {
-              var data = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents[file]));
-              for (var i = 0; i < data.length; i++) {
-                hash = ((hash << 5) + hash) ^ (data[i] & 0xff);
-              }
-              totalSize += data.length;
-            });
-            out(files.length + ' files emitted, total output size: ' + totalSize + ', hashed printout: ' + hash);
-          };
-        }
-      ''' % DEFAULT_ARG)
+          }
+          files.sort();
+          var hash = 5381;
+          var totalSize = 0;
+          files.forEach(function(file) {
+            var data = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents[file]));
+            for (var i = 0; i < data.length; i++) {
+              hash = ((hash << 5) + hash) ^ (data[i] & 0xff);
+            }
+            totalSize += data.length;
+          });
+          out(files.length + ' files emitted, total output size: ' + totalSize + ', hashed printout: ' + hash);
+        };
+      }
+    ''' % DEFAULT_ARG)
+
+    self.emcc_args += ['-Wno-js-compiler']
 
     def lib_builder(name, native, env_init):
       return self.get_poppler_library(env_init=env_init)
