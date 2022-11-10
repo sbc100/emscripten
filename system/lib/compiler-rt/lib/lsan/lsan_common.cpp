@@ -576,7 +576,7 @@ void ScanRootRegion(Frontier *frontier, const RootRegion &root_region,
 static void ProcessRootRegion(Frontier *frontier,
                               const RootRegion &root_region) {
 #if SANITIZER_EMSCRIPTEN
-  ScanRootRegion(frontier, root_region, 0, emscripten_get_heap_size(), true);
+  ScanRootRegion(frontier, root_region, 0, emscripten_memory_get_size(), true);
 #else
   MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
   MemoryMappedSegment segment;

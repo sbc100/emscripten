@@ -113,23 +113,23 @@ mergeInto(LibraryManager.library, {
 #endif
 
   // Returns a pointer ('p'), which means an i32 on wasm32 and an i64 wasm64
-  // We have a separate JS version `getHeapMax()` which can be called directly
+  // We have a separate JS version `getMemoryMax()` which can be called directly
   // avoiding any wrapper added for wasm64.
-  emscripten_get_heap_max__deps: ['$getHeapMax'],
-  emscripten_get_heap_max: () => {
-    return getHeapMax();
+  emscripten_memory_get_max__deps: ['$getMemoryMax'],
+  emscripten_memory_get_max: () => {
+    return getMemoryMax();
   },
 
-  $getHeapMax: () =>
+  $getMemoryMax: function() {
 #if ALLOW_MEMORY_GROWTH
 #if MEMORY64 == 1
     {{{ MAXIMUM_MEMORY }}},
 #else
     // Stay one Wasm page short of 4GB: while e.g. Chrome is able to allocate
     // full 4GB Wasm memories, the size will wrap back to 0 bytes in Wasm side
-    // for any code that deals with heap sizes, which would require special
-    // casing all heap size related code to treat 0 specially.
-    {{{ Math.min(MAXIMUM_MEMORY, FOUR_GB - WASM_PAGE_SIZE) }}},
+    // for any code that deals with memory sizes, which would require special
+    // casing all memory size related code to treat 0 specially.
+    {{{ Math.min(MAXIMUM_MEMORY, FOUR_GB - WASM_PAGE_SIZE) }}};
 #endif
 #else // no growth
     HEAPU8.length,
@@ -184,8 +184,8 @@ mergeInto(LibraryManager.library, {
   },
 #endif // ~TEST_MEMORY_GROWTH_FAILS
 
-  emscripten_resize_heap__deps: [
-    '$getHeapMax',
+  emscripten_memory_resize__deps: [
+    '$getMemoryMax',
 #if ASSERTIONS == 2
     'emscripten_get_now',
 #endif
@@ -196,8 +196,7 @@ mergeInto(LibraryManager.library, {
     '$growMemory',
 #endif
   ],
-  emscripten_resize_heap: 'ip',
-  emscripten_resize_heap: (requestedSize) => {
+  emscripten_memory_resize: (requestedSize) => {
     var oldSize = HEAPU8.length;
 #if MEMORY64 != 1
     requestedSize = requestedSize >>> 0;
@@ -225,16 +224,16 @@ mergeInto(LibraryManager.library, {
 #endif
 
     // Memory resize rules:
-    // 1.  Always increase heap size to at least the requested size, rounded up
-    //     to next page multiple.
-    // 2a. If MEMORY_GROWTH_LINEAR_STEP == -1, excessively resize the heap
-    //     geometrically: increase the heap size according to
+    // 1.  Always increase memory size to at least the requested size, rounded
+    //     up to next page multiple.
+    // 2a. If MEMORY_GROWTH_LINEAR_STEP == -1, excessively resize the memory
+    //     geometrically: increase the memory size according to
     //     MEMORY_GROWTH_GEOMETRIC_STEP factor (default +20%), At most
     //     overreserve by MEMORY_GROWTH_GEOMETRIC_CAP bytes (default 96MB).
-    // 2b. If MEMORY_GROWTH_LINEAR_STEP != -1, excessively resize the heap
-    //     linearly: increase the heap size by at least
+    // 2b. If MEMORY_GROWTH_LINEAR_STEP != -1, excessively resize the memory
+    //     linearly: increase the memory size by at least
     //     MEMORY_GROWTH_LINEAR_STEP bytes.
-    // 3.  Max size for the heap is capped at 2048MB-WASM_PAGE_SIZE, or by
+    // 3.  Max size for the memory is capped at 2048MB-WASM_PAGE_SIZE, or by
     //     MAXIMUM_MEMORY, or by ASAN limit, depending on which is smallest
     // 4.  If we were unable to allocate as much memory, it may be due to
     //     over-eager decision to excessively reserve due to (3) above.
@@ -243,7 +242,7 @@ mergeInto(LibraryManager.library, {
 
     // A limit is set for how much we can grow. We should not exceed that
     // (the wasm binary specifies it, so if we tried, we'd fail anyhow).
-    var maxHeapSize = getHeapMax();
+    var maxHeapSize = getMemoryMax();
     if (requestedSize > maxHeapSize) {
 #if ASSERTIONS
       err(`Cannot enlarge memory, asked to go up to ${requestedSize} bytes, but the limit is ${maxHeapSize} bytes!`);
@@ -257,7 +256,7 @@ mergeInto(LibraryManager.library, {
 
     var alignUp = (x, multiple) => x + (multiple - x % multiple) % multiple;
 
-    // Loop through potential heap size increases. If we attempt a too eager
+    // Loop through potential memory size increases. If we attempt a too eager
     // reservation that fails, cut down on the attempted size and reserve a
     // smaller bump instead. (max 3 times, chosen somewhat arbitrarily)
     for (var cutDown = 1; cutDown <= 4; cutDown *= 2) {
@@ -296,7 +295,7 @@ mergeInto(LibraryManager.library, {
       }
     }
 #if ASSERTIONS
-    err(`Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
+    err(`Failed to grow the memory from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
 #endif
 #if ABORTING_MALLOC
     abortOnCannotGrowMemory(requestedSize);

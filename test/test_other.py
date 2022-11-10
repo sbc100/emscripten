@@ -12107,12 +12107,12 @@ exec "$@"
     # integer
     '4GB': ('-sMAXIMUM_MEMORY=4GB', '4294901760'),
   })
-  def test_emscripten_get_heap_max(self, arg, expected):
+  def test_emscripten_memory_get_max(self, arg, expected):
     create_file('get.c', r'''
       #include <emscripten/heap.h>
       #include <stdio.h>
       int main() {
-        printf("max: |%zu|\n", emscripten_get_heap_max());
+        printf("max: |%zu|\n", emscripten_memory_get_max());
       }
     ''')
     self.do_runf('get.c', f'max: |{expected}|', emcc_args=['-sALLOW_MEMORY_GROWTH', arg])
@@ -13110,11 +13110,11 @@ j1: 8589934599, j2: 30064771074, j3: 12884901891
     create_file('f2.c', '''
     #include <emscripten.h>
 
-    EM_JS_DEPS(main, "$getHeapMax");
+    EM_JS_DEPS(main, "$getMemoryMax");
 
     int main() {
       EM_ASM({
-        err(getHeapMax());
+        err(getMemoryMax());
         var x = stackSave();
         stringToUTF8OnStack("hello");
         stackRestore(x);
