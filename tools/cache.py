@@ -28,7 +28,7 @@ def acquire_cache_lock(reason):
   if config.FROZEN_CACHE:
     # Raise an exception here rather than exit_with_error since in practice this
     # should never happen
-    raise Exception('Attempt to lock the cache but FROZEN_CACHE is set')
+    raise Exception(f'Attempt to lock the cache but FROZEN_CACHE is set ({reason})')
 
   if acquired_count == 0:
     logger.debug(f'PID {os.getpid()} acquiring multiprocess file lock to Emscripten cache at {cachedir}')
@@ -47,7 +47,7 @@ def acquire_cache_lock(reason):
 def release_cache_lock():
   global acquired_count
   acquired_count -= 1
-  assert acquired_count >= 0, "Called release more times than acquire"
+  assert acquired_count >= 0, 'Called release more times than acquire'
   if acquired_count == 0:
     assert os.environ['EM_CACHE_IS_LOCKED'] == '1'
     del os.environ['EM_CACHE_IS_LOCKED']
@@ -144,9 +144,10 @@ def get_lib(libname, *args, **kwargs):
 def get(shortname, creator, what=None, force=False, quiet=False, deferred=False):
   ensure_setup()
   cachename = Path(cachedir, shortname)
+
   # Check for existence before taking the lock in case we can avoid the
   # lock completely.
-  if cachename.exists() and not force:
+  if not config.AUTO_BUILD or (cachename.exists() and not force):
     return str(cachename)
 
   if config.FROZEN_CACHE:

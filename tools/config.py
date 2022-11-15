@@ -33,6 +33,7 @@ WASMER = None
 WASMTIME = None
 WASM_ENGINES: List[List[str]] = []
 FROZEN_CACHE = None
+AUTO_BUILD = True
 CACHE = None
 PORTS = None
 COMPILER_WRAPPER = None
@@ -127,6 +128,7 @@ def parse_config_file():
 
   CONFIG_KEYS = (
     'NODE_JS',
+    'AUTO_BUILD',
     'BINARYEN_ROOT',
     'SPIDERMONKEY_ENGINE',
     'V8_ENGINE',
