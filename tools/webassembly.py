@@ -55,6 +55,10 @@ def read_sleb(iobuf):
   return leb128.i.decode_reader(iobuf)[0]
 
 
+def write_uleb(iobuf, value):
+  return iobuf.write(leb128.u.encode(value)
+
+
 def memoize(method):
 
   @wraps(method)

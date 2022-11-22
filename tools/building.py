@@ -1158,7 +1158,7 @@ def map_and_apply_to_settings(library_name):
   return False
 
 
-def emit_wasm_source_map(wasm_file, map_file, final_wasm):
+def emit_wasm_source_map(wasm_file, map_file, final_wasm, url):
   # source file paths must be relative to the location of the map (which is
   # emitted alongside the wasm)
   base_path = os.path.dirname(os.path.abspath(final_wasm))
@@ -1168,6 +1168,12 @@ def emit_wasm_source_map(wasm_file, map_file, final_wasm):
                    '-o',  map_file,
                    '--basepath=' + base_path]
   check_call(sourcemap_cmd)
+
+  # Add the source map url section
+  with open(wasm_file, 'ab') as f:
+    webassembly.write_uleb(f, webassembly.SecType.CUSTOM)
+    webassembly.write_string(f)
+
 
 
 def get_binaryen_feature_flags():

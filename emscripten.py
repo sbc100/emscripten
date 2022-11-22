@@ -475,10 +475,9 @@ def finalize_wasm(infile, outfile, memfile, js_syms):
     # later processing later anyhow)
     modify_wasm = True
   if settings.GENERATE_SOURCE_MAP:
-    building.emit_wasm_source_map(infile, infile + '.map', outfile)
+    url = settings.SOURCE_MAP_BASE + os.path.basename(outfile) + '.map'
+    building.emit_wasm_source_map(infile, infile + '.map', outfile, url)
     building.save_intermediate(infile + '.map', 'base_wasm.map')
-    args += ['--output-source-map-url=' + settings.SOURCE_MAP_BASE + os.path.basename(outfile) + '.map']
-    modify_wasm = True
   if settings.DEBUG_LEVEL >= 2 or settings.ASYNCIFY_ADD or settings.ASYNCIFY_ADVISE or settings.ASYNCIFY_ONLY or settings.ASYNCIFY_REMOVE or settings.EMIT_SYMBOL_MAP or settings.EMIT_NAME_SECTION:
     args.append('-g')
   if settings.WASM_BIGINT:
