@@ -17,6 +17,15 @@ logger = logging.getLogger('profiler')
 from . import response_file
 
 EMPROFILE = int(os.getenv('EMPROFILE', '0'))
+stats = {}
+
+
+def report_stats():
+  pairs = list(stats.items())
+  pairs.sort(key=lambda x: x[1], reverse=True)
+  logger.info('Summary:')
+  for name, duration in pairs:
+    logger.info('  %30s: %.3f' % (name, duration))
 
 
 class Logger(ContextDecorator):
@@ -49,9 +58,14 @@ class Logger(ContextDecorator):
       Logger.depth -= 1
       indentation = '  ' * Logger.depth
       logger.info(indentation + msg, self.name, duration)
+      stats.setdefault(self.name, 0)
+      stats[self.name] += duration
     else:
       logger.debug(msg, self.name, duration)
 
+
+if EMPROFILE == 2:
+  atexit.register(report_stats)
 
 if EMPROFILE == 1:
   original_sys_exit = sys.exit
