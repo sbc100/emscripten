@@ -195,7 +195,8 @@ function isPowerOfTwo(x) {
 function Benchmarker() {
   const totals = {};
   const ids = [];
-  const lastTime = 0;
+  const startTime = Date.now();
+  let lastTime = 0;
   this.start = function(id) {
     const now = Date.now();
     if (ids.length > 0) {
@@ -215,8 +216,10 @@ function Benchmarker() {
   this.print = function(text) {
     const ids = Object.keys(totals);
     if (ids.length > 0) {
+      const now = Date.now();
       ids.sort((a, b) => totals[b] - totals[a]);
       printErr(text + ' times: \n' + ids.map((id) => id + ' : ' + totals[id] + ' ms').join('\n'));
+      printErr(`total: ${now - startTime}`);
     }
   };
 }
