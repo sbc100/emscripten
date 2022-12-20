@@ -61,38 +61,32 @@ struct Canonicalized {
     typedef typename std::remove_cv<typename std::remove_reference<T>::type>::type type;
 };
 
+#if !__has_feature(cxx_rtti)
+static_assert(!has_unbound_type_names,
+              "Unbound type names are illegal with RTTI disabled. "
+              "Either add -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 to or remove -fno-rtti "
+              "from the compiler arguments");
+#endif
+
 template<typename T>
 struct LightTypeID {
     static constexpr TYPEID get() {
-        if (has_unbound_type_names) {
-#if __has_feature(cxx_rtti)
-            return &typeid(T);
+#if __has_feature(cxx_rtti) && EMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES
+        return &typeid(T);
 #else
-            static_assert(!has_unbound_type_names,
-                "Unbound type names are illegal with RTTI disabled. "
-                "Either add -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 to or remove -fno-rtti "
-                "from the compiler arguments");
-#endif
-        }
-
         typedef typename Canonicalized<T>::type C;
         return CanonicalizedID<C>::get();
+#endif
     }
 };
 
 template<typename T>
 constexpr TYPEID getLightTypeID(const T& value) {
-    if (has_unbound_type_names) {
-#if __has_feature(cxx_rtti)
-        return &typeid(value);
+#if __has_feature(cxx_rtti) && EMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES
+    return &typeid(value);
 #else
-        static_assert(!has_unbound_type_names,
-            "Unbound type names are illegal with RTTI disabled. "
-            "Either add -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 to or remove -fno-rtti "
-            "from the compiler arguments");
-#endif
-    }
     return LightTypeID<T>::get();
+#endif
 }
 
 // The second typename is an unused stub so it's possible to
