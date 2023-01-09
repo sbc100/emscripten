@@ -26,8 +26,8 @@
 var LibraryPThread = {
   $PThread__postset: 'PThread.init();',
   $PThread__deps: ['_emscripten_thread_init',
-                   '$killThread',
-                   '$cancelThread', '$cleanupThread', '$zeroMemory',
+                   '$zeroMemory',
+                   '$cleanupThread',
 #if MAIN_MODULE
                    '$markAsFinshed',
 #endif
@@ -280,10 +280,6 @@ var LibraryPThread = {
         } else if (cmd === 'markAsFinshed') {
           markAsFinshed(d['thread']);
 #endif
-        } else if (cmd === 'killThread') {
-          killThread(d['thread']);
-        } else if (cmd === 'cancelThread') {
-          cancelThread(d['thread']);
         } else if (cmd === 'loaded') {
           worker.loaded = true;
 #if ENVIRONMENT_MAY_BE_NODE && PTHREAD_POOL_SIZE
@@ -562,6 +558,9 @@ var LibraryPThread = {
     // entry point, calls pthread_exit, or acts upon a cancellation.
     // Detached threads are responsible for calling this themselves,
     // otherwise pthread_join is responsible for calling this.
+    // Note: we can't use the 'async' proxy mechanism here since this can be
+    // called from _emscripten_thread_exit after the current thread is been
+    // destroyed (i.e. we can't call back into native code at this point).
 #if PTHREADS_DEBUG
     dbg('__emscripten_thread_cleanup: ' + ptrToString(thread))
 #endif
@@ -924,13 +923,13 @@ var LibraryPThread = {
 #endif
   },
 
+  __pthread_kill_js__deps: ['$cancelThread', '$killThread'],
+  __pthread_kill_js__proxy: 'async',
   __pthread_kill_js: function(thread, signal) {
     if (signal === {{{ cDefs.SIGCANCEL }}}) { // Used by pthread_cancel in musl
-      if (!ENVIRONMENT_IS_PTHREAD) cancelThread(thread);
-      else postMessage({ 'cmd': 'cancelThread', 'thread': thread });
+      cancelThread(thread);
     } else {
-      if (!ENVIRONMENT_IS_PTHREAD) killThread(thread);
-      else postMessage({ 'cmd': 'killThread', 'thread': thread });
+      killThread(thread);
     }
     return 0;
   },
