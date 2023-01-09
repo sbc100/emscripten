@@ -533,25 +533,6 @@ var LibraryPThread = {
     };
   },
 
-  $killThread__deps: ['_emscripten_thread_free_data', '$terminateWorker'],
-  $killThread: function(pthread_ptr) {
-#if PTHREADS_DEBUG
-    dbg('killThread ' + ptrToString(pthread_ptr));
-#endif
-#if ASSERTIONS
-    assert(!ENVIRONMENT_IS_PTHREAD, 'Internal Error! killThread() can only ever be called from main application thread!');
-    assert(pthread_ptr, 'Internal Error! Null pthread_ptr in killThread!');
-#endif
-    var worker = PThread.pthreads[pthread_ptr];
-    delete PThread.pthreads[pthread_ptr];
-    terminateWorker(worker);
-    __emscripten_thread_free_data(pthread_ptr);
-    // The worker was completely nuked (not just the pthread execution it was hosting), so remove it from running workers
-    // but don't put it back to the pool.
-    PThread.runningWorkers.splice(PThread.runningWorkers.indexOf(worker), 1); // Not a running Worker anymore.
-    worker.pthread_ptr = 0;
-  },
-
   __emscripten_thread_cleanup: function(thread) {
     // Called when a thread needs to be cleaned up so it can be reused.
     // A thread is considered reusable when it either returns from its
@@ -641,15 +622,6 @@ var LibraryPThread = {
     PThread.tlsInitFunctions.push(tlsInitFunc);
   },
 #endif
-
-  $cancelThread: function(pthread_ptr) {
-#if ASSERTIONS
-    assert(!ENVIRONMENT_IS_PTHREAD, 'Internal Error! cancelThread() can only ever be called from main application thread!');
-    assert(pthread_ptr, 'Internal Error! Null pthread_ptr in cancelThread!');
-#endif
-    var worker = PThread.pthreads[pthread_ptr];
-    worker.postMessage({ 'cmd': 'cancel' });
-  },
 
   $spawnThread: function(threadParams) {
 #if ASSERTIONS
@@ -923,13 +895,27 @@ var LibraryPThread = {
 #endif
   },
 
-  __pthread_kill_js__deps: ['$cancelThread', '$killThread'],
+  __pthread_kill_js__deps: ['_emscripten_thread_free_data'],
   __pthread_kill_js__proxy: 'async',
-  __pthread_kill_js: function(thread, signal) {
+  __pthread_kill_js: function(pthread_ptr, signal) {
+#if PTHREADS_DEBUG
+    dbg('pthread_kill_js ' + ptrToString(pthread_ptr));
+#endif
+#if ASSERTIONS
+    assert(pthread_ptr, 'Internal Error! Null pthread_ptr in pthread_kill_js!');
+#endif
+    var worker = PThread.pthreads[pthread_ptr];
     if (signal === {{{ cDefs.SIGCANCEL }}}) { // Used by pthread_cancel in musl
-      cancelThread(thread);
+      worker.postMessage({ 'cmd': 'cancel' });
     } else {
-      killThread(thread);
+      delete PThread.pthreads[pthread_ptr];
+      worker.terminate();
+      __emscripten_thread_free_data(pthread_ptr);
+      // The worker was completely nuked (not just the pthread execution it was
+      // hosting), so remove it from running workers but don't put it back to
+      // the pool.
+      PThread.runningWorkers.splice(PThread.runningWorkers.indexOf(worker), 1);
+      worker.pthread_ptr = 0;
     }
     return 0;
   },
