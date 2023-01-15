@@ -10,28 +10,12 @@ var Module = moduleArg;
 // if (!Module)` is crucial for Closure Compiler here as it will
 // otherwise replace every `Module` occurrence with the object below
 var /** @type{Object} */ Module;
-if (!Module) /** @suppress{checkTypes}*/Module = 
-#if AUDIO_WORKLET
-  globalThis.{{{ EXPORT_NAME }}} || 
-#endif
-  {"__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__":1};
-
-#elif ENVIRONMENT_MAY_BE_NODE || ENVIRONMENT_MAY_BE_SHELL
-
+if (!Module) /** @suppress{checkTypes}*/Module = {"__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__":1};
+#elif !MODULARIZE && (ENVIRONMENT_MAY_BE_NODE || ENVIRONMENT_MAY_BE_SHELL)
 // When running on the web we expect Module to be defined externally, in the
 // HTML.  Otherwise we must define it here before its first use
-var Module =
-#if SUPPORTS_GLOBALTHIS
-  // As a small code size optimization, we can use 'globalThis' to refer to the global scope Module variable.
-  globalThis.{{{ EXPORT_NAME }}} || {};
-#else
-  // Otherwise do a good old typeof check.
-  typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {};
-#endif
-
-#else
-var Module = {{{ EXPORT_NAME }}};
-#endif
+var Module = Module || {};
+#endif // USE_CLOSURE_COMPILER
 
 #if MODULARIZE && EXPORT_READY_PROMISE
 // Set up the promise that indicates the Module is initialized
