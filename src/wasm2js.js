@@ -14,17 +14,21 @@
 var
 #endif
 WebAssembly = {
+#if IMPORTED_MEMORY
   // Note that we do not use closure quoting (this['buffer'], etc.) on these
   // functions, as they are just meant for internal use. In other words, this is
   // not a fully general polyfill.
+  // We only need a Memory constructor if we are importing the memory from
+  // JavaScript.  In the normal case the memory is created by the wasm2js code.
   /** @constructor */
   Memory: function(opts) {
 #if SHARED_MEMORY
     this.buffer = new SharedArrayBuffer(opts['initial'] * {{{ WASM_PAGE_SIZE }}});
 #else
     this.buffer = new ArrayBuffer(opts['initial'] * {{{ WASM_PAGE_SIZE }}});
-#endif
   },
+#endif
+#endif
 
 #if RELOCATABLE
   // Only needed in RELOCATABLE builds since normal builds export the table
