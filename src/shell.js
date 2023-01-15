@@ -37,10 +37,8 @@ var /** @type {{
 }}
  */ Module;
 if (!Module) /** @suppress{checkTypes}*/Module = {"__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__":1};
-#elif AUDIO_WORKLET
-var Module = globalThis.Module || (typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {});
-#else
-var Module = typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {};
+#elif !MODULARIZE
+var Module = Module || {};
 #endif // USE_CLOSURE_COMPILER
 
 #if POLYFILL
