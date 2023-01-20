@@ -569,16 +569,15 @@ def get_canonical_temp_dir(temp_dir):
 
 
 def setup_temp_dirs():
-  global EMSCRIPTEN_TEMP_DIR, CANONICAL_TEMP_DIR, TEMP_DIR
-  EMSCRIPTEN_TEMP_DIR = None
+  global TEMP_DIR
 
   TEMP_DIR = os.environ.get("EMCC_TEMP_DIR", tempfile.gettempdir())
   if not os.path.isdir(TEMP_DIR):
     exit_with_error(f'The temporary directory `{TEMP_DIR}` does not exist! Please make sure that the path is correct.')
 
-  CANONICAL_TEMP_DIR = get_canonical_temp_dir(TEMP_DIR)
-
   if DEBUG:
+    global EMSCRIPTEN_TEMP_DIR, CANONICAL_TEMP_DIR
+    CANONICAL_TEMP_DIR = get_canonical_temp_dir(TEMP_DIR)
     EMSCRIPTEN_TEMP_DIR = CANONICAL_TEMP_DIR
     try:
       safe_ensure_dirs(EMSCRIPTEN_TEMP_DIR)

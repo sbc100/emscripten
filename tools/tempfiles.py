@@ -36,7 +36,9 @@ class TempFiles:
     class TempFileObject:
       def __enter__(self_):
         self_.file = tempfile.NamedTemporaryFile(dir=self.tmpdir, suffix=suffix, delete=False)
-        self_.file.close() # NamedTemporaryFile passes out open file handles, but callers prefer filenames (and open their own handles manually if needed)
+        # NamedTemporaryFile passes out open file handles, but callers prefer
+        # filenames (and open their own handles manually if needed)
+        self_.file.close()
         return self_.file.name
 
       def __exit__(self_, _type, _value, _traceback):
