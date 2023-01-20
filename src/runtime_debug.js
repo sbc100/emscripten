@@ -5,7 +5,6 @@
  */
 
 #if ASSERTIONS
-
 function legacyModuleProp(prop, newName) {
   if (!Object.getOwnPropertyDescriptor(Module, prop)) {
     Object.defineProperty(Module, prop, {
@@ -81,6 +80,7 @@ function missingLibrarySymbol(sym) {
   unexportedRuntimeSymbol(sym);
 }
 
+#if !EXPORT_ALL
 function unexportedRuntimeSymbol(sym) {
   if (!Object.getOwnPropertyDescriptor(Module, sym)) {
     Object.defineProperty(Module, sym, {
@@ -95,6 +95,7 @@ function unexportedRuntimeSymbol(sym) {
     });
   }
 }
+#endif // !EXPORT_ALL
 
 #if ASSERTIONS == 2
 
@@ -170,4 +171,4 @@ function dbg(text) {
   // logging to show up as warnings.
   console.warn.apply(console, arguments);
 }
-#endif
+#endif // RUNTIME_DEBUG

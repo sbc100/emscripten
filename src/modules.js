@@ -346,7 +346,7 @@ function exportRuntime() {
   // a function (almost all of them) or a number.
   function maybeExport(name) {
     // if requested to be exported, export it
-    if (EXPORTED_RUNTIME_METHODS_SET.has(name)) {
+    if (EXPORT_ALL || EXPORTED_RUNTIME_METHODS_SET.has(name)) {
       let exported = name;
       // the exported name may differ from the internal name
       if (exported.startsWith('FS_')) {
