@@ -53,7 +53,11 @@ function callMain() {
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 #endif
 
+<<<<<<< HEAD
   var entryFunction = {{{ getEntryFunction() }}};
+=======
+  var entryFunction = {{{ getEntryFunction() }}}
+>>>>>>> ecd6447ea (Call `main` function directly rather than via module export. NFC)
 
 #if PROXY_TO_PTHREAD
   // With PROXY_TO_PTHREAD make sure we keep the runtime alive until the
