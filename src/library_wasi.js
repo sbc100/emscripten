@@ -373,7 +373,7 @@ var WasiLibrary = {
     {{{ receiveI64ParamAsI53('offset', cDefs.EOVERFLOW) }}}
     var stream = SYSCALLS.getStreamFromFD(fd);
     FS.llseek(stream, offset, whence);
-    {{{ makeSetValue('newOffset', '0', 'stream.position', 'i64') }}};
+    {{{ makeSetValue('newOffset', '0', 'stream.position', 'i53') }}};
     if (stream.getdents && offset === 0 && whence === {{{ cDefs.SEEK_SET }}}) stream.getdents = null; // reset readdir state
     return 0;
 #else
@@ -535,8 +535,8 @@ var WasiLibrary = {
     }
     {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_filetype, 'type', 'i8') }}};
     {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_flags, 'flags', 'i16') }}};
-    {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_rights_base, 'rightsBase', 'i64') }}};
-    {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_rights_inheriting, 'rightsInheriting', 'i64') }}};
+    {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_rights_base, 'rightsBase', 'i53') }}};
+    {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_rights_inheriting, 'rightsInheriting', 'i53') }}};
     return 0;
   },
 

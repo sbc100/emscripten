@@ -728,7 +728,7 @@ var LibraryWebGPU = {
     }
     function setLimitValueU64(name, limitOffset) {
       var limitValue = device.limits[name];
-      {{{ makeSetValue('limitsOutPtr', 'limitsPtr + limitOffset', 'limitValue', 'i64') }}};
+      {{{ makeSetValue('limitsOutPtr', 'limitsPtr + limitOffset', 'limitValue', 'i53') }}};
     }
 
     setLimitValueU32('maxTextureDimension1D', {{{ C_STRUCTS.WGPULimits.maxTextureDimension1D }}});

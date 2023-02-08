@@ -98,7 +98,7 @@ mergeInto(LibraryManager.library, {
     assert(wasmFS$backends[backend]);
 #endif
     var size = await wasmFS$backends[backend].getSize(file);
-    {{{ makeSetValue('size_p', 0, 'size', 'i64') }}};
+    {{{ makeSetValue('size_p', 0, 'size', 'i53') }}};
     _emscripten_proxy_finish(ctx);
   },
 });

@@ -387,7 +387,7 @@ mergeInto(LibraryManager.library, {
     } catch {
       size = -{{{ cDefs.EIO }}};
     }
-    {{{ makeSetValue('sizePtr', 0, 'size', 'i64') }}};
+    {{{ makeSetValue('sizePtr', 0, 'size', 'i53') }}};
     wasmfsOPFSProxyFinish(ctx);
   },
 
@@ -406,7 +406,7 @@ mergeInto(LibraryManager.library, {
     } catch {
       size = -{{{ cDefs.EIO }}};
     }
-    {{{ makeSetValue('sizePtr', 0, 'size', 'i64') }}};
+    {{{ makeSetValue('sizePtr', 0, 'size', 'i53') }}};
     wasmfsOPFSProxyFinish(ctx);
   },
 

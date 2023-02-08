@@ -37,6 +37,7 @@ function getValueImpl(ptr, type = 'i8') {
 #else
     case 'i64': abort('to do getValue(i64) use WASM_BIGINT');
 #endif
+    case 'i53': return {{{ makeGetValue('ptr', '0', 'i53') }}};
     case 'float': return {{{ makeGetValue('ptr', '0', 'float') }}};
     case 'double': return {{{ makeGetValue('ptr', '0', 'double') }}};
     case '*': return {{{ makeGetValue('ptr', '0', '*') }}};
