@@ -223,6 +223,9 @@ function(${args}) {
     // The first four are deps that are automatically/conditionally added
     // by the {{{ makeDynCall }}}, and {{{ runtimeKeepalivePush/Pop }}} macros.
     const autoDeps = [
+      'writeI53ToI64',
+      'writeI53FromI64',
+      'readI53FromI64',
       'getDynCaller',
       'getWasmTableEntry',
       'runtimeKeepalivePush',

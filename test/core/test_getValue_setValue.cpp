@@ -13,8 +13,8 @@ int main() {
     out('i32: ' + getValue($0, 'i32'));
     setValue($0, 1234, 'i32');
     out('i32: ' + getValue($0, 'i32'));
-#ifdef WASM_BIGINT
-    i64 = getValue($1, 'i64');
+    i64 = getValue($1, 'i53');
+    ptr = getValue($1, '*');
     out('i64: 0x' + i64.toString(16) + ' ' + typeof(i64));
 #endif
     ptr = getValue($1, '*');
@@ -23,8 +23,8 @@ int main() {
     out('i32: ' + getValue($0, 'i32'));
     Module['setValue']($0, 1234, 'i32');
     out('i32: ' + Module['getValue']($0, 'i32'));
-#ifdef WASM_BIGINT
-    i64 = Module['getValue']($1, 'i64');
+    i64 = Module['getValue']($1, 'i53');
+    ptr = Module['getValue']($1, '*');
     out('i64: 0x' + i64.toString(16) + ' ' + typeof(i64));
 #endif
     ptr = Module['getValue']($1, '*');

@@ -25,7 +25,6 @@ mergeInto(LibraryManager.library, {
     return 0;
   },
 
-  test_makeGetValue__deps: ['$readI53FromI64', '$readI53FromU64'],
   test_makeGetValue: function(ptr) {
     out('\ntest_makeGetValue:');
     let val;
