@@ -294,11 +294,17 @@ function getNativeTypeSize(type) {
 function getHeapOffset(offset, type) {
   const sz = getNativeTypeSize(type);
   const shifts = Math.log(sz) / Math.LN2;
+  let result;
   if (MEMORY64 == 1) {
-    return `((${offset})/2**${shifts})`;
+    result = `((${offset})/2**${shifts})`;
   } else {
-    return `((${offset})>>${shifts})`;
+    result = `((${offset})>>${shifts})`;
   }
+  if (ASSERTIONS == 2 && sz > 1) {
+    const assertion = `assert((${offset}) % ${sz} == 0, "unaligned memory access from JS")`
+    return `(${assertion},${result})`;
+  }
+  return `(${result})`;
 }
 
 function ensureDot(value) {

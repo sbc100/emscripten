@@ -187,12 +187,13 @@ var LibraryEmVal = {
         "return function emval_allocator_"+argCount+"(constructor, argTypes, args) {\n" +
         "  var {{{ MEMORY64 ? 'HEAPU64' : 'HEAPU32' }}} = getMemory();\n";
 
+    var getCurrentType = '{{{ makeGetValue("argTypes", "0", "*") }}}';
     for (var i = 0; i < argCount; ++i) {
-        functionBody +=
-            "var argType"+i+" = requireRegisteredType({{{ makeGetValue('argTypes', '0', '*') }}}, 'parameter "+i+"');\n" +
-            "var arg"+i+" = argType"+i+".readValueFromPointer(args);\n" +
-            "args += argType"+i+"['argPackAdvance'];\n" +
-            "argTypes += {{{ POINTER_SIZE }}};\n";
+      functionBody +=
+          "var argType"+i+" = requireRegisteredType("+getCurrentType+", 'parameter "+i+"');\n" +
+          "var arg"+i+" = argType"+i+".readValueFromPointer(args);\n" +
+          "args += argType"+i+"['argPackAdvance'];\n" +
+          "argTypes += {{{ POINTER_SIZE }}};\n";
     }
     functionBody +=
         "var obj = new constructor("+argsList+");\n" +
@@ -200,8 +201,15 @@ var LibraryEmVal = {
         "}\n";
 
     /*jshint evil:true*/
-    return (new Function("requireRegisteredType", "Module", "valueToHandle", "getMemory" , functionBody))(
-        requireRegisteredType, Module, Emval.toHandle, getMemory);
+    return (new Function("requireRegisteredType", "Module", "valueToHandle", "getMemory",
+#if ASSERTIONS
+      "assert",
+#endif
+      functionBody))(requireRegisteredType, Module, Emval.toHandle, getMemory
+#if ASSERTIONS
+      , assert
+#endif
+    );
 #endif
   },
 
