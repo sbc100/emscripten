@@ -4,13 +4,22 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <emscripten/emscripten.h>
 
 pthread_t t;
 
 void* thread_main_exit(void* arg) {
+  // This test run with both _EXIT defined and without to test low level
+  // and high level exit.
+#ifdef _EXIT
+  printf("calling _exit\n");
+  _exit(43);
+#else
   printf("calling exit\n");
   exit(42);
+#endif
+  __builtin_trap();
 }
 
 // This location should never get set to true.
