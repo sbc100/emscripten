@@ -937,26 +937,6 @@ var LibraryPThread = {
     return 0;
   },
 
-  // This function is call by a pthread to signal that exit() was called and
-  // that the entire process should exit.
-  // This function is always called from a pthread, but is executed on the
-  // main thread due the __proxy attribute.
-  $exitOnMainThread__deps: ['exit',
-#if !MINIMAL_RUNTIME
-    '$handleException',
-#endif
-  ],
-  $exitOnMainThread__proxy: 'async',
-  $exitOnMainThread: function(returnCode) {
-#if PTHREADS_DEBUG
-    dbg('exitOnMainThread');
-#endif
-#if PROXY_TO_PTHREAD
-    {{{ runtimeKeepalivePop() }}};
-#endif
-    _exit(returnCode);
-  },
-
   $proxyToMainThread__deps: ['$withStackSave', '_emscripten_run_in_main_runtime_thread_js'],
   $proxyToMainThread__docs: '/** @type{function(number, (number|boolean), ...(number|boolean))} */',
   $proxyToMainThread: function(index, sync) {
