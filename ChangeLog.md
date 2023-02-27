@@ -144,6 +144,10 @@ See docs/process.md for more on how version tagging works.
 -----------------
 - Initial support for C++20 modules.  We have added a very simple test in form
   of `other.test_cpp_module`. (#18915)
+  of `other.test_cpp_module`. (#)
+- When targetting `node` (i.e. when node is included in `ENVIRONMENT`) the
+  output file is now marked as executable and includes a !# line by default.
+  This can be disabled explictly via `-sEXECUTABLE_OUTPUT=0`.
 - Removed `sys/sysctl.h` compatibility header.  We don't implement the function
   it defines. (#18863)
 - Update SDL2_ttf port to 2.20.2 (#18804)
