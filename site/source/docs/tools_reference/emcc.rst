@@ -229,7 +229,7 @@ Options that are modified or new in *emcc* are listed below:
   can still reconstruct meaningful stack traces by translating the indexes back
   to the names.
 
-  .. note:: When used with ``-sWASM=2``, two symbol files are created. ``[name].js.symbols`` (with WASM symbols) and ``[name].wasm.js.symbols`` (with ASM.js symbols)
+  .. note:: When used with ``-sWASM=2``, two symbol files are created. ``[name].symbols`` (with WASM symbols) and ``[name].wasm.symbols`` (with wasm2js symbols)
 
 .. _emcc-lto:
 

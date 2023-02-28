@@ -4450,7 +4450,7 @@ EM_ASM({ _middle() });
         cmd.append(f'-sWASM={wasm}')
       self.run_process(cmd)
 
-      minified_middle = get_minified_middle('a.out.js.symbols')
+      minified_middle = get_minified_middle('a.out.symbols')
       self.assertNotEqual(minified_middle, None, "Missing minified 'middle' function")
       if wasm:
         # stack traces are standardized enough that we can easily check that the
@@ -4465,15 +4465,15 @@ EM_ASM({ _middle() });
 
       # Ensure symbols file type according to `-sWASM=` mode
       if wasm == 0:
-        self.assertEqual(guess_symbols_file_type('a.out.js.symbols'), 'js', 'Primary symbols file should store JS mappings')
+        self.assertEqual(guess_symbols_file_type('a.out.symbols'), 'js', 'Primary symbols file should store JS mappings')
       elif wasm == 1:
-        self.assertEqual(guess_symbols_file_type('a.out.js.symbols'), 'wasm', 'Primary symbols file should store Wasm mappings')
+        self.assertEqual(guess_symbols_file_type('a.out.symbols'), 'wasm', 'Primary symbols file should store Wasm mappings')
       elif wasm == 2:
         # special case when both JS and Wasm targets are created
-        minified_middle_2 = get_minified_middle('a.out.wasm.js.symbols')
+        minified_middle_2 = get_minified_middle('a.out.wasm.symbols')
         self.assertNotEqual(minified_middle_2, None, "Missing minified 'middle' function")
-        self.assertEqual(guess_symbols_file_type('a.out.js.symbols'), 'wasm', 'Primary symbols file should store Wasm mappings')
-        self.assertEqual(guess_symbols_file_type('a.out.wasm.js.symbols'), 'js', 'Secondary symbols file should store JS mappings')
+        self.assertEqual(guess_symbols_file_type('a.out.symbols'), 'wasm', 'Primary symbols file should store Wasm mappings')
+        self.assertEqual(guess_symbols_file_type('a.out.wasm.symbols'), 'js', 'Secondary symbols file should store JS mappings')
 
       # check we don't keep unnecessary debug info with wasm2js when emitting
       # a symbol map

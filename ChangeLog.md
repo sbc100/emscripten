@@ -144,6 +144,14 @@ See docs/process.md for more on how version tagging works.
 -----------------
 - Initial support for C++20 modules.  We have added a very simple test in form
   of `other.test_cpp_module`. (#18915)
+  of `other.test_cpp_module`. (#)
+- File names of the files output by `--emit-symbol-map` and `--memory-init-file`
+  no longer contains the file extension of the output file.  This matches the
+  behaivour of `-sMINIMAL_RUNTIME`.  e.g `a.out.js.mem` -> `a.out.js` and
+  `a.out.js.symbols` -> `a.out.symbols`.
+- When targetting `node` (i.e. when node is included in `ENVIRONMENT`) the
+  output file is now marked as executable and includes a !# line by default.
+  This can be disabled explictly via `-sEXECUTABLE_OUTPUT=0`.
 - Removed `sys/sysctl.h` compatibility header.  We don't implement the function
   it defines. (#18863)
 - Update SDL2_ttf port to 2.20.2 (#18804)

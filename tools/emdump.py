@@ -605,7 +605,7 @@ def read_symbol_map(filename):
   return symbol_map
 
 
-# Locates foo.js to foo.js.symbols or foo.html.symbols based on default output name rules for Emscripten compiler
+# Locates foo.js to foo.symbols or foo.html.symbols based on default output name rules for Emscripten compiler
 def guess_symbol_map_file_location(sources, symbol_map_file):
   if os.path.isfile(symbol_map_file):
     return symbol_map_file
