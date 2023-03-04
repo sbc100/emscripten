@@ -2556,10 +2556,16 @@ def phase_linker_setup(options, state, newargs):
       not settings.AUTODEBUG and \
       not settings.ASSERTIONS and \
       not settings.RELOCATABLE and \
-      not settings.ASYNCIFY_LAZY_LOAD_CODE and \
-          settings.MINIFY_WASM_EXPORT_NAMES:
+      not settings.ASYNCIFY_LAZY_LOAD_CODE:
     settings.MINIFY_WASM_IMPORTS_AND_EXPORTS = 1
     settings.MINIFY_WASM_IMPORTED_MODULES = 1
+
+    # Sadly we don't yet have a binaryen flag that will minify imports and modules
+    # but not exports.  So we have to disable module minifying if we disable export
+    # minification:
+    # See https://github.com/WebAssembly/binaryen/issues/5546
+    if not settings.MINIFY_WASM_EXPORT_NAMES:
+      settings.MINIFY_WASM_IMPORTED_MODULES = 0
 
   if settings.MINIMAL_RUNTIME:
     # Minimal runtime uses a different default shell file

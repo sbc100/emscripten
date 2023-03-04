@@ -8801,16 +8801,23 @@ NODEFS is no longer included by default; build with -lnodefs.js
     self.maybe_closure()
     self.do_runf(test_file('declare_asm_module_exports.c'), 'jsFunction: 1')
     js = read_file('declare_asm_module_exports.js')
-    occurances = js.count('cFunction')
+    export_occurances = js.count('cFunction')
+    import_occurances = js.count('__assert_fail')
     if self.is_optimizing() and '-g' not in self.emcc_args:
-      # In optimized builds only the single reference cFunction that exists in the EM_ASM should exist
+      # In optimized builds only the single reference cFunction that
+      # exists in the EM_ASM should exist.
       if self.is_wasm():
-        self.assertEqual(occurances, 1)
+        self.assertEqual(export_occurances, 1)
+        self.assertEqual(import_occurances, 2)
       else:
         # With js the asm module itself also contains a reference for the cFunction name
-        self.assertEqual(occurances, 2)
+        self.assertEqual(export_occurances, 2)
+      # For the __assert_fail import we expect the defintion itself
+      # plus the single usage in the wasmImports map.
+      self.assertEqual(import_occurances, 2)
     else:
-      print(occurances)
+      print(export_occurances)
+      print(import_occurances)
 
   # Tests that building with -sDECLARE_ASM_MODULE_EXPORTS=0 works
   @no_wasmfs('https://github.com/emscripten-core/emscripten/issues/16816')
