@@ -12,16 +12,16 @@ var WasiLibrary = {
     this.message = `Program terminated with exit(${status})`;
     this.status = status;
   },
-  proc_exit__deps: ['$ExitStatus'],
+  __wasi_proc_exit__deps: ['$ExitStatus'],
 #endif
 
-  proc_exit__nothrow: true,
-  proc_exit: (code) => {
+  __wasi_proc_exit__nothrow: true,
+  __wasi_proc_exit: (code) => {
 #if MINIMAL_RUNTIME
     throw `exit(${code})`;
 #else
 #if RUNTIME_DEBUG
-    dbg(`proc_exit: ${code}`);
+    dbg(`__wasi_proc_exit: ${code}`);
 #endif
     EXITSTATUS = code;
     if (!keepRuntimeAlive()) {
@@ -87,9 +87,9 @@ var WasiLibrary = {
     return getEnvStrings.strings;
   },
 
-  environ_sizes_get__deps: ['$getEnvStrings'],
-  environ_sizes_get__nothrow: true,
-  environ_sizes_get: (penviron_count, penviron_buf_size) => {
+  __wasi_environ_sizes_get__deps: ['$getEnvStrings'],
+  __wasi_environ_sizes_get__nothrow: true,
+  __wasi_environ_sizes_get: (penviron_count, penviron_buf_size) => {
     var strings = getEnvStrings();
     {{{ makeSetValue('penviron_count', 0, 'strings.length', SIZE_TYPE) }}};
     var bufSize = 0;
@@ -100,9 +100,9 @@ var WasiLibrary = {
     return 0;
   },
 
-  environ_get__deps: ['$getEnvStrings', '$stringToAscii'],
-  environ_get__nothrow: true,
-  environ_get: (__environ, environ_buf) => {
+  __wasi_environ_get__deps: ['$getEnvStrings', '$stringToAscii'],
+  __wasi_environ_get__nothrow: true,
+  __wasi_environ_get: (__environ, environ_buf) => {
     var bufSize = 0;
     getEnvStrings().forEach(function(string, i) {
       var ptr = environ_buf + bufSize;
@@ -116,8 +116,8 @@ var WasiLibrary = {
   // In normal (non-standalone) mode arguments are passed direclty
   // to main, and the `mainArgs` global does not exist.
 #if STANDALONE_WASM
-  args_sizes_get__nothrow: true,
-  args_sizes_get: (pargc, pargv_buf_size) => {
+  __wasi_args_sizes_get__nothrow: true,
+  __wasi_args_sizes_get: (pargc, pargv_buf_size) => {
 #if MAIN_READS_PARAMS
     {{{ makeSetValue('pargc', 0, 'mainArgs.length', SIZE_TYPE) }}};
     var bufSize = 0;
@@ -131,9 +131,9 @@ var WasiLibrary = {
     return 0;
   },
 
-  args_get__nothrow: true,
-  args_get__deps: ['$stringToAscii'],
-  args_get: (argv, argv_buf) => {
+  __wasi_args_get__nothrow: true,
+  __wasi_args_get__deps: ['$stringToAscii'],
+  __wasi_args_get: (argv, argv_buf) => {
 #if MAIN_READS_PARAMS
     var bufSize = 0;
     mainArgs.forEach(function(arg, i) {
@@ -158,9 +158,9 @@ var WasiLibrary = {
   // but the wasm file can't be legalized in standalone mode, which is where
   // this is needed. To get this code to be usable as a JS shim we need to
   // either wait for BigInt support or to legalize on the client.
-  clock_time_get__nothrow: true,
-  clock_time_get__deps: ['emscripten_get_now', '$nowIsMonotonic', '$checkWasiClock'],
-  clock_time_get: (clk_id, {{{ defineI64Param('ignored_precision') }}}, ptime) => {
+  __wasi_clock_time_get__nothrow: true,
+  __wasi_clock_time_get__deps: ['emscripten_get_now', '$nowIsMonotonic', '$checkWasiClock'],
+  __wasi_clock_time_get: (clk_id, {{{ defineI64Param('ignored_precision') }}}, ptime) => {
     if (!checkWasiClock(clk_id)) {
       return {{{ cDefs.EINVAL }}};
     }
@@ -180,9 +180,9 @@ var WasiLibrary = {
     return 0;
   },
 
-  clock_res_get__nothrow: true,
-  clock_res_get__deps: ['emscripten_get_now', 'emscripten_get_now_res', '$nowIsMonotonic', '$checkWasiClock'],
-  clock_res_get: (clk_id, pres) => {
+  __wasi_clock_res_get__nothrow: true,
+  __wasi_clock_res_get__deps: ['emscripten_get_now', 'emscripten_get_now_res', '$nowIsMonotonic', '$checkWasiClock'],
+  __wasi_clock_res_get: (clk_id, pres) => {
     if (!checkWasiClock(clk_id)) {
       return {{{ cDefs.EINVAL }}};
     }
@@ -255,7 +255,7 @@ var WasiLibrary = {
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
 
 #if SYSCALLS_REQUIRE_FILESYSTEM
-  fd_write__deps: ['$doWritev'],
+  __wasi_fd_write__deps: ['$doWritev'],
 #elif (!MINIMAL_RUNTIME || EXIT_RUNTIME)
   $flush_NO_FILESYSTEM__deps: ['$printChar', '$printCharBuffers'],
   $flush_NO_FILESYSTEM: () => {
@@ -266,14 +266,14 @@ var WasiLibrary = {
     if (printCharBuffers[1].length) printChar(1, {{{ charCode("\n") }}});
     if (printCharBuffers[2].length) printChar(2, {{{ charCode("\n") }}});
   },
-  fd_write__deps: ['$flush_NO_FILESYSTEM', '$printChar'],
-  fd_write__postset: () => {
+  __wasi_fd_write__deps: ['$flush_NO_FILESYSTEM', '$printChar'],
+  __wasi_fd_write__postset: () => {
     addAtExit('flush_NO_FILESYSTEM()');
   },
 #else
-  fd_write__deps: ['$printChar'],
+  __wasi_fd_write__deps: ['$printChar'],
 #endif
-  fd_write: (fd, iov, iovcnt, pnum) => {
+  __wasi_fd_write: (fd, iov, iovcnt, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doWritev(stream, iov, iovcnt);
@@ -294,12 +294,12 @@ var WasiLibrary = {
     return 0;
   },
 
-  fd_pwrite__deps: [
+  __wasi_fd_pwrite__deps: [
 #if SYSCALLS_REQUIRE_FILESYSTEM
     '$doWritev',
 #endif
   ].concat(i53ConversionDeps),
-  fd_pwrite: (fd, iov, iovcnt, {{{ defineI64Param('offset') }}}, pnum) => {
+  __wasi_fd_pwrite: (fd, iov, iovcnt, {{{ defineI64Param('offset') }}}, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     {{{ receiveI64ParamAsI53('offset', cDefs.EOVERFLOW) }}}
     var stream = SYSCALLS.getStreamFromFD(fd)
@@ -307,13 +307,13 @@ var WasiLibrary = {
     {{{ makeSetValue('pnum', 0, 'num', SIZE_TYPE) }}};
     return 0;
 #elif ASSERTIONS
-    abort('fd_pwrite called without SYSCALLS_REQUIRE_FILESYSTEM');
+    abort('__wasi_fd_pwrite called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
     return {{{ cDefs.ENOSYS }}};
 #endif
   },
 
-  fd_close: (fd) => {
+  __wasi_fd_close: (fd) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
     FS.close(stream);
@@ -326,34 +326,34 @@ var WasiLibrary = {
     warnOnce('To close sockets with PROXY_POSIX_SOCKETS bridge, prefer to use the function shutdown() that is proxied, instead of close()')
     return 0;
 #elif ASSERTIONS
-    abort('fd_close called without SYSCALLS_REQUIRE_FILESYSTEM');
+    abort('__wasi_fd_close called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
     return {{{ cDefs.ENOSYS }}};
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
 
 #if SYSCALLS_REQUIRE_FILESYSTEM
-  fd_read__deps: ['$doReadv'],
+  __wasi_fd_read__deps: ['$doReadv'],
 #endif
-  fd_read: (fd, iov, iovcnt, pnum) => {
+  __wasi_fd_read: (fd, iov, iovcnt, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doReadv(stream, iov, iovcnt);
     {{{ makeSetValue('pnum', 0, 'num', SIZE_TYPE) }}};
     return 0;
 #elif ASSERTIONS
-    abort('fd_read called without SYSCALLS_REQUIRE_FILESYSTEM');
+    abort('__wasi_fd_read called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
     return {{{ cDefs.ENOSYS }}};
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
 
-  fd_pread__deps: [
+  __wasi_fd_pread__deps: [
 #if SYSCALLS_REQUIRE_FILESYSTEM
     '$doReadv',
 #endif
   ].concat(i53ConversionDeps),
-  fd_pread: (fd, iov, iovcnt, {{{ defineI64Param('offset') }}}, pnum) => {
+  __wasi_fd_pread: (fd, iov, iovcnt, {{{ defineI64Param('offset') }}}, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     {{{ receiveI64ParamAsI53('offset', cDefs.EOVERFLOW) }}}
     var stream = SYSCALLS.getStreamFromFD(fd)
@@ -361,14 +361,14 @@ var WasiLibrary = {
     {{{ makeSetValue('pnum', 0, 'num', SIZE_TYPE) }}};
     return 0;
 #elif ASSERTIONS
-    abort('fd_pread called without SYSCALLS_REQUIRE_FILESYSTEM');
+    abort('__wasi_fd_pread called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
     return {{{ cDefs.ENOSYS }}};
 #endif
   },
 
-  fd_seek__deps: i53ConversionDeps,
-  fd_seek: (fd, {{{ defineI64Param('offset') }}}, whence, newOffset) => {
+  __wasi_fd_seek__deps: i53ConversionDeps,
+  __wasi_fd_seek: (fd, {{{ defineI64Param('offset') }}}, whence, newOffset) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     {{{ receiveI64ParamAsI53('offset', cDefs.EOVERFLOW) }}}
     var stream = SYSCALLS.getStreamFromFD(fd);
@@ -540,7 +540,7 @@ var WasiLibrary = {
     return 0;
   },
 
-  fd_sync: (fd) => {
+  __wasi_fd_sync: (fd) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
 #if ASYNCIFY
@@ -566,7 +566,7 @@ var WasiLibrary = {
     return 0; // we can't do anything synchronously; the in-memory FS is already synced to
 #endif // ASYNCIFY
 #elif ASSERTIONS
-    abort('fd_sync called without SYSCALLS_REQUIRE_FILESYSTEM');
+    abort('__wasi_fd_sync called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
     return {{{ cDefs.ENOSYS }}};
 #endif // SYSCALLS_REQUIRE_FILESYSTEM

@@ -692,10 +692,12 @@ def create_sending(metadata, library_symbols):
   for name in metadata.invokeFuncs:
     send_items_map[name] = name
   for name in metadata.imports:
-    if name in metadata.emJsFuncs:
-      send_items_map[name] = name
-    else:
-      send_items_map[name] = asmjs_mangle(name)
+    jsname = name
+    if name not in metadata.emJsFuncs:
+      jsname = asmjs_mangle(name)
+    if name.startswith('__wasi_'):
+      name = name[len('__wasi_'):]
+    send_items_map[name] = jsname
 
   add_standard_wasm_imports(send_items_map)
 

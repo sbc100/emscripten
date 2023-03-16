@@ -54,7 +54,7 @@ mergeInto(LibraryManager.library, {
 
 #if !MINIMAL_RUNTIME
   $exitJS__docs: '/** @param {boolean|number=} implicit */',
-  $exitJS__deps: ['proc_exit'],
+  $exitJS__deps: ['__wasi_proc_exit'],
   $exitJS: (status, implicit) => {
     EXITSTATUS = status;
 
@@ -100,7 +100,7 @@ mergeInto(LibraryManager.library, {
     }
 #endif // ASSERTIONS
 
-    _proc_exit(status);
+    ___wasi_proc_exit(status);
   },
 #endif
 

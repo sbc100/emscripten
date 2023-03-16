@@ -259,6 +259,8 @@ def update_metadata(filename, metadata):
       if i.kind == webassembly.ExternType.FUNC:
         if i.field.startswith('invoke_'):
           invoke_funcs.append(i.field)
+        elif i.module == 'wasi_snapshot_preview1':
+          imports.append('__wasi_' + i.field)
         else:
           imports.append(i.field)
       elif i.kind in (webassembly.ExternType.GLOBAL, webassembly.ExternType.TAG):
@@ -319,7 +321,10 @@ def extract_metadata(filename):
           if i.field in em_js_funcs:
             types = module.get_types()
             em_js_func_types[i.field] = types[i.type]
-          import_names.append(i.field)
+          if i.module == 'wasi_snapshot_preview1':
+            import_names.append('__wasi_' + i.field)
+          else:
+            import_names.append(i.field)
       elif i.kind in (webassembly.ExternType.GLOBAL, webassembly.ExternType.TAG):
         import_names.append(i.field)
 
