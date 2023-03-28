@@ -29,12 +29,13 @@ from . import colored_logger
 # Configure logging before importing any other local modules so even
 # log message during import are shown as expected.
 DEBUG = int(os.environ.get('EMCC_DEBUG', '0'))
-EMCC_LOGGING = int(os.environ.get('EMCC_LOGGING', '1'))
-log_level = logging.ERROR
+EMCC_VERBOSE = int(os.getenv('EMCC_VERBOSE', '0'))
 if DEBUG:
   log_level = logging.DEBUG
-elif EMCC_LOGGING:
+elif EMCC_VERBOSE:
   log_level = logging.INFO
+else:
+  log_level = logging.WARN
 # can add  %(asctime)s  to see timestamps
 logging.basicConfig(format='%(name)s:%(levelname)s: %(message)s', level=log_level)
 colored_logger.enable()
@@ -49,7 +50,6 @@ from .settings import settings
 
 
 DEBUG_SAVE = DEBUG or int(os.environ.get('EMCC_DEBUG_SAVE', '0'))
-PRINT_STAGES = int(os.getenv('EMCC_VERBOSE', '0'))
 # Minimum node version required to run the emscripten compiler.  This is distinct
 # from the minimum version required to execute the generated code.  This is not an
 # exact requirement, but is the oldest version of node that we do any testing with.
@@ -619,7 +619,7 @@ def target_environment_may_be(environment):
 def print_compiler_stage(cmd):
   """Emulate the '-v' of clang/gcc by printing the name of the sub-command
   before executing it."""
-  if PRINT_STAGES:
+  if EMCC_VERBOSE:
     print(' "%s" %s' % (cmd[0], shlex_join(cmd[1:])), file=sys.stderr)
     sys.stderr.flush()
 

@@ -197,7 +197,7 @@ def main():
     settings.LTO = args.lto
 
   if args.verbose:
-    shared.PRINT_STAGES = True
+    shared.EMCC_VERBOSE = True
 
   if args.pic:
     settings.RELOCATABLE = 1
