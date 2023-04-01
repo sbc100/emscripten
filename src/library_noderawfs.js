@@ -7,26 +7,26 @@
 addToLibrary({
   $NODERAWFS__deps: ['$ERRNO_CODES', '$FS', '$NODEFS', '$mmapAlloc', '$FS_modeStringToFlags'],
   $NODERAWFS__postset: `
-    if (ENVIRONMENT_IS_NODE) {
-      var _wrapNodeError = function(func) {
-        return function() {
-          try {
-            return func.apply(this, arguments)
-          } catch (e) {
-            if (e.code) {
-              throw new FS.ErrnoError(ERRNO_CODES[e.code]);
-            }
-            throw e;
-          }
-        }
-      };
-      var VFS = Object.assign({}, FS);
-      for (var _key in NODERAWFS) {
-        FS[_key] = _wrapNodeError(NODERAWFS[_key]);
-      }
-    } else {
+    if (!ENVIRONMENT_IS_NODE) {
       throw new Error("NODERAWFS is currently only supported on Node.js environment.")
-    }`,
+    }
+    var _wrapNodeError = (func) => {
+      return function() {
+        try {
+          return func.apply(this, arguments)
+        } catch (e) {
+          if (e.code) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          throw e;
+        }
+      }
+    };
+    var VFS = Object.assign({}, FS);
+    for (var _key in NODERAWFS) {
+      FS[_key] = _wrapNodeError(NODERAWFS[_key]);
+    }
+    `,
   $NODERAWFS: {
     lookup(parent, name) {
 #if ASSERTIONS

@@ -372,9 +372,34 @@ var WasiLibrary = {
 #endif
   },
 
+  fd_tell: function(fd, offset_addr) {
+#if SYSCALLS_REQUIRE_FILESYSTEM
+    var stream = SYSCALLS.getStreamFromFD(fd);
+    var offset = FS.llseek(stream, 0, {{{ cDefs.SEEK_CUR }}});
+    {{{ makeSetValue('offset_addr', '0', 'offset', 'i64') }}};
+    return 0;
+#else
+    return {{{ cDefs.ESPIPE }}};
+#endif
+  },
+
+  fd_renumber: function(fd, to) {
+#if SYSCALLS_REQUIRE_FILESYSTEM
+    var oldStream = SYSCALLS.getStreamFromFD(fd);
+    var newStream = SYSCALLS.getStreamFromFD(fd);
+    if (!oldStream || !newStream) return -{{{ cDefs.EINVAL }}};
+    var newfd = newStream.fd;
+    FS.close(newStream);
+    oldStream.fd = newfd;
+    return 0;
+#else
+    return {{{ cDefs.ESPIPE }}};
+#endif
+  },
+
   $wasiRightsToMuslOFlags: (rights) => {
 #if SYSCALL_DEBUG
-    dbg(`wasiRightsToMuslOFlags: ${rights}`);
+    dbg(`wasiRightsToMuslOFlags: ${ptrToString(rights)}`);
 #endif
     if ((rights & {{{ cDefs.__WASI_RIGHTS_FD_READ }}}) && (rights & {{{ cDefs.__WASI_RIGHTS_FD_WRITE }}})) {
       return {{{ cDefs.O_RDWR }}};
@@ -409,17 +434,39 @@ var WasiLibrary = {
   // preopen maps open file descriptors to pathname.
   // In emscripten we already have a VFS layer so (for now) we expose the entire
   // VFS to the wasi API.
-  $preopens: "{3: '/'}",
+  $preopens: "{}",
+  $preopens__deps: ['$preopen'],
+  $preopens__postset: function() {
+#if SYSCALLS_REQUIRE_FILESYSTEM
+    addAtInit("preopen('/');");
+#endif
+    return ''
+  },
+
+  $preopen__deps: ['$preopens'],
+  $preopen: function(dirname) {
+    FS.unmount('/');
+    FS.mount(NODEFS, { root: '.' }, '/');
+    var stream = FS.open(dirname);
+#if RUNTIME_DEBUG
+    dbg('preopen ' + dirname + ' -> ' + stream.fd);
+#endif
+    preopens[stream.fd] = dirname;
+  },
 
   path_open__sig: 'iiiiiiiiii',
   path_open__deps: ['$wasiRightsToMuslOFlags', '$wasiOFlagsToMuslOFlags', '$preopens'],
   path_open: (fd, dirflags, path, path_len, oflags,
               fs_rights_base, fs_rights_inherting,
               fdflags, opened_fd) => {
-    if (!(fd in preopens)) {
-      return {{{ cDefs.EBADF }}};
-    }
     var pathname = UTF8ToString(path, path_len);
+#if SYSCALL_DEBUG
+    dbg('path_open: "' + pathname + '"');
+#endif
+    pathname = SYSCALLS.calculateAt(fd, pathname);
+#if SYSCALL_DEBUG
+    dbg('path_open: "' + pathname + '"');
+#endif
     var musl_oflags = wasiRightsToMuslOFlags(Number(fs_rights_base));
 #if SYSCALL_DEBUG
     dbg(`oflags1: ${ptrToString(musl_oflags)}`);

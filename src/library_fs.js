@@ -543,13 +543,18 @@ FS.staticInit();` +
         throw type;
       }
 #endif
+#if RUNTIME_DEBUG
+      dbg(`mount: ${mountpoint}`);
+#endif
       var root = mountpoint === '/';
       var pseudo = !mountpoint;
       var node;
 
       if (root && FS.root) {
         throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
-      } else if (!root && !pseudo) {
+      }
+
+      if (!root && !pseudo) {
         var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
 
         mountpoint = lookup.path;  // use the absolute path
@@ -591,7 +596,17 @@ FS.staticInit();` +
       return mountRoot;
     },
     unmount(mountpoint) {
+#if RUNTIME_DEBUG
+      dbg(`unmount: ${mountpoint}`);
+#endif
       var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
+      console.log(lookup.node);
+      console.log(FS.root);
+      if (FS.root == lookup.node) {
+        delete FS.root;
+        return;
+      }
+
 
       if (!FS.isMountpoint(lookup.node)) {
         throw new FS.ErrnoError({{{ cDefs.EINVAL }}});

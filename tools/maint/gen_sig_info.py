@@ -159,6 +159,8 @@ wasi_symbols = {
   'fd_seek',
   'fd_sync',
   'fd_fdstat_get',
+  'fd_renumber',
+  'fd_tell',
   'args_get',
   'args_sizes_get',
   'random_get',
