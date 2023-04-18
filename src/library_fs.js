@@ -687,6 +687,30 @@ FS.staticInit();` +
       mode |= {{{ cDefs.S_IFCHR }}};
       return FS.mknod(path, mode, dev);
     },
+    link: (oldpath, newpath) => {
+      if (!PATH_FS.resolve(oldpath)) {
+        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+      }
+      var lookup = FS.lookupPath(newpath, { parent: true });
+      var parent = lookup.node;
+      if (!parent) {
+        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+      }
+      var newname = PATH.basename(newpath);
+      var errCode = FS.mayCreate(parent, newname);
+      if (errCode) {
+        throw new FS.ErrnoError(errCode);
+      }
+      if (!parent.node_ops.symlink) {
+        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+      }
+#if FS_DEBUG
+      if (FS.trackingDelegate['onMakeLink']) {
+        FS.trackingDelegate['onMakeLink'](oldpath, newpath);
+      }
+#endif
+      return parent.node_ops.link(parent, newname, oldpath);
+    },
     symlink: (oldpath, newpath) => {
       if (!PATH_FS.resolve(oldpath)) {
         throw new FS.ErrnoError({{{ cDefs.ENOENT }}});

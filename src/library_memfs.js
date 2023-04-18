@@ -29,6 +29,7 @@ mergeInto(LibraryManager.library, {
               rmdir: MEMFS.node_ops.rmdir,
               readdir: MEMFS.node_ops.readdir,
               symlink: MEMFS.node_ops.symlink
+              link: MEMFS.node_ops.link
             },
             stream: {
               llseek: MEMFS.stream_ops.llseek
@@ -229,6 +230,8 @@ mergeInto(LibraryManager.library, {
           entries.push(key);
         }
         return entries;
+      },
+      link: function(parent, newname, oldnode) {
       },
       symlink: function(parent, newname, oldpath) {
         var node = MEMFS.createNode(parent, newname, 511 /* 0777 */ | {{{ cDefs.S_IFLNK }}}, 0);

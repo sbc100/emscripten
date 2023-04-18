@@ -104,10 +104,6 @@ weak int __syscall_getppid() {
   return g_ppid;
 }
 
-weak int __syscall_linkat(int olddirfd, intptr_t oldpath, int newdirfd, intptr_t newpath, int flags) {
-  return -EMLINK; // no hardlinks for us
-}
-
 weak int __syscall_getgroups32(int size, intptr_t list) {
   if (size < 1) {
     return -EINVAL;

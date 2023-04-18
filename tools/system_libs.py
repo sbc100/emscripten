@@ -1113,6 +1113,16 @@ class libc(MuslInternalLibrary,
           'thrd_join.c',
           'thrd_sleep.c',
           'thrd_yield.c',
+          # POSIX semaphores
+          'sem_destroy.c',
+          'sem_getvalue.c',
+          'sem_init.c',
+          'sem_open.c',
+          'sem_post.c',
+          'sem_timedwait.c',
+          'sem_trywait.c',
+          'sem_unlink.c',
+          'sem_wait.c',
         ])
       libc_files += files_in_path(
         path='system/lib/pthread',

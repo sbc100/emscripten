@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include "lock.h"
 #include "fork_impl.h"
+#include "emscripten/console.h"
 
 #define malloc __libc_malloc
 #define calloc __libc_calloc
@@ -42,8 +43,10 @@ sem_t *sem_open(const char *name, int flags, ...)
 	struct stat st;
 	char buf[NAME_MAX+10];
 
+  _emscripten_errf("sem_open %s", name);
 	if (!(name = __shm_mapname(name, buf)))
 		return SEM_FAILED;
+  _emscripten_errf("__shm_mapname %s", name);
 
 	LOCK(lock);
 	/* Allocate table if we don't have one yet */
@@ -87,6 +90,7 @@ sem_t *sem_open(const char *name, int flags, ...)
 		if (flags != (O_CREAT|O_EXCL)) {
 			fd = open(name, FLAGS);
 			if (fd >= 0) {
+        _emscripten_errf("open done: %d", fd);
 				if (fstat(fd, &st) < 0 ||
 				    (map = mmap(0, sizeof(sem_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
 					close(fd);
@@ -95,11 +99,15 @@ sem_t *sem_open(const char *name, int flags, ...)
 				close(fd);
 				break;
 			}
-			if (errno != ENOENT)
+			if (errno != ENOENT) {
+        _emscripten_errf("failed to open");
 				goto fail;
+      }
 		}
-		if (!(flags & O_CREAT))
+		if (!(flags & O_CREAT))  {
+        _emscripten_errf("O_CREAT not passed");
 			goto fail;
+    }
 		if (first) {
 			first = 0;
 			va_start(ap, flags);
@@ -107,27 +115,33 @@ sem_t *sem_open(const char *name, int flags, ...)
 			value = va_arg(ap, unsigned);
 			va_end(ap);
 			if (value > SEM_VALUE_MAX) {
+        _emscripten_errf("SEM_VALUE_MAX error");
 				errno = EINVAL;
 				goto fail;
 			}
 			sem_init(&newsem, 1, value);
 		}
+    _emscripten_errf("sem_open fd = %d", fd);
 		/* Create a temp file with the new semaphore contents
 		 * and attempt to atomically link it as the new name */
 		clock_gettime(CLOCK_REALTIME, &ts);
 		snprintf(tmp, sizeof(tmp), "/dev/shm/tmp-%d", (int)ts.tv_nsec);
 		fd = open(tmp, O_CREAT|O_EXCL|FLAGS, mode);
 		if (fd < 0) {
+      _emscripten_errf("error opening %s", tmp);
 			if (errno == EEXIST) continue;
 			goto fail;
 		}
+    _emscripten_errf("done open %s %d", tmp, fd);
 		if (write(fd, &newsem, sizeof newsem) != sizeof newsem || fstat(fd, &st) < 0 ||
 		    (map = mmap(0, sizeof(sem_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
 			close(fd);
 			unlink(tmp);
 			goto fail;
 		}
+    _emscripten_errf("done write");
 		close(fd);
+    _emscripten_errf("linking %s %s", tmp, name);
 		e = link(tmp, name) ? errno : 0;
 		unlink(tmp);
 		if (!e) break;
@@ -136,8 +150,11 @@ sem_t *sem_open(const char *name, int flags, ...)
 		 * otherwise, next iteration will try to open the
 		 * existing file. */
 		if (e != EEXIST || flags == (O_CREAT|O_EXCL))
+      _emscripten_errf("yyyyy %s", strerror(e));
 			goto fail;
 	}
+
+  _emscripten_errf("xxxxx");
 
 	/* See if the newly mapped semaphore is already mapped. If
 	 * so, unmap the new mapping and use the existing one. Otherwise,

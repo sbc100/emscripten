@@ -915,6 +915,17 @@ var SyscallsLibrary = {
     FS.rename(oldpath, newpath);
     return 0;
   },
+  __syscall_linkat: function(olddirfd, oldpath, newdirfd, newpath, flags) {
+#if SYSCALL_DEBUG
+    dbg('warning: untested syscall');
+#endif
+    oldpath = SYSCALLS.getStr(oldpath);
+    oldpath = SYSCALLS.calculateAt(olddirfd, oldpath);
+    newpath = SYSCALLS.getStr(newpath);
+    newpath = SYSCALLS.calculateAt(newdirfd, newpath);
+    err('__syscall_linkat ' + newpath + ' -> ' + oldpath);
+    FS.link(oldpath, newpath);
+  },
   __syscall_symlinkat: function(target, newdirfd, linkpath) {
 #if SYSCALL_DEBUG
     dbg('warning: untested syscall');

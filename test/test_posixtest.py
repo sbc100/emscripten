@@ -33,6 +33,9 @@ def filter_tests(all_tests):
     'strftime',
     'asctime',
     'gmtime'
+    'gmtime',
+    'sem_init',
+    'sem_post',
   ]
 
   def enable_test(t):
@@ -77,6 +80,9 @@ unsupported_noreturn = {
 }
 
 unsupported = {
+  'test_sem_init_3_2': 'fork() and multiple processes are not supported',
+  'test_sem_init_3_3': 'fork() and multiple processes are not supported',
+  'test_sem_init_7_1': 'musl does not honor SEM_NSEMS_MAX',
   'test_pthread_attr_setinheritsched_2_2': 'scheduling policy/parameters are not supported',
   'test_pthread_attr_setinheritsched_2_3': 'scheduling policy/parameters are not supported',
   'test_pthread_attr_setinheritsched_2_4': 'scheduling policy/parameters are not supported',
