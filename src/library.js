@@ -3617,6 +3617,8 @@ mergeInto(LibraryManager.library, {
 #endif
   },
 
+  // General purpose handle allocator, used in various places to map JS
+  // objects to integer IDs that can them be passed to native code.
   $HandleAllocator__docs: '/** @constructor */',
   $HandleAllocator: function() {
     // Reserve slot 0 so that 0 is always an invalid handle
