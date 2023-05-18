@@ -834,7 +834,7 @@ var SyscallsLibrary = {
         if (arg < 0) {
           return -{{{ cDefs.EINVAL }}};
         }
-        while (FS.streams[arg]) {
+        while (FS.streams.allocated[arg]) {
           arg++;
         }
         var newStream;

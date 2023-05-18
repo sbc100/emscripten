@@ -1280,6 +1280,28 @@ var FS_getMode = (canRead, canWrite) => {
   return mode;
 };
 
+class HandleAllocator {
+  allocated=[ undefined ];
+  freelist=[];
+  get(id) {
+    return this.allocated[id];
+  }
+  has(id) {
+    return this.allocated[id] !== undefined;
+  }
+  allocate(handle) {
+    var id = this.freelist.pop() ?? this.allocated.length;
+    this.allocated[id] = handle;
+    return id;
+  }
+  free(id) {
+    // Set the slot to `undefined` rather than using `delete` here since
+    // apparently arrays with holes in them can be less efficient.
+    this.allocated[id] = undefined;
+    this.freelist.push(id);
+  }
+}
+
 var asyncLoad = async url => {
   var arrayBuffer = await readAsync(url);
   return new Uint8Array(arrayBuffer);
@@ -1356,7 +1378,6 @@ var FS = {
   root: null,
   mounts: [],
   devices: {},
-  streams: [],
   nextInode: 1,
   nameTable: null,
   currentPath: "/",
@@ -1742,14 +1763,6 @@ var FS = {
     return op;
   },
   MAX_OPEN_FDS: 4096,
-  nextfd() {
-    for (var fd = 0; fd <= FS.MAX_OPEN_FDS; fd++) {
-      if (!FS.streams[fd]) {
-        return fd;
-      }
-    }
-    throw new FS.ErrnoError(33);
-  },
   getStreamChecked(fd) {
     var stream = FS.getStream(fd);
     if (!stream) {
@@ -1757,19 +1770,24 @@ var FS = {
     }
     return stream;
   },
-  getStream: fd => FS.streams[fd],
+  getStream: fd => FS.streams.allocated[fd],
   createStream(stream, fd = -1) {
     // clone it, so we can return an instance of FSStream
     stream = Object.assign(new FS.FSStream, stream);
     if (fd == -1) {
-      fd = FS.nextfd();
+      fd = FS.streams.allocate(stream);
+    } else {
+      // Avoid holes in the `allocated` array.
+      while (FS.streams.allocated.length <= fd) {
+        FS.streams.allocated.push(undefined);
+      }
+      FS.streams.allocated[fd] = stream;
     }
     stream.fd = fd;
-    FS.streams[fd] = stream;
     return stream;
   },
   closeStream(fd) {
-    FS.streams[fd] = null;
+    FS.streams.free(fd);
   },
   dupStream(origStream, fd = -1) {
     var stream = FS.createStream(origStream, fd);
@@ -2654,7 +2672,7 @@ var FS = {
             return ret;
           },
           readdir() {
-            return Array.from(FS.streams.entries()).filter(([k, v]) => v).map(([k, v]) => k.toString());
+            return Array.from(FS.streams.allocated.entries()).filter(([k, v]) => v).map(([k, v]) => k.toString());
           }
         };
         return node;
@@ -2701,6 +2719,11 @@ var FS = {
   },
   init(input, output, error) {
     FS.initialized = true;
+    FS.streams = new HandleAllocator;
+    // Clear the default allocated list since the default HandleAllocator
+    // starts with `undefined` to avoid handing out handle zero, but in the
+    // case of file handles zero is a valid handle (stdin).
+    FS.streams.allocated = [];
     // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
     FS.createStandardStreams(input, output, error);
   },
@@ -2708,7 +2731,7 @@ var FS = {
     FS.initialized = false;
     // force-flush all streams, so we get musl std streams printed out
     // close all of our streams
-    for (var stream of FS.streams) {
+    for (var stream of FS.streams.allocated) {
       if (stream) {
         FS.close(stream);
       }

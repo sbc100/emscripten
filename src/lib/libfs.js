@@ -14,6 +14,9 @@ var LibraryFS = {
     '$FS_fileDataToTypedArray',
     '$FS_getMode',
     '$intArrayFromString',
+    '$stringToUTF8Array',
+    '$lengthBytesUTF8',
+    '$HandleAllocator',
 #if LibraryManager.has('libidbfs.js')
     '$IDBFS',
 #endif
@@ -52,7 +55,6 @@ FS.staticInit();`;
     root: null,
     mounts: [],
     devices: {},
-    streams: [],
     nextInode: 1,
     nameTable: null,
     currentPath: '/',
@@ -510,14 +512,6 @@ FS.staticInit();`;
     // streams
     //
     MAX_OPEN_FDS: 4096,
-    nextfd() {
-      for (var fd = 0; fd <= FS.MAX_OPEN_FDS; fd++) {
-        if (!FS.streams[fd]) {
-          return fd;
-        }
-      }
-      throw new FS.ErrnoError({{{ cDefs.EMFILE }}});
-    },
     getStreamChecked(fd) {
       var stream = FS.getStream(fd);
       if (!stream) {
@@ -525,7 +519,7 @@ FS.staticInit();`;
       }
       return stream;
     },
-    getStream: (fd) => FS.streams[fd],
+    getStream: (fd) => FS.streams.allocated[fd],
     // TODO parameterize this function such that a stream
     // object isn't directly passed in. not possible until
     // SOCKFS is completed.
@@ -537,14 +531,19 @@ FS.staticInit();`;
       // clone it, so we can return an instance of FSStream
       stream = Object.assign(new FS.FSStream(), stream);
       if (fd == -1) {
-        fd = FS.nextfd();
+        fd = FS.streams.allocate(stream);
+      } else {
+        // Avoid holes in the `allocated` array.
+        while (FS.streams.allocated.length <= fd) {
+          FS.streams.allocated.push(undefined);
+        }
+        FS.streams.allocated[fd] = stream;
       }
       stream.fd = fd;
-      FS.streams[fd] = stream;
       return stream;
     },
     closeStream(fd) {
-      FS.streams[fd] = null;
+      FS.streams.free(fd);
     },
     dupStream(origStream, fd = -1) {
       var stream = FS.createStream(origStream, fd);
@@ -1530,7 +1529,7 @@ FS.staticInit();`;
               return ret;
             },
             readdir() {
-              return Array.from(FS.streams.entries())
+              return Array.from(FS.streams.allocated.entries())
                 .filter(([k, v]) => v)
                 .map(([k, v]) => k.toString());
             }
@@ -1604,6 +1603,11 @@ FS.staticInit();`;
       assert(!FS.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
 #endif
       FS.initialized = true;
+      FS.streams = new HandleAllocator();
+      // Clear the default allocated list since the default HandleAllocator
+      // starts with `undefined` to avoid handing out handle zero, but in the
+      // case of file handles zero is a valid handle (stdin).
+      FS.streams.allocated = [];
 
       // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
 #if expectToReceiveOnModule('stdin')
@@ -1625,7 +1629,7 @@ FS.staticInit();`;
       _fflush(0);
 #endif
       // close all of our streams
-      for (var stream of FS.streams) {
+      for (var stream of FS.streams.allocated) {
         if (stream) {
           FS.close(stream);
         }
