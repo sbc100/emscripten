@@ -148,8 +148,10 @@ function stackCheckInit() {
 #else
   _emscripten_stack_init();
 #endif
+#if STACK_OVERFLOW_CHECK == 1
   // TODO(sbc): Move writeStackCookie to native to to avoid this.
   writeStackCookie();
+#endif
 }
 #endif
 
@@ -263,7 +265,7 @@ function run() {
   {
     doRun();
   }
-#if STACK_OVERFLOW_CHECK
+#if STACK_OVERFLOW_CHECK == 1
   checkStackCookie();
 #endif
 }
