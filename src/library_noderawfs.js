@@ -8,8 +8,8 @@ mergeInto(LibraryManager.library, {
   $NODERAWFS__deps: ['$ERRNO_CODES', '$FS', '$NODEFS', '$mmapAlloc', '$FS_modeStringToFlags'],
   $NODERAWFS__postset: `
     if (ENVIRONMENT_IS_NODE) {
-      var _wrapNodeError = function(func) {
-        return function() {
+      var _wrapNodeError = (func) => {
+        return () => {
           try {
             return func.apply(this, arguments)
           } catch (e) {
@@ -28,14 +28,14 @@ mergeInto(LibraryManager.library, {
       throw new Error("NODERAWFS is currently only supported on Node.js environment.")
     }`,
   $NODERAWFS: {
-    lookup: function(parent, name) {
+    lookup: (parent, name) => {
 #if ASSERTIONS
       assert(parent)
       assert(parent.path)
 #endif
       return FS.lookupPath(`${parent.path}/${name}`).node;
     },
-    lookupPath: function(path, opts = {}) {
+    lookupPath: (path, opts = {}) => {
       if (opts.parent) {
         path = nodePath.dirname(path);
       }
@@ -43,22 +43,23 @@ mergeInto(LibraryManager.library, {
       var mode = NODEFS.getMode(path);
       return { path, node: { id: st.ino, mode, node_ops: NODERAWFS, path }};
     },
-    createStandardStreams: function() {
+    createStandardStreams: () => {
       FS.createStream({ nfd: 0, position: 0, path: '', flags: 0, tty: true, seekable: false }, 0);
       for (var i = 1; i < 3; i++) {
         FS.createStream({ nfd: i, position: 0, path: '', flags: 577, tty: true, seekable: false }, i);
       }
     },
     // generic function for all node creation
-    cwd: function() { return process.cwd(); },
-    chdir: function() { process.chdir.apply(void 0, arguments); },
-    mknod: function(path, mode) {
+    cwd: () => process.cwd(),
+    chdir: () => process.chdir.apply(void 0, arguments),
+    mknod: (path, mode) => {
       if (FS.isDir(path)) {
         fs.mkdirSync(path, mode);
       } else {
         fs.writeFileSync(path, '', { mode: mode });
       }
     },
+<<<<<<< HEAD
     mkdir: function() { fs.mkdirSync.apply(void 0, arguments); },
     symlink: function() { fs.symlinkSync.apply(void 0, arguments); },
     rename: function() { fs.renameSync.apply(void 0, arguments); },
@@ -80,6 +81,23 @@ mergeInto(LibraryManager.library, {
     },
     truncate: function() { fs.truncateSync.apply(void 0, arguments); },
     ftruncate: function(fd, len) {
+=======
+    mkdir: () => fs.mkdirSync.apply(void 0, arguments),
+    symlink: () => fs.symlinkSync.apply(void 0, arguments),
+    rename: () => fs.renameSync.apply(void 0, arguments),
+    rmdir: () => fs.rmdirSync.apply(void 0, arguments),
+    readdir: () => ['.', '..'].concat(fs.readdirSync.apply(void 0, arguments)),
+    unlink: () => fs.unlinkSync.apply(void 0, arguments),
+    readlink: () => fs.readlinkSync.apply(void 0, arguments),
+    stat: () => fs.statSync.apply(void 0, arguments),
+    lstat: () => fs.lstatSync.apply(void 0, arguments),
+    chmod: () => fs.chmodSync.apply(void 0, arguments),
+    fchmod: () => fs.fchmodSync.apply(void 0, arguments),
+    chown: () => fs.chownSync.apply(void 0, arguments),
+    fchown: () => fs.fchownSync.apply(void 0, arguments),
+    truncate: () => fs.truncateSync.apply(void 0, arguments),
+    ftruncate: (fd, len) => {
+>>>>>>> dab8fa9cbb (Use JS arrow functions in library_noderawfs.js. NFC)
       // See https://github.com/nodejs/node/issues/35632
       if (len < 0) {
         throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
@@ -87,12 +105,12 @@ mergeInto(LibraryManager.library, {
       var stream = FS.getStreamChecked(fd);
       fs.ftruncateSync(stream.nfd, len);
     },
-    utime: function(path, atime, mtime) { fs.utimesSync(path, atime/1000, mtime/1000); },
-    open: function(path, flags, mode) {
+    utime: (path, atime, mtime) => { fs.utimesSync(path, atime/1000, mtime/1000); },
+    open: (path, flags, mode) => {
       if (typeof flags == "string") {
         flags = FS_modeStringToFlags(flags)
       }
-      var pathTruncated = path.split('/').map(function(s) { return s.substr(0, 255); }).join('/');
+      var pathTruncated = path.split('/').map((s) => s.substr(0, 255)).join('/');
       var nfd = fs.openSync(pathTruncated, NODEFS.flagsForNode(flags), mode);
       var st = fs.fstatSync(nfd);
       if (flags & {{{ cDefs.O_DIRECTORY }}} && !st.isDirectory()) {
@@ -103,7 +121,7 @@ mergeInto(LibraryManager.library, {
       var node = { id: st.ino, mode: newMode, node_ops: NODERAWFS, path }
       return FS.createStream({ nfd, position: 0, path, flags, node, seekable: true });
     },
-    createStream: function(stream, fd) {
+    createStream: (stream, fd) => {
       // Call the original FS.createStream
       var rtn = VFS.createStream(stream, fd);
       if (typeof rtn.shared.refcnt == 'undefined') {
@@ -113,7 +131,7 @@ mergeInto(LibraryManager.library, {
       }
       return rtn;
     },
-    close: function(stream) {
+    close: (stream) => {
       VFS.closeStream(stream.fd);
       if (!stream.stream_ops && --stream.shared.refcnt === 0) {
         // This stream is created by our Node.js filesystem, close the
@@ -121,7 +139,7 @@ mergeInto(LibraryManager.library, {
         fs.closeSync(stream.nfd);
       }
     },
-    llseek: function(stream, offset, whence) {
+    llseek: (stream, offset, whence) => {
       if (stream.stream_ops) {
         // this stream is created by in-memory filesystem
         return VFS.llseek(stream, offset, whence);
@@ -141,7 +159,7 @@ mergeInto(LibraryManager.library, {
       stream.position = position;
       return position;
     },
-    read: function(stream, buffer, offset, length, position) {
+    read: (stream, buffer, offset, length, position) => {
       if (stream.stream_ops) {
         // this stream is created by in-memory filesystem
         return VFS.read(stream, buffer, offset, length, position);
@@ -153,7 +171,7 @@ mergeInto(LibraryManager.library, {
       if (!seeking) stream.position += bytesRead;
       return bytesRead;
     },
-    write: function(stream, buffer, offset, length, position) {
+    write: (stream, buffer, offset, length, position) => {
       if (stream.stream_ops) {
         // this stream is created by in-memory filesystem
         return VFS.write(stream, buffer, offset, length, position);
@@ -169,10 +187,10 @@ mergeInto(LibraryManager.library, {
       if (!seeking) stream.position += bytesWritten;
       return bytesWritten;
     },
-    allocate: function() {
+    allocate: () => {
       throw new FS.ErrnoError({{{ cDefs.EOPNOTSUPP }}});
     },
-    mmap: function(stream, length, position, prot, flags) {
+    mmap: (stream, length, position, prot, flags) => {
       if (stream.stream_ops) {
         // this stream is created by in-memory filesystem
         return VFS.mmap(stream, length, position, prot, flags);
@@ -182,7 +200,7 @@ mergeInto(LibraryManager.library, {
       FS.read(stream, HEAP8, ptr, length, position);
       return { ptr, allocated: true };
     },
-    msync: function(stream, buffer, offset, length, mmapFlags) {
+    msync: (stream, buffer, offset, length, mmapFlags) => {
       if (stream.stream_ops) {
         // this stream is created by in-memory filesystem
         return VFS.msync(stream, buffer, offset, length, mmapFlags);
@@ -192,10 +210,8 @@ mergeInto(LibraryManager.library, {
       // should we check if bytesWritten and length are the same?
       return 0;
     },
-    munmap: function() {
-      return 0;
-    },
-    ioctl: function() {
+    munmap: () => 0,
+    ioctl: () => {
       throw new FS.ErrnoError({{{ cDefs.ENOTTY }}});
     }
   }
