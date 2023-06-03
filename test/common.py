@@ -458,6 +458,7 @@ class RunnerMeta(type):
     # We use @functools.wraps to copy over all the function attributes.
     @wraps(func)
     def resulting_test(self):
+      self.orig_name = name
       return func(self, *args)
 
     # Add suffix to the function name so that it displays correctly.
@@ -465,6 +466,7 @@ class RunnerMeta(type):
       resulting_test.__name__ = f'{name}_{suffix}'
     else:
       resulting_test.__name__ = name
+
 
     # On python 3, functions have __qualname__ as well. This is a full dot-separated path to the
     # function.  We add the suffix to it as well.

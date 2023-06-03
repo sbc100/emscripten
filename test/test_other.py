@@ -195,8 +195,13 @@ class other(RunnerCore):
   def assertIsWasmDylib(self, filename):
     self.assertTrue(building.is_wasm_dylib(filename))
 
-  def do_other_test(self, testname, emcc_args=None, **kwargs):
-    return self.do_run_in_out_file_test('other', testname, emcc_args=emcc_args, **kwargs)
+  def do_other_test(self, filename, emcc_args=None, **kwargs):
+    test_name = self.id().split('.')[-1]
+    if hasattr(self, 'orig_name'):
+      test_name = self.orig_name
+    basename = os.path.splitext(filename)[0]
+    assert basename == test_name, f'{filename} does not match test name ({test_name})'
+    return self.do_run_in_out_file_test('other', filename, emcc_args=emcc_args, **kwargs)
 
   def run_on_pty(self, cmd):
     master, slave = os.openpty()
@@ -7415,7 +7420,7 @@ int main() {
     src = read_file('a.out.js')
     assert 'use asm' not in src
 
-  def test_EM_ASM_i64(self):
+  def test_em_asm_i64(self):
     expected = 'Invalid character 106("j") in readEmAsmArgs!'
     self.do_runf(test_file('other/test_em_asm_i64.cpp'),
                  expected_output=expected,
@@ -9017,7 +9022,7 @@ end
 
   @also_with_wasmfs
   def test_ioctl_window_size(self):
-      self.do_other_test('test_ioctl_window_size.cpp')
+    self.do_other_test('test_ioctl_window_size.cpp')
 
   @also_with_wasmfs
   def test_ioctl(self):
@@ -10696,11 +10701,12 @@ int main(void) {
         emcc_args.extend(['--embed-file', f])
     self.do_other_test('test_mmap_and_munmap.cpp', emcc_args)
 
-  def test_mmap_and_munmap_anonymous(self):
-    self.do_other_test('test_mmap_and_munmap_anonymous.cpp', emcc_args=['-sNO_FILESYSTEM'])
-
-  def test_mmap_and_munmap_anonymous_asan(self):
-    self.do_other_test('test_mmap_and_munmap_anonymous.cpp', emcc_args=['-sNO_FILESYSTEM', '-fsanitize=address'])
+  @parameterized({
+    '': ([],),
+    'asan': (['-fsanitize=address'],),
+  })
+  def test_mmap_and_munmap_anonymous(self, args):
+    self.do_other_test('test_mmap_and_munmap_anonymous.cpp', emcc_args=['-sNO_FILESYSTEM'] + args)
 
   def test_mmap_memorygrowth(self):
     self.do_other_test('test_mmap_memorygrowth.cpp', ['-sALLOW_MEMORY_GROWTH'])
@@ -11414,11 +11420,11 @@ Aborted(Module.arguments has been replaced with plain arguments_ (the initial va
     # Verify the JS output was smaller
     self.assertLess(os.path.getsize('test_support_errno.js'), size_default)
 
-  def test_assembly(self):
+  def test_asm(self):
     self.run_process([EMCC, '-c', test_file('other/test_asm.s'), '-o', 'foo.o'])
     self.do_other_test('test_asm.c', libraries=['foo.o'])
 
-  def test_assembly_preprocessed(self):
+  def test_asm_preprocessed(self):
     self.run_process([EMCC, '-c', test_file('other/test_asm_cpp.S'), '-o', 'foo.o'])
     self.do_other_test('test_asm.c', libraries=['foo.o'])
 
