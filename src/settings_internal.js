@@ -137,6 +137,9 @@ var PTHREAD_WORKER_FILE = '';
 // name of the file containing the Wasm Worker *.ww.js, if relevant
 var WASM_WORKER_FILE = '';
 
+// In WASM_WORKERS == 2 mode we embed the *.ww.js code inside the main module.
+var WASM_WORKER_CODE = '';
+
 // name of the file containing the Audio Worklet *.aw.js, if relevant
 var AUDIO_WORKLET_FILE = '';
 

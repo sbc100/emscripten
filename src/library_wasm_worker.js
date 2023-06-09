@@ -1,10 +1,3 @@
-{{{
-  global.captureModuleArg = () => MODULARIZE ? '' : 'self.Module=d;';
-  global.instantiateModule = () => MODULARIZE ? `${EXPORT_NAME}(d);` : '';
-  global.instantiateWasm = () => MINIMAL_RUNTIME ? '' : 'd[`instantiateWasm`]=(i,r)=>{var n=new WebAssembly.Instance(d[`wasm`],i);r(n,d[`wasm`]);return n.exports};';
-  null;
-}}}
-
 #if WASM_WORKERS
 
 #if !SHARED_MEMORY
@@ -100,9 +93,12 @@ mergeInto(LibraryManager.library, {
   },
 
 #if WASM_WORKERS == 2
-  // In WASM_WORKERS == 2 build mode, we create the Wasm Worker global scope script from a string bundled in the main application JS file. This simplifies the number of deployed JS files with the app,
-  // but has a downside that the generated build output will no longer be csp-eval compliant. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src#unsafe_eval_expressions
-  $_wasmWorkerBlobUrl: "URL.createObjectURL(new Blob(['onmessage=function(d){onmessage=null;d=d.data;{{{ captureModuleArg() }}}{{{ instantiateWasm() }}}importScripts(d.js);{{{ instantiateModule() }}}d.wasm=d.mem=d.js=0;}'],{type:'application/javascript'}))",
+  // In WASM_WORKERS == 2 build mode, we create the Wasm Worker global scope
+  // script from a string bundled in the main application JS file. This
+  // simplifies the number of deployed JS files with the app, but has a downside
+  // that the generated build output will no longer be csp-eval compliant.
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src#unsafe_eval_expressions
+  $_wasmWorkerBlobUrl: "URL.createObjectURL(new Blob(['{{{ WASM_WORKER_CODE }}}'],{type:'application/javascript'}))",
 #endif
 
   _emscripten_create_wasm_worker__deps: ['$_wasmWorkers', '$_wasmWorkersID', '$_wasmWorkerAppendToQueue', '$_wasmWorkerRunPostMessage'
@@ -116,11 +112,17 @@ mergeInto(LibraryManager.library, {
     + '}\n',
   _emscripten_create_wasm_worker: function(stackLowestAddress, stackSize) {
     let worker = _wasmWorkers[_wasmWorkersID] = new Worker(
-#if WASM_WORKERS == 2 // WASM_WORKERS=2 mode embeds .ww.js file contents into the main .js file as a Blob URL. (convenient, but not CSP security safe, since this is eval-like)
+#if WASM_WORKERS == 2
+      // WASM_WORKERS=2 mode embeds .ww.js file contents into the main .js file
+      // as a Blob URL. (convenient, but not CSP security safe, since this is
+      // eval-like)
       _wasmWorkerBlobUrl
-#elif MINIMAL_RUNTIME // MINIMAL_RUNTIME has a structure where the .ww.js file is loaded from the main HTML file in parallel to all other files for best performance
+#elif MINIMAL_RUNTIME
+      // MINIMAL_RUNTIME has a structure where the .ww.js file is loaded from
+      // the main HTML file in parallel to all other files for best performance
       Module['$wb'] // $wb="Wasm worker Blob", abbreviated since not DCEable
-#else // default runtime loads the .ww.js file on demand.
+#else
+      // default runtime loads the .ww.js file on demand.
       locateFile('{{{ WASM_WORKER_FILE }}}')
 #endif
     );

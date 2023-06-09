@@ -9757,6 +9757,10 @@ NODEFS is no longer included by default; build with -lnodefs.js
   def test_wasm_worker_malloc(self):
     self.do_runf(test_file('wasm_worker/malloc_wasm_worker.c'), emcc_args=['-sWASM_WORKERS'])
 
+  @node_pthreads
+  def test_wasm_worker_embedded(self):
+    self.do_runf(test_file('wasm_worker/hello_wasm_worker.c'), emcc_args=['-sWASM_WORKERS=2'])
+
 
 # Generate tests for everything
 def make_run(name, emcc_args, settings=None, env=None,
