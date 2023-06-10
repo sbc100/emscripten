@@ -11164,7 +11164,12 @@ Aborted(Module.arguments has been replaced with plain arguments_ (the initial va
     self.set_setting('ASYNCIFY')
     self.set_setting('PTHREAD_POOL_SIZE', 2)
     self.set_setting('EXIT_RUNTIME')
-    self.do_run_in_out_file_test('other/test_pthread_asyncify.c')
+    self.do_other_test('test_pthread_asyncify.c')
+
+  @node_pthreads
+  def test_pthread_is_main(self):
+    self.do_other_test('test_pthread_is_main.c', emcc_args=['-sPTHREAD_POOL_SIZE=1'])
+    self.do_other_test('test_pthread_is_main.c', emcc_args=['-sPROXY_TO_PTHREAD', '-DPROXY_TO_PTHREAD', '-sEXIT_RUNTIME'])
 
   def test_stdin_preprocess(self):
     create_file('temp.h', '#include <string>')

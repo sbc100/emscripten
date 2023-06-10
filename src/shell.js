@@ -274,6 +274,7 @@ if (ENVIRONMENT_IS_NODE) {
     throw e;
   }
   global.Worker = nodeWorkerThreads.Worker;
+  ENVIRONMENT_IS_WORKER = !nodeWorkerThreads.isMainThread;
 #endif
 
 #if WASM == 2
