@@ -27,6 +27,10 @@ See docs/process.md for more on how version tagging works.
   16.0. To run the output JS in an older version of node, you can use e.g.
   `-sMIN_NODE_VERSION=101900` which will apply the previous minimum version of
   10.19.0. (#19192).
+- The `FORCE_FILESYSTEM` setting now only triggers the export of symbols needed
+  by the file packager output.  Specifically, `FS_unlink`, `FS_createLazyFile`,
+  and `FS_createDevice` are no longer automatically exported when
+  `FORCE_FILESYSTEM` is used. (#19590)
 - The log message that emcc will sometime print (for example when auto-building
   system libraries) can now be completely supressed by running with
   `EMCC_LOGGING=0`.
