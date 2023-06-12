@@ -8,7 +8,6 @@
 #define _Int64 __INT64_TYPE__
 #define _Reg __PTRDIFF_TYPE__
 
-#if __GNUC__ >= 3
 #if defined(__NEED_va_list) && !defined(__DEFINED_va_list)
 typedef __builtin_va_list va_list;
 #define __DEFINED_va_list
@@ -19,34 +18,13 @@ typedef __builtin_va_list __isoc_va_list;
 #define __DEFINED___isoc_va_list
 #endif
 
-#else
-#if defined(__NEED_va_list) && !defined(__DEFINED_va_list)
-typedef struct __va_list * va_list;
-#define __DEFINED_va_list
-#endif
-
-#if defined(__NEED___isoc_va_list) && !defined(__DEFINED___isoc_va_list)
-typedef struct __va_list * __isoc_va_list;
-#define __DEFINED___isoc_va_list
-#endif
-
-#endif
-
 #ifndef __cplusplus
-#ifdef __WCHAR_TYPE__
 #if defined(__NEED_wchar_t) && !defined(__DEFINED_wchar_t)
 typedef __WCHAR_TYPE__ wchar_t;
 #define __DEFINED_wchar_t
 #endif
-
-#else
-#if defined(__NEED_wchar_t) && !defined(__DEFINED_wchar_t)
-typedef int wchar_t;
-#define __DEFINED_wchar_t
 #endif
 
-#endif
-#endif
 #if defined(__NEED_wint_t) && !defined(__DEFINED_wint_t)
 typedef __WINT_TYPE__ wint_t;
 #define __DEFINED_wint_t

@@ -7246,10 +7246,10 @@ void* operator new(size_t size) {
         if self.get_setting('WASM_BIGINT'):
           out_suffix += '_bigint'
       assert_returncode = 0 if not asserts else NON_ZERO
-      self.do_run_in_out_file_test('core/test_getValue_setValue.cpp',
-                                   out_suffix=out_suffix,
-                                   assert_returncode=assert_returncode,
-                                   emcc_args=args)
+      self.do_core_test('test_getValue_setValue.cpp',
+                        out_suffix=out_suffix,
+                        assert_returncode=assert_returncode,
+                        emcc_args=args)
 
     if self.get_setting('WASM_BIGINT'):
       self.emcc_args += ['-DWASM_BIGINT']
@@ -8139,13 +8139,13 @@ void* operator new(size_t size) {
     self.do_runf(test_file('test_minmax.c'), 'NAN != NAN\nSuccess!')
 
   def test_localeconv(self):
-    self.do_run_in_out_file_test('core/test_localeconv.c')
+    self.do_core_test('test_localeconv.c')
 
   def test_newlocale(self):
-    self.do_run_in_out_file_test('core/test_newlocale.c')
+    self.do_core_test('test_newlocale.c')
 
   def test_setlocale(self):
-    self.do_run_in_out_file_test('core/test_setlocale.c')
+    self.do_core_test('test_setlocale.c')
 
   def test_vswprintf_utf8(self):
     self.do_core_test('test_vswprintf_utf8.c')
@@ -9378,7 +9378,7 @@ NODEFS is no longer included by default; build with -lnodefs.js
   @node_pthreads
   def test_stdio_locking(self):
     self.set_setting('PTHREAD_POOL_SIZE', '2')
-    self.do_run_in_out_file_test('core/test_stdio_locking.c')
+    self.do_core_test('test_stdio_locking.c')
 
   @needs_dylink
   @node_pthreads
