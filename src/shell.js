@@ -282,7 +282,6 @@ if (ENVIRONMENT_IS_NODE) {
     eval(fs.readFileSync(locateFile('{{{ TARGET_BASENAME }}}.wasm.js'))+'');
   }
 #endif
-
 } else
 #endif // ENVIRONMENT_MAY_BE_NODE
 #if ENVIRONMENT_MAY_BE_SHELL || ASSERTIONS

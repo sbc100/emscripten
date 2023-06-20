@@ -2322,42 +2322,48 @@ mergeInto(LibraryManager.library, {
 
   emscripten_random: () => Math.random(),
 
-  emscripten_get_now: `;
 #if ENVIRONMENT_MAY_BE_NODE && MIN_NODE_VERSION < 160000
-    // The performance global was added to node in v16.0.0:
-    // https://nodejs.org/api/globals.html#performance
-    if (ENVIRONMENT_IS_NODE) {
-      global.performance = require('perf_hooks').performance;
-    }
+  $performancePolyfill__internal: false,
+  $performancePolyfill: `;
+  // The performance global was added to node in v16.0.0:
+  // https://nodejs.org/api/globals.html#performance
+  if (ENVIRONMENT_IS_NODE && !global.performance) {
+    global.performance = require('perf_hooks').performance;
+  }
+  `,
+#endif
+
+#if ENVIRONMENT_MAY_BE_NODE && MIN_NODE_VERSION < 160000
+  emscripten_get_now__deps: ['$performancePolyfill'],
 #endif
 #if PTHREADS && !AUDIO_WORKLET
-    // Pthreads need their clocks synchronized to the execution of the main
-    // thread, so, when using them, make sure to adjust all timings to the
-    // respective time origins.
-    _emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
+  // Pthreads need their clocks synchronized to the execution of the main
+  // thread, so, when using them, make sure to adjust all timings to the
+  // respective time origins.
+  emscripten_get_now: () => performance.timeOrigin + {{{ getPerformanceNow() }}}(),
 #else
 #if MIN_IE_VERSION <= 9 || MIN_FIREFOX_VERSION <= 14 || MIN_CHROME_VERSION <= 23 || MIN_SAFARI_VERSION <= 80400 || AUDIO_WORKLET // https://caniuse.com/#feat=high-resolution-time
     // AudioWorkletGlobalScope does not have performance.now()
     // (https://github.com/WebAudio/web-audio-api/issues/2527), so if building
     // with
     // Audio Worklets enabled, do a dynamic check for its presence.
-    if (typeof performance != 'undefined' && {{{ getPerformanceNow() }}}) {
+  emscripten_get_now: () => {
+    if (typeof performance != 'undefined' && performance.now) {
 #if PTHREADS
-      _emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
+      return performance.timeOrigin + {{{ getPerformanceNow() }}}();
 #else
-      _emscripten_get_now = () => {{{ getPerformanceNow() }}}();
+      return {{{ getPerformanceNow() }}}();
 #endif
-    } else {
-      _emscripten_get_now = Date.now;
     }
+    return Date.now();
+  },
 #else
-    // Modern environment where performance.now() is supported:
-    // N.B. a shorter form "_emscripten_get_now = performance.now;" is
-    // unfortunately not allowed even in current browsers (e.g. FF Nightly 75).
-    _emscripten_get_now = () => {{{ getPerformanceNow() }}}();
+  // Modern environment where performance.now() is supported:
+  // N.B. a shorter form "_emscripten_get_now = performance.now;" is
+  // unfortunately not allowed even in current browsers (e.g. FF Nightly 75).
+  emscripten_get_now: '{{{ getPerformanceNow() }}}',
 #endif
 #endif
-`,
 
   emscripten_get_now_res: () => { // return resolution of get_now, in nanoseconds
 #if ENVIRONMENT_MAY_BE_NODE
