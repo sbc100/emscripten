@@ -6279,9 +6279,6 @@ int main() {
     self.assertContained('done', self.run_js('a.out.js'))
 
   def test_failing_growth_wasm64(self):
-    # For now we skip this test because failure to create the TypedArray views
-    # causes weird unrecoverable failures.
-    self.skipTest('https://bugs.chromium.org/p/v8/issues/detail?id=4153')
     self.require_wasm64()
     create_file('test.c', r'''
 #include <assert.h>

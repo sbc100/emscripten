@@ -547,6 +547,12 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
         self.node_args += shared.node_memory64_flags()
         return
 
+    if config.SPIDERMONKEY_ENGINE and config.SPIDERMONKEY_ENGINE in self.js_engines:
+      self.emcc_args.append('-sENVIRONMENT=shell')
+      self.spidermonkey_args += ['--wasm-memory64']
+      self.js_engines = [config.SPIDERMONKEY_ENGINE]
+      return
+
     if config.V8_ENGINE and config.V8_ENGINE in self.js_engines:
       self.emcc_args.append('-sENVIRONMENT=shell')
       self.js_engines = [config.V8_ENGINE]
@@ -677,6 +683,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
         self.emcc_args += building.get_emcc_node_flags(node_version)
 
     self.v8_args = ['--wasm-staging']
+    self.spidermonkey_args = []
     self.env = {}
     self.temp_files_before_run = []
     self.uses_es6 = False
@@ -986,6 +993,8 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       engine = engine + self.node_args
     if engine == config.V8_ENGINE:
       engine = engine + self.v8_args
+    if engine == config.SPIDERMONKEY_ENGINE:
+      engine = engine + self.spidermonkey_args
     try:
       jsrun.run_js(filename, engine, args,
                    stdout=stdout,
