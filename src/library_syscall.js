@@ -134,8 +134,7 @@ var SyscallsLibrary = {
     'emscripten_builtin_memalign',
 #endif
   ].concat(i53ConversionDeps),
-  _mmap_js: function(len, prot, flags, fd, {{{ defineI64Param('offset') }}}, allocated, addr) {
-    {{{ receiveI64ParamAsI53('offset', -cDefs.EOVERFLOW) }}}
+  _mmap_js: function(len, prot, flags, fd, offset, allocated, addr) {
 #if FILESYSTEM && SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
     var res = FS.mmap(stream, len, offset, prot, flags);
@@ -156,8 +155,7 @@ var SyscallsLibrary = {
     '$FS',
 #endif
   ].concat(i53ConversionDeps),
-  _munmap_js: function(addr, len, prot, flags, fd, {{{ defineI64Param('offset') }}}) {
-    {{{ receiveI64ParamAsI53('offset', -cDefs.EOVERFLOW) }}}
+  _munmap_js: function(addr, len, prot, flags, fd, offset) {
 #if FILESYSTEM && SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
     if (prot & {{{ cDefs.PROT_WRITE }}}) {
@@ -626,8 +624,7 @@ var SyscallsLibrary = {
     return total;
   },
   _msync_js__deps: i53ConversionDeps,
-  _msync_js: function(addr, len, prot, flags, fd, {{{ defineI64Param('offset') }}}) {
-    {{{ receiveI64ParamAsI53('offset', -cDefs.EOVERFLOW) }}}
+  _msync_js: function(addr, len, prot, flags, fd, offset) {
     SYSCALLS.doMsync(addr, SYSCALLS.getStreamFromFD(fd), len, flags, offset);
     return 0;
   },
@@ -665,15 +662,13 @@ var SyscallsLibrary = {
     return cwdLengthInBytes;
   },
   __syscall_truncate64__deps: i53ConversionDeps,
-  __syscall_truncate64: function(path, {{{ defineI64Param('length') }}}) {
-    {{{ receiveI64ParamAsI53('length', -cDefs.EOVERFLOW) }}}
+  __syscall_truncate64: function(path, length) {
     path = SYSCALLS.getStr(path);
     FS.truncate(path, length);
     return 0;
   },
   __syscall_ftruncate64__deps: i53ConversionDeps,
-  __syscall_ftruncate64: function(fd, {{{ defineI64Param('length') }}}) {
-    {{{ receiveI64ParamAsI53('length', -cDefs.EOVERFLOW) }}}
+  __syscall_ftruncate64: function(fd, length) {
     FS.ftruncate(fd, length);
     return 0;
   },
@@ -997,9 +992,7 @@ var SyscallsLibrary = {
     return 0;
   },
   __syscall_fallocate__deps: i53ConversionDeps,
-  __syscall_fallocate: function(fd, mode, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('len') }}}) {
-    {{{ receiveI64ParamAsI53('offset', -cDefs.EOVERFLOW) }}}
-    {{{ receiveI64ParamAsI53('len', -cDefs.EOVERFLOW) }}}
+  __syscall_fallocate: function(fd, mode, offset, len) {
     var stream = SYSCALLS.getStreamFromFD(fd)
 #if ASSERTIONS
     assert(mode === 0);

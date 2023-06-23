@@ -207,18 +207,16 @@ function makeInlineCalculation(expression, value, tempVar) {
   return '(' + expression.replace(/VALUE/g, value) + ')';
 }
 
+function splitI53(value) {
+  return [`(${value} >>> 0)`, `${value} / 4294967296`];
+}
+
 // XXX Make all i64 parts signed
 
 // Splits a number (an integer in a double, possibly > 32 bits) into an i64
 // value, represented by a low and high i32 pair.
 // Will suffer from rounding and truncation.
 function splitI64(value) {
-  if (WASM_BIGINT) {
-    // Nothing to do: just make sure it is a BigInt (as it must be of that
-    // type, to be sent into wasm).
-    return `BigInt(${value})`;
-  }
-
   // general idea:
   //
   //  $1$0 = ~~$d >>> 0;
@@ -521,7 +519,7 @@ function makeReturn64(value) {
   if (WASM_BIGINT) {
     return `BigInt(${value})`;
   }
-  const pair = splitI64(value);
+  const pair = splitI53(value);
   // `return (a, b, c)` in JavaScript will execute `a`, and `b` and return the final
   // element `c`
   return `(setTempRet0(${pair[1]}), ${pair[0]})`;

@@ -1489,7 +1489,7 @@ var LibraryWebGPU = {
   },
 
   wgpuQueueOnSubmittedWorkDone__deps: ['$callUserCallback'],
-  wgpuQueueOnSubmittedWorkDone: function(queueId, {{{ defineI64Param('signalValue') }}}, callback, userdata) {
+  wgpuQueueOnSubmittedWorkDone: function(queueId, signalValue, callback, userdata) {
     var queue = WebGPU.mgrQueue.get(queueId);
 #if ASSERTIONS
     assert(signalValue_low === 0 && signalValue_high === 0, 'signalValue not supported, must be 0');
@@ -1509,9 +1509,7 @@ var LibraryWebGPU = {
     });
   },
 
-  wgpuQueueWriteBuffer: function(queueId,
-      bufferId, {{{ defineI64Param('bufferOffset') }}}, data, size) {
-    {{{ receiveI64ParamAsI53('bufferOffset') }}}
+  wgpuQueueWriteBuffer: function(queueId, bufferId, bufferOffset, data, size) {
     var queue = WebGPU.mgrQueue.get(queueId);
     var buffer = WebGPU.mgrBuffer.get(bufferId);
     // There is a size limitation for ArrayBufferView. Work around by passing in a subarray
@@ -1698,7 +1696,7 @@ var LibraryWebGPU = {
     return WebGPU.mgrRenderPassEncoder.create(commandEncoder["beginRenderPass"](desc));
   },
 
-  wgpuCommandEncoderClearBuffer: function(encoderId, bufferId, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('size') }}}) {
+  wgpuCommandEncoderClearBuffer: function(encoderId, bufferId, offset, size) {
     var commandEncoder = WebGPU.mgrCommandEncoder.get(encoderId);
     {{{ receiveI64ParamAsI32s('offset') }}}
     {{{ receiveI64ParamAsI32s('size') }}}
@@ -1711,10 +1709,7 @@ var LibraryWebGPU = {
     );
   },
 
-  wgpuCommandEncoderCopyBufferToBuffer: function(encoderId, srcId, {{{ defineI64Param('srcOffset') }}}, dstId, {{{ defineI64Param('dstOffset') }}}, {{{ defineI64Param('size') }}}) {
-    {{{ receiveI64ParamAsI53('srcOffset') }}}
-    {{{ receiveI64ParamAsI53('dstOffset') }}}
-    {{{ receiveI64ParamAsI53('size') }}}
+  wgpuCommandEncoderCopyBufferToBuffer: function(encoderId, srcId, srcOffset, dstId, dstOffset, size) {
     var commandEncoder = WebGPU.mgrCommandEncoder.get(encoderId);
     var src = WebGPU.mgrBuffer.get(srcId);
     var dst = WebGPU.mgrBuffer.get(dstId);
@@ -1743,8 +1738,7 @@ var LibraryWebGPU = {
   },
 
   wgpuCommandEncoderResolveQuerySet: function(encoderId, querySetId, firstQuery, queryCount,
-      destinationId, {{{ defineI64Param('destinationOffset') }}}) {
-    {{{ receiveI64ParamAsI53('destinationOffset') }}}
+      destinationId, destinationOffset) {
     var commandEncoder = WebGPU.mgrCommandEncoder.get(encoderId);
     var querySet = WebGPU.mgrQuerySet.get(querySetId);
     var destination = WebGPU.mgrBuffer.get(destinationId);
@@ -2091,8 +2085,7 @@ var LibraryWebGPU = {
     var pass = WebGPU.mgrComputePassEncoder.get(passId);
     pass["dispatchWorkgroups"](x, y, z);
   },
-  wgpuComputePassEncoderDispatchWorkgroupsIndirect: function(passId, indirectBufferId, {{{ defineI64Param('indirectOffset') }}}) {
-    {{{ receiveI64ParamAsI53('indirectOffset') }}}
+  wgpuComputePassEncoderDispatchWorkgroupsIndirect: function(passId, indirectBufferId, indirectOffset) {
     var indirectBuffer = WebGPU.mgrBuffer.get(indirectBufferId);
     var pass = WebGPU.mgrComputePassEncoder.get(passId);
     pass["dispatchWorkgroupsIndirect"](indirectBuffer, indirectOffset);
@@ -2157,8 +2150,7 @@ var LibraryWebGPU = {
     var color = WebGPU.makeColor(colorPtr);
     pass["setBlendConstant"](color);
   },
-  wgpuRenderPassEncoderSetIndexBuffer: function(passId, bufferId, format, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('size') }}}) {
-    {{{ receiveI64ParamAsI53('offset') }}}
+  wgpuRenderPassEncoderSetIndexBuffer: function(passId, bufferId, format, offset, size) {
     {{{ receiveI64ParamAsI32s('size') }}}
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     var buffer = WebGPU.mgrBuffer.get(bufferId);
@@ -2182,8 +2174,7 @@ var LibraryWebGPU = {
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     pass["setStencilReference"](reference);
   },
-  wgpuRenderPassEncoderSetVertexBuffer: function(passId, slot, bufferId, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('size') }}}) {
-    {{{ receiveI64ParamAsI53('offset') }}}
+  wgpuRenderPassEncoderSetVertexBuffer: function(passId, slot, bufferId, offset, size) {
     {{{ receiveI64ParamAsI32s('size') }}}
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     var buffer = WebGPU.mgrBuffer.get(bufferId);
@@ -2199,14 +2190,12 @@ var LibraryWebGPU = {
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     pass["drawIndexed"](indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
   },
-  wgpuRenderPassEncoderDrawIndirect: function(passId, indirectBufferId, {{{ defineI64Param('indirectOffset') }}}) {
-    {{{ receiveI64ParamAsI53('indirectOffset') }}}
+  wgpuRenderPassEncoderDrawIndirect: function(passId, indirectBufferId, indirectOffset) {
     var indirectBuffer = WebGPU.mgrBuffer.get(indirectBufferId);
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     pass["drawIndirect"](indirectBuffer, indirectOffset);
   },
-  wgpuRenderPassEncoderDrawIndexedIndirect: function(passId, indirectBufferId, {{{ defineI64Param('indirectOffset') }}}) {
-    {{{ receiveI64ParamAsI53('indirectOffset') }}}
+  wgpuRenderPassEncoderDrawIndexedIndirect: function(passId, indirectBufferId, indirectOffset) {
     var indirectBuffer = WebGPU.mgrBuffer.get(indirectBufferId);
     var pass = WebGPU.mgrRenderPassEncoder.get(passId);
     pass["drawIndexedIndirect"](indirectBuffer, indirectOffset);
@@ -2293,8 +2282,7 @@ var LibraryWebGPU = {
       pass["setBindGroup"](groupIndex, group, offsets);
     }
   },
-  wgpuRenderBundleEncoderSetIndexBuffer: function(bundleId, bufferId, format, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('size') }}}) {
-    {{{ receiveI64ParamAsI53('offset') }}}
+  wgpuRenderBundleEncoderSetIndexBuffer: function(bundleId, bufferId, format, offset, size) {
     {{{ receiveI64ParamAsI32s('size') }}}
     var pass = WebGPU.mgrRenderBundleEncoder.get(bundleId);
     var buffer = WebGPU.mgrBuffer.get(bufferId);
@@ -2306,8 +2294,7 @@ var LibraryWebGPU = {
     var pipeline = WebGPU.mgrRenderPipeline.get(pipelineId);
     pass["setPipeline"](pipeline);
   },
-  wgpuRenderBundleEncoderSetVertexBuffer: function(bundleId, slot, bufferId, {{{ defineI64Param('offset') }}}, {{{ defineI64Param('size') }}}) {
-    {{{ receiveI64ParamAsI53('offset') }}}
+  wgpuRenderBundleEncoderSetVertexBuffer: function(bundleId, slot, bufferId, offset, size) {
     {{{ receiveI64ParamAsI32s('size') }}}
     var pass = WebGPU.mgrRenderBundleEncoder.get(bundleId);
     var buffer = WebGPU.mgrBuffer.get(bufferId);
@@ -2323,14 +2310,12 @@ var LibraryWebGPU = {
     var pass = WebGPU.mgrRenderBundleEncoder.get(bundleId);
     pass["drawIndexed"](indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
   },
-  wgpuRenderBundleEncoderDrawIndirect: function(bundleId, indirectBufferId, {{{ defineI64Param('indirectOffset') }}}) {
-    {{{ receiveI64ParamAsI53('indirectOffset') }}}
+  wgpuRenderBundleEncoderDrawIndirect: function(bundleId, indirectBufferId, indirectOffset) {
     var indirectBuffer = WebGPU.mgrBuffer.get(indirectBufferId);
     var pass = WebGPU.mgrRenderBundleEncoder.get(bundleId);
     pass["drawIndirect"](indirectBuffer, indirectOffset);
   },
-  wgpuRenderBundleEncoderDrawIndexedIndirect: function(bundleId, indirectBufferId, {{{ defineI64Param('indirectOffset') }}}) {
-    {{{ receiveI64ParamAsI53('indirectOffset') }}}
+  wgpuRenderBundleEncoderDrawIndexedIndirect: function(bundleId, indirectBufferId, indirectOffset) {
     var indirectBuffer = WebGPU.mgrBuffer.get(indirectBufferId);
     var pass = WebGPU.mgrRenderBundleEncoder.get(bundleId);
     pass["drawIndexedIndirect"](indirectBuffer, indirectOffset);

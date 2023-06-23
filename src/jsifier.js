@@ -108,15 +108,22 @@ function runJSify() {
     }
   }
 
-  function convertPointerParams(symbol, snippet, sig) {
-    // Automatically convert any incoming pointer arguments from BigInt
-    // to double (this limits the range to int53).
-    // And convert the return value if the function returns a pointer.
+  function handleI53Signatures(symbol, snippet, sig) {
+    // Handler i64 paramaters and return values
+    //
+    // When WASM_BIGINT is enabled these arrive as BigInt value which we convert
+    // to an int53 JS number.  We also convert the return value bag to BitInt in
+    // necessary.
+    //
+    // When WASM_BIGINT is not enable we receive i64 values as pair of i32
+    // which is coverted to single int53 JS number.  We also split the return
+    // value into a pair.
     return modifyJSFunction(snippet, (args, body) => {
       let argLines = args.split('\n');
       argLines = argLines.map((line) => line.split('//')[0]);
       const argNames = argLines.join(' ').split(',').map((name) => name.trim());
       let newArgs = [];
+      let innerArgs = [];
       let argConvertions = '';
       for (let i = 1; i < sig.length; i++) {
         const name = argNames[i - 1];
@@ -124,24 +131,35 @@ function runJSify() {
           error(`convertPointerParams: missing name for argument ${i} in ${symbol}`);
           return snippet;
         }
-        if (sig[i] == 'p') {
-          argConvertions += `  ${name} = Number(${name});\n`;
-          newArgs.push(`Number(${name})`);
+        if (WASM_BIGINT) {
+          if (sig[i] == 'p' || sig[i] == 'j') {
+            argConvertions += `  ${name} = Number(${name});\n`;
+            innerArgs.push(`Number(${name})`);
+          }
         } else {
-          newArgs.push(name);
+          innerArgs.push(name);
+          if (sig[i] == 'j') {
+            argConvertions += receiveI64ParamAsI53(name);
+            newArgs.push(defineI64Param(name));
+          } else {
+            newArgs.push(name);
+          }
         }
       }
 
-      if (sig[0] == 'p') {
-        // For functions that return a pointer we need to convert
-        // the return value too, which means we need to wrap the
-        // body in an inner function.
-        newArgs = newArgs.join(',');
+      if (sig[0] == 'j' || (WASM_BIGINT && sig[0] == 'p')) {
+        // For functions that where we need to mutate the return value, we
+        // also need to wrap the body in an inner function.
+        innerArgs = innerArgs.join(',');
         return `\
 function(${args}) {
-  var ret = ((${args}) => { ${body} })(${newArgs});
-  return BigInt(ret);
+  var ret = ((${args}) => { ${body} })(${innerArgs});
+  return ${makeReturn64('ret')};
 }`;
+      }
+
+      if (!WASM_BIGINT) {
+        args = newArgs.join(',');
       }
 
       // Otherwise no inner function is needed and we covert the arguments
@@ -205,11 +223,10 @@ function(${args}) {
       }
     }
 
-    if (MEMORY64) {
-      const sig = LibraryManager.library[symbol + '__sig'];
-      if (sig && sig.includes('p')) {
-        snippet = convertPointerParams(symbol, snippet, sig);
-      }
+    const sig = LibraryManager.library[symbol + '__sig'];
+    if (sig && (sig.includes('j') || (MEMORY64 && sig.includes('p')))) {
+      snippet = handleI53Signatures(symbol, snippet, sig, deps);
+      i53ConversionDeps.forEach((d) => deps.push(d))
     }
 
     return snippet;
