@@ -257,32 +257,8 @@ function preMain() {
 #endif
 
 #if EXIT_RUNTIME
-function exitRuntime() {
-#if RUNTIME_DEBUG
-  dbg('exitRuntime');
-#endif
-#if ASSERTIONS
-  assert(!runtimeExited);
-#endif
-#if ASYNCIFY == 1 && ASSERTIONS
-  // ASYNCIFY cannot be used once the runtime starts shutting down.
-  Asyncify.state = Asyncify.State.Disabled;
-#endif
-#if STACK_OVERFLOW_CHECK
-  checkStackCookie();
-#endif
-#if PTHREADS
-  if (ENVIRONMENT_IS_PTHREAD) return; // PThreads reuse the runtime from the main thread.
-#endif
-#if !STANDALONE_WASM
-  ___funcs_on_exit(); // Native atexit() functions
-#endif
-  callRuntimeCallbacks(__ATEXIT__);
+function call_atexits() {
   <<< ATEXITS >>>
-#if PTHREADS
-  PThread.terminateAllThreads();
-#endif
-  runtimeExited = true;
 }
 #endif
 
