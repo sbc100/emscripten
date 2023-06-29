@@ -204,6 +204,7 @@ var LibraryPThread = {
       for (var worker of PThread.unusedWorkers) {
         promises.push(terminateWorker(worker));
       }
+      {{{ runtimeKeepalivePush(); }}}
       return Promise.all(promises).then(() => {
 #if RUNTIME_DEBUG
         dbg('terminateAllThreads done');
@@ -211,6 +212,7 @@ var LibraryPThread = {
         PThread.unusedWorkers = [];
         PThread.runningWorkers = [];
         PThread.pthreads = [];
+        {{{ runtimeKeepalivePop(); }}}
       });
     },
     returnWorkerToPool: (worker) => {

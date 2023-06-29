@@ -91,28 +91,38 @@ addToLibrary({
       throw 'unwind';
     }
 #if PTHREADS_DEBUG
-    err(`main thread called exit(${status}): keepRuntimeAlive=${keepRuntimeAlive()} (counter=${runtimeKeepaliveCounter})`);
+    dbg(`main thread called exit(${status}): keepRuntimeAlive=${keepRuntimeAlive()} (counter=${runtimeKeepaliveCounter})`);
 #endif // PTHREADS_DEBUG
 #endif // PTHREADS
 
-#if EXIT_RUNTIME
-    if (!keepRuntimeAlive()) {
-      exitRuntime();
-    }
-#endif
-
+    var doneExit = () => {
 #if ASSERTIONS
-    // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
-    if (keepRuntimeAlive() && !implicit) {
-      var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
-#if MODULARIZE
-      readyPromiseReject(msg);
-#endif // MODULARIZE
-      err(msg);
-    }
+      // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
+      if (keepRuntimeAlive() && !implicit) {
+        var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
+  #if MODULARIZE
+        readyPromiseReject(msg);
+  #endif // MODULARIZE
+        err(msg);
+      }
 #endif // ASSERTIONS
 
-    _proc_exit(status);
+      _proc_exit(status);
+    };
+
+#if EXIT_RUNTIME
+    if (!keepRuntimeAlive()) {
+      exitRuntime().then(() =>  {
+        dbg("exitRuntime resolved");
+        try {
+          doneExit();
+        } catch (e) {
+          handleException(e);
+        }
+      });
+    } else
+#endif
+    doneExit();
   },
 #endif
 
