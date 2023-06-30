@@ -1289,4 +1289,4 @@ def get_emcc_node_flags(node_version):
   # Convert to the format we use in our settings, XXYYZZ, for example,
   # 10.1.7 will turn into "100107".
   str_node_version = "%02d%02d%02d" % node_version
-  return [f'-sMIN_NODE_VERSION={str_node_version}']
+  return [f'-sMIN_NODE_VERSION={str_node_version}', '-Wno-transpile']
