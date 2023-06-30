@@ -18,6 +18,7 @@
 
 // ALC extensions
 void emscripten_alcDevicePauseSOFT(ALCdevice *device);
+void emscripten_alcSetError(ALCenum err);
 void emscripten_alcDeviceResumeSOFT(ALCdevice *device);
 const ALCchar *emscripten_alcGetStringiSOFT(ALCdevice *device, ALCenum paramName, ALCsizei index);
 ALCboolean emscripten_alcResetDeviceSOFT(ALCdevice *device, const ALCint *attrList);
@@ -25,12 +26,8 @@ ALCboolean emscripten_alcResetDeviceSOFT(ALCdevice *device, const ALCint *attrLi
 
 void* alcGetProcAddress(ALCdevice *device, const ALCchar *name) {
   // Validate the input.
-  if (EM_ASM_INT({
-    if (!$0) {
-      AL.alcErr = 0xA004 /* ALC_INVALID_VALUE */;
-      return 1;
-    }
-  }, name)) {
+  if (!name) {
+    emscripten_alcSetError(ALC_INVALID_VALUE);
     return NULL;
   }
 

@@ -2269,6 +2269,11 @@ var LibraryOpenAL = {
     return err;
   },
 
+  emscripten_alcSetError__proxy: 'sync',
+  emscripten_alcSetError: function(err) {
+    AL.alcErr = err;
+  },
+
   alcGetCurrentContext__proxy: 'sync',
   alcGetCurrentContext: () => {
     if (AL.currentCtx !== null) {
