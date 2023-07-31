@@ -844,7 +844,7 @@ def phase_linker_setup(options, state, newargs):
 
   # For users that opt out of WARN_ON_UNDEFINED_SYMBOLS we assume they also
   # want to opt out of ERROR_ON_UNDEFINED_SYMBOLS.
-  if user_settings.get('WARN_ON_UNDEFINED_SYMBOLS') == '0':
+  if user_settings.get('WARN_ON_UNDEFINED_SYMBOLS') == 0:
     default_setting('ERROR_ON_UNDEFINED_SYMBOLS', 0)
 
   # It is unlikely that developers targeting "native web" APIs with MINIMAL_RUNTIME need
