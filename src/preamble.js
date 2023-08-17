@@ -608,7 +608,8 @@ function instrumentWasmTableWithAbort() {
 #endif
 
 var wasmBinaryFile;
-#if EXPORT_ES6 && USE_ES6_IMPORT_META && !SINGLE_FILE
+#if !WASM2JS
+#if EXPORT_ES6 && USE_ES6_IMPORT_META && !SINGLE_FILE && !WASM2JS
 if (Module['locateFile']) {
 #endif
   wasmBinaryFile = '{{{ WASM_BINARY_FILE }}}';
@@ -626,8 +627,12 @@ if (Module['locateFile']) {
   wasmBinaryFile = new URL('{{{ WASM_BINARY_FILE }}}', import.meta.url).href;
 }
 #endif
+#endif
 
 function getBinarySync(file) {
+#if WASM2JS
+  return
+#else
   if (file == wasmBinaryFile && wasmBinary) {
     return new Uint8Array(wasmBinary);
   }
@@ -645,10 +650,11 @@ function getBinarySync(file) {
 #else
   throw 'sync fetching of the wasm failed: you can preload it to Module["wasmBinary"] manually, or emcc.py will do that for you when generating HTML (but not JS)';
 #endif
+#endif
 }
 
 function getBinaryPromise(binaryFile) {
-#if !SINGLE_FILE
+#if !SINGLE_FILE && !WASM2JS
   // If we don't have the binary yet, try to load it asynchronously.
   // Fetch has some additional restrictions over XHR, like it can't be used on a file:// url.
   // See https://github.com/github/fetch/pull/92#issuecomment-140665932
