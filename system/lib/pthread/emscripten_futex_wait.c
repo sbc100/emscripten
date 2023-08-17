@@ -17,9 +17,9 @@
 
 extern void* _emscripten_main_thread_futex;
 
-static int futex_wait_main_browser_thread(volatile void* addr,
-                                          uint32_t val,
-                                          double timeout) {
+static int futex_wait_busy_loop(volatile void* addr,
+                                uint32_t val,
+                                double timeout) {
   // Atomics.wait is not available in the main browser thread, so simulate it
   // via busy spinning.
   double now = emscripten_get_now();
@@ -75,8 +75,8 @@ static int futex_wait_main_browser_thread(volatile void* addr,
     //    address to futex B, and there is no longer any mention of futex A.
     //  * a worker is done with futex A. it checks _emscripten_main_thread_futex
     //    but does not see A, so it does nothing special for the main thread.
-    //  * a worker is done with futex B. it flips mainThreadMutex from B
-    //    to 0, ending the wait on futex B.
+    //  * a worker is done with futex B. it flips _emscripten_main_thread_futex
+    //    from B to 0, ending the wait on futex B.
     //  * we return to the wait on futex A. _emscripten_main_thread_futex is 0,
     //    but that is because of futex B being done - we can't tell from
     //    _emscripten_main_thread_futex whether A is done or not. therefore,
@@ -93,13 +93,12 @@ static int futex_wait_main_browser_thread(volatile void* addr,
     // to futex A), which means we could be starting all of our work at the
     // later time when there is no need to block. The only "odd" thing is
     // that we may have caused side effects in that "delay" time. But the
-    // only side effects we can have are to call
-    // _emscripten_yield(). That is always ok to
-    // do on the main thread (it's why it is ok for us to call it in the
-    // middle of this function, and elsewhere). So if we check the value
+    // only side effects we can have are to call _emscripten_yield(). That is
+    // always ok to do on the main thread (it's why it is ok for us to call it
+    // in the middle of this function, and elsewhere). So if we check the value
     // here and return, it's the same is if what happened on the main thread
-    // was the same as calling _emscripten_yield()
-    // a few times before calling emscripten_futex_wait().
+    // was the same as calling _emscripten_yield() a few times before calling
+    // emscripten_futex_wait().
     if (__c11_atomic_load((_Atomic uint32_t*)addr, __ATOMIC_SEQ_CST) != val) {
       return -EWOULDBLOCK;
     }
@@ -126,8 +125,8 @@ int emscripten_futex_wait(volatile void *addr, uint32_t val, double max_wait_ms)
 
   // For the main browser thread and audio worklets we can't use
   // __builtin_wasm_memory_atomic_wait32 so we have busy wait instead.
-  if (!_emscripten_thread_supports_atomics_wait()) {
-    ret = futex_wait_main_browser_thread(addr, val, max_wait_ms);
+  if (emscripten_is_main_runtime_thread() || !_emscripten_thread_supports_atomics_wait()) {
+    ret = futex_wait_busy_loop(addr, val, max_wait_ms);
     emscripten_conditional_set_current_thread_status(EM_THREAD_STATUS_WAITFUTEX, EM_THREAD_STATUS_RUNNING);
     return ret;
   }
