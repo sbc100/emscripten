@@ -6,6 +6,7 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

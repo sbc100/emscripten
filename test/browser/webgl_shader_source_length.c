@@ -7,33 +7,31 @@
 #include <GLES/gl.h>
 #include <GLES/glext.h>
 #include <GLES2/gl2.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #include <assert.h>
 #include <string.h>
 
-#define GL_CALL( x ) \
-    { \
-        x; \
-        GLenum error = glGetError(); \
-        if( error != GL_NO_ERROR ) { \
-            printf( "GL ERROR: %d,  %s\n", (int)error, #x ); \
-            assert(false); \
-        } \
-    } \
+#define GL_CALL(x)                                                             \
+  {                                                                            \
+    x;                                                                         \
+    GLenum error = glGetError();                                               \
+    if (error != GL_NO_ERROR) {                                                \
+      printf("GL ERROR: %d,  %s\n", (int)error, #x);                           \
+      assert(false);                                                           \
+    }                                                                          \
+  }
 
-
-int main()
-{
+int main() {
   emscripten_set_canvas_element_size( "#canvas", 100, 100 );
 
   EmscriptenWebGLContextAttributes attrs;
   emscripten_webgl_init_context_attributes(&attrs);
 
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context = emscripten_webgl_create_context( "#canvas", &attrs );
-  if (!context)
-  {
+  if (!context) {
     printf("Skipped: WebGL is not supported.\n");
     return 0;
   }
