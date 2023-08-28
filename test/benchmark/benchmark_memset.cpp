@@ -10,11 +10,6 @@
 #include <iostream>
 #include <algorithm>
 
-#ifdef WIN32
-#include <Windows.h>
-#define aligned_alloc(align, size) _aligned_malloc((size), (align))
-#endif
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif

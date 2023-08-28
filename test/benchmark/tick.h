@@ -1,14 +1,5 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#endif
-
-#ifdef WIN32
-#include <Windows.h>
-#define tick_t unsigned long long
-#define aligned_alloc(align, size) _aligned_malloc((size), (align))
-#endif
-
-#ifdef __EMSCRIPTEN__
 #define tick emscripten_get_now
 #define tick_t double
 tick_t ticks_per_sec() { return 1000.0; }
@@ -49,6 +40,7 @@ tick_t ticks_per_sec()
   return 1000 * 1000;
 }
 #elif defined(WIN32)
+#include <Windows.h>
 #define tick_t unsigned long long
 inline tick_t tick()
 {
