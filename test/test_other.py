@@ -7010,6 +7010,30 @@ int main(int argc,char** argv) {
     self.assertContained('hello1_val by hello1:3', out)
     self.assertContained('hello1_val by hello2:3', out)
 
+  def test_dlopen_duplicate_local(self):
+    create_file('side.c', 'int foo = 42;\n')
+    create_file('main.c', r'''
+    #include <assert.h>
+    #include <stdio.h>
+    #include <dlfcn.h>
+    void do_local_load() {
+      void* h = dlopen("libside.so", RTLD_NOW|RTLD_LOCAL);
+      assert(h);
+      int* foo = (int*)dlsym(h, "foo");
+      assert(foo);
+      printf("foo = %p %d\n", foo, *foo);
+      assert(*foo == 42);
+    }
+    int main() {
+      do_local_load();
+      do_local_load();
+    }
+    ''')
+    self.run_process([EMCC, 'side.c', '-o', 'libside.so', '-sSIDE_MODULE'])
+    self.set_setting('MAIN_MODULE', 2)
+    self.set_setting('EXIT_RUNTIME')
+    self.do_runf('main.c', emcc_args=['--embed-file', 'libside.so'])
+
   def test_dlopen_async(self):
     create_file('side.c', 'int foo = 42;\n')
     create_file('pre.js', r'''

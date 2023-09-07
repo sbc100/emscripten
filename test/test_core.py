@@ -3904,6 +3904,14 @@ ok
         f = dlsym(RTLD_DEFAULT, "func_sub");
         assert(f == NULL);
 
+        // Open the same library again with RTLD_GLOBAL
+        void* handle2 = dlopen("liba.so", RTLD_NOW|RTLD_GLOBAL);
+
+        func_a = dlsym(RTLD_DEFAULT, "func_a");
+        assert(func_a != NULL);
+        func_b = dlsym(RTLD_DEFAULT, "func_b");
+        assert(func_b != NULL);
+
         printf("done\n");
         return 0;
       }
