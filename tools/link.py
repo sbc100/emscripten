@@ -747,15 +747,23 @@ def phase_linker_setup(options, state, newargs):
   if settings.SAFE_HEAP not in [0, 1, 2]:
     exit_with_error('emcc: SAFE_HEAP must be 0, 1 or 2')
 
-  if not settings.WASM:
-    # When the user requests non-wasm output, we enable wasm2js. that is,
-    # we still compile to wasm normally, but we compile the final output
-    # to js.
-    settings.WASM = 1
-    settings.WASM2JS = 1
-  if settings.WASM == 2:
-    # Requesting both Wasm and Wasm2JS support
-    settings.WASM2JS = 1
+  if 'WASM' in user_settings:
+    diagnostics.warning('deprecated', '-sWASM is deprecated, please use -sWASM2JS instead if JavaScript output is desired')
+    if 'WASM2JS' in user_settings:
+      exit_with_error('The -sWASM2JS setting replaces -sWASM.  They cannot be used at the same time')
+    if settings.WASM == 0:
+      settings.WASM2JS = 1
+    elif settings.WASM == 2:
+      settings.WASM2JS = 2
+
+  # Set the WASM settings based on the WASM2JS settings.
+  # TODO(sbc): Remove all the internal usage of the WASM setting such
+  # that this is no longer needed.
+  if 'WASM2JS' in user_settings:
+    if settings.WASM2JS == 1:
+      settings.WASM = 0
+    elif settings.WASM2JS == 2:
+      settings.WASM = 2
 
   if options.oformat == OFormat.WASM and not settings.SIDE_MODULE:
     # if the output is just a wasm file, it will normally be a standalone one,
@@ -910,7 +918,7 @@ def phase_linker_setup(options, state, newargs):
     diagnostics.warning('emcc', 'disabling closure because debug info was requested')
     options.use_closure_compiler = False
 
-  if settings.WASM == 2 and settings.SINGLE_FILE:
+  if settings.WASM2JS == 2 and settings.SINGLE_FILE:
     exit_with_error('cannot have both WASM=2 and SINGLE_FILE enabled at the same time')
 
   if settings.SEPARATE_DWARF and settings.WASM2JS:
@@ -2197,7 +2205,7 @@ def phase_binaryen(target, options, wasm_target, memfile):
 
   if settings.WASM2JS:
     symbols_file_js = None
-    if settings.WASM == 2:
+    if settings.WASM2JS == 2:
       # With normal wasm2js mode this file gets included as part of the
       # preamble, but with WASM=2 its a separate file.
       wasm2js_polyfill = shared.read_and_preprocess(utils.path_from_root('src/wasm2js.js'), expand_macros=True)
@@ -2221,10 +2229,9 @@ def phase_binaryen(target, options, wasm_target, memfile):
 
     shared.get_temp_files().note(wasm2js)
 
-    if settings.WASM == 2:
+    if settings.WASM2JS == 2:
       safe_copy(wasm2js, wasm2js_template)
-
-    if settings.WASM != 2:
+    else:
       final_js = wasm2js
       # if we only target JS, we don't need the wasm any more
       delete_file(wasm_target)
@@ -2468,7 +2475,7 @@ def generate_traditional_runtime_html(target, options, js_target, target_basenam
           wasmXHR.send(null);
 ''' % (get_subresource_location(wasm_target), script.inline)
 
-    if settings.WASM == 2:
+    if settings.WASM2JS == 2:
       # If target browser does not support WebAssembly, we need to load the .wasm.js file before the main .js file.
       script.un_src()
       script.inline = '''

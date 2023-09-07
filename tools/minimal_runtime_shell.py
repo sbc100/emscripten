@@ -54,7 +54,7 @@ def generate_minimal_runtime_load_statement(target_basename):
     files_to_load += ["binary('%s')" % (target_basename + '.mem')]
 
   # Download .wasm file
-  if (settings.WASM == 1 and settings.WASM2JS == 0) or not download_wasm:
+  if not settings.WASM2JS or not download_wasm:
     if settings.MODULARIZE:
       modularize_imports += ['wasm: r[%d]' % len(files_to_load)]
     else:
@@ -79,7 +79,7 @@ def generate_minimal_runtime_load_statement(target_basename):
     modularize_imports += ["worker: '{{{ PTHREAD_WORKER_FILE }}}'"]
 
   # Download Wasm2JS code if target browser does not support WebAssembly
-  if settings.WASM == 2:
+  if settings.WASM2JS == 2:
     if settings.MODULARIZE:
       modularize_imports += ['wasm: supportsWasm ? r[%d] : 0' % len(files_to_load)]
     else:

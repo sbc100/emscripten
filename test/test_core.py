@@ -8401,7 +8401,7 @@ Module.onRuntimeInitialized = () => {
   def test_wasm2js(self):
     if not self.is_wasm():
       self.skipTest('redundant to test wasm2js in wasm2js* mode')
-    self.set_setting('WASM', 0)
+    self.set_setting('WASM2JS')
     self.do_core_test('test_hello_world.c')
     # a mem init file is emitted just like with JS
     expect_memory_init_file = self.uses_memory_init_file()
@@ -8441,7 +8441,7 @@ Module.onRuntimeInitialized = () => {
     if not self.is_wasm():
       self.skipTest('redundant to test wasm2js in wasm2js* mode')
 
-    cmd = [EMCC, test_file('small_hello_world.c'), '-sWASM=2'] + args
+    cmd = [EMCC, test_file('small_hello_world.c'), '-sWASM2JS=2'] + args
     self.run_process(cmd)
 
     # First run with WebAssembly support enabled

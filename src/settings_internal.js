@@ -66,11 +66,6 @@ var BINARYEN_FEATURES = [];
 // runtime logging that can help in debugging.
 var AUTODEBUG = false;
 
-// Whether we should use binaryen's wasm2js to convert our wasm to JS. Set when
-// wasm backend is in use with WASM=0 (to enable non-wasm output, we compile to
-// wasm normally, then compile that to JS).
-var WASM2JS = false;
-
 // Whether we should link in the runtime for ubsan.
 // 0 means do not link ubsan, 1 means link minimal ubsan runtime.
 // This is not meant to be used with `-s`. Instead, to use ubsan, use clang flag
