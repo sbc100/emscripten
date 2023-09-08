@@ -523,7 +523,7 @@ var LibraryDylink = {
     return customSection;
   },
 
-  // Module.symbols <- libModule.symbols (flags.global handler)
+  // Merge symbols from a library in to the global symbol scope (wasmImports)
   $mergeLibSymbols__deps: ['$isSymbolDefined'],
   $mergeLibSymbols: (exports, libName) => {
     // add symbols into global namespace TODO: weak linking etc.
@@ -917,18 +917,18 @@ var LibraryDylink = {
   //
   // Several flags affect the loading:
   //
-  // - if flags.global=true, symbols from the loaded library are merged into global
-  //   process namespace. Flags.global is thus similar to RTLD_GLOBAL in ELF.
-  //
   // - if flags.nodelete=true, the library will be never unloaded. Flags.nodelete
   //   is thus similar to RTLD_NODELETE in ELF.
   //
   // - if flags.loadAsync=true, the loading is performed asynchronously and
   //   loadDynamicLibrary returns corresponding promise.
   //
+  // If localScope is null it means that library is to be loaded globally.
+  //
   // If a library was already loaded, it is not loaded a second time. However
-  // flags.global and flags.nodelete are handled every time a load request is made.
-  // Once a library becomes "global" or "nodelete", it cannot be removed or unloaded.
+  // flags.nodelete and localScope are handled every time a load request is
+  // made.  Once a library becomes global or "nodelete", it cannot be removed
+  // or unloaded.
   $loadDynamicLibrary__deps: ['$LDSO', '$loadWebAssemblyModule',
                               '$isInternalSym', '$mergeLibSymbols', '$newDSO',
                               '$asyncLoad',
@@ -941,7 +941,7 @@ var LibraryDylink = {
      * @param {number=} handle
      * @param {Object=} localScope
      */`,
-  $loadDynamicLibrary: function(libName, flags = {global: true, nodelete: true}, localScope, handle) {
+  $loadDynamicLibrary: function(libName, flags = {nodelete: true}, localScope, handle) {
 #if DYLINK_DEBUG
     dbg(`loadDynamicLibrary: ${libName} handle: ${handle}`);
     dbg(`existing: ${Object.keys(LDSO.loadedLibsByName)}`);
@@ -955,10 +955,8 @@ var LibraryDylink = {
 #if ASSERTIONS
       assert(dso.exports !== 'loading', `Attempt to load '${libName}' twice before the first load completed`);
 #endif
-      if (!flags.global) {
-        if (localScope) {
-          Object.assign(localScope, dso.exports);
-        }
+      if (localScope) {
+        Object.assign(localScope, dso.exports);
       } else if (!dso.global) {
         // The library was previously loaded only locally but not
         // we have a request with global=true.
@@ -979,7 +977,7 @@ var LibraryDylink = {
     // allocate new DSO
     dso = newDSO(libName, handle, 'loading');
     dso.refcount = flags.nodelete ? Infinity : 1;
-    dso.global = flags.global;
+    dso.global = !!localScope;
 
     // libName -> libData
     function loadLibData() {
@@ -1082,17 +1080,9 @@ var LibraryDylink = {
 
     // Load binaries asynchronously
     addRunDependency('loadDylibs');
-    dynamicLibraries
-      .reduce((chain, lib) => chain.then(() =>
-        loadDynamicLibrary(lib, {loadAsync: true, global: true, nodelete: true, allowUndefined: true})
-      ), Promise.resolve())
-      .then(() => {
-        // we got them all, wonderful
-        reportUndefinedSymbols();
-        removeRunDependency('loadDylibs');
-  #if DYLINK_DEBUG
-        dbg('loadDylibs done!');
-  #endif
+    dynamicLibraries.reduce((chain, lib) => {
+      return chain.then(() => {
+        return loadDynamicLibrary(lib, {loadAsync: true, nodelete: true, allowUndefined: true});
       });
   },
 
@@ -1109,12 +1099,10 @@ var LibraryDylink = {
     filename = PATH.normalize(filename);
     var searchpaths = [];
 
-    var global = Boolean(flags & {{{ cDefs.RTLD_GLOBAL }}});
-    var localScope = global ? null : {};
+    var localScope = Boolean(flags & {{{ cDefs.RTLD_GLOBAL }}}) ? null : {};
 
     // We don't care about RTLD_NOW and RTLD_LAZY.
     var combinedFlags = {
-      global,
       nodelete:  Boolean(flags & {{{ cDefs.RTLD_NODELETE }}}),
       loadAsync: jsflags.loadAsync,
     }
