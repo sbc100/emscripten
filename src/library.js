@@ -3632,6 +3632,16 @@ function autoAddDeps(object, name) {
   }
 }
 
+function addDefaultProxyMode(object, proxyMode) {
+  for (const key of Object.keys(object)) {
+    if (typeof object[key] === 'function' && !isJsOnlySymbol(key)) {
+      if ((!key + '__proxy' in object)) {
+        object[key + '__proxy'] = proxyMode;
+      }
+    }
+  }
+}
+
 #if LEGACY_RUNTIME
 // Library functions that were previously included as runtime functions are
 // automatically included when `LEGACY_RUNTIME` is set.

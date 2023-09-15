@@ -99,7 +99,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id);
-  eglGetDisplay__proxy: 'sync',
   eglGetDisplay: (nativeDisplayType) => {
     EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
     // Emscripten EGL implementation "emulates" X11, and eglGetDisplay is
@@ -112,7 +111,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
-  eglInitialize__proxy: 'sync',
   eglInitialize: (display, majorVersion, minorVersion) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -130,7 +128,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglTerminate(EGLDisplay dpy);
-  eglTerminate__proxy: 'sync',
   eglTerminate: (display) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -145,19 +142,14 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size, EGLint *num_config);
-  eglGetConfigs__proxy: 'sync',
-  eglGetConfigs: (display, configs, config_size, numConfigs) => {
-    return EGL.chooseConfig(display, 0, configs, config_size, numConfigs);
-  },
+  eglGetConfigs: (display, configs, config_size, numConfigs) =>
+      EGL.chooseConfig(display, 0, configs, config_size, numConfigs),
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config);
-  eglChooseConfig__proxy: 'sync',
-  eglChooseConfig: (display, attrib_list, configs, config_size, numConfigs) => {
-    return EGL.chooseConfig(display, attrib_list, configs, config_size, numConfigs);
-  },
+  eglChooseConfig: (display, attrib_list, configs, config_size, numConfigs) =>
+      EGL.chooseConfig(display, attrib_list, configs, config_size, numConfigs),
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglGetConfigAttrib(EGLDisplay dpy, EGLConfig config, EGLint attribute, EGLint *value);
-  eglGetConfigAttrib__proxy: 'sync',
   eglGetConfigAttrib: (display, config, attribute, value) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -274,7 +266,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLSurface EGLAPIENTRY eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint *attrib_list);
-  eglCreateWindowSurface__proxy: 'sync',
   eglCreateWindowSurface: (display, config, win, attrib_list) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -293,7 +284,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglDestroySurface(EGLDisplay display, EGLSurface surface);
-  eglDestroySurface__proxy: 'sync',
   eglDestroySurface: (display, surface) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -316,7 +306,6 @@ var LibraryEGL = {
   eglCreateContext__deps: ['$GL'],
 
   // EGLAPI EGLContext EGLAPIENTRY eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
-  eglCreateContext__proxy: 'sync',
   eglCreateContext: (display, config, hmm, contextAttribs) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -380,7 +369,6 @@ var LibraryEGL = {
   eglDestroyContext__deps: ['$GL'],
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglDestroyContext(EGLDisplay dpy, EGLContext context);
-  eglDestroyContext__proxy: 'sync',
   eglDestroyContext: (display, context) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -400,7 +388,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglQuerySurface(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint *value);
-  eglQuerySurface__proxy: 'sync',
   eglQuerySurface: (display, surface, attribute, value) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -466,7 +453,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint *value);
-  eglQueryContext__proxy: 'sync',
   eglQueryContext: (display, context, attribute, value) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -505,12 +491,10 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLint EGLAPIENTRY eglGetError(void);
-  eglGetError__proxy: 'sync',
   eglGetError: () => EGL.errorCode,
 
   // EGLAPI const char * EGLAPIENTRY eglQueryString(EGLDisplay dpy, EGLint name);
   eglQueryString__deps: ['$stringToNewUTF8'],
-  eglQueryString__proxy: 'sync',
   eglQueryString: (display, name) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -534,7 +518,6 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglBindAPI(EGLenum api);
-  eglBindAPI__proxy: 'sync',
   eglBindAPI: (api) => {
     if (api == 0x30A0 /* EGL_OPENGL_ES_API */) {
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
@@ -546,21 +529,18 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLenum EGLAPIENTRY eglQueryAPI(void);
-  eglQueryAPI__proxy: 'sync',
   eglQueryAPI: () => {
     EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
     return 0x30A0; // EGL_OPENGL_ES_API
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglWaitClient(void);
-  eglWaitClient__proxy: 'sync',
   eglWaitClient: () => {
     EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
     return 1;
   },
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglWaitNative(EGLint engine);
-  eglWaitNative__proxy: 'sync',
   eglWaitNative: (nativeEngineId) => {
     EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
     return 1;
@@ -572,7 +552,6 @@ var LibraryEGL = {
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglSwapInterval(EGLDisplay dpy, EGLint interval);
   eglSwapInterval__deps: ['emscripten_set_main_loop_timing'],
-  eglSwapInterval__proxy: 'sync',
   eglSwapInterval: (display, interval) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -587,7 +566,6 @@ var LibraryEGL = {
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
   eglMakeCurrent__deps: ['$GL'],
-  eglMakeCurrent__proxy: 'sync',
   eglMakeCurrent: (display, draw, read, context) => {
     if (display != {{{ eglDefaultDisplay }}}) {
       EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
@@ -613,11 +591,9 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLContext EGLAPIENTRY eglGetCurrentContext(void);
-  eglGetCurrentContext__proxy: 'sync',
   eglGetCurrentContext: () => EGL.currentContext,
 
   // EGLAPI EGLSurface EGLAPIENTRY eglGetCurrentSurface(EGLint readdraw);
-  eglGetCurrentSurface__proxy: 'sync',
   eglGetCurrentSurface: (readdraw) => {
     if (readdraw == 0x305A /* EGL_READ */) {
       return EGL.currentReadSurface;
@@ -630,11 +606,9 @@ var LibraryEGL = {
   },
 
   // EGLAPI EGLDisplay EGLAPIENTRY eglGetCurrentDisplay(void);
-  eglGetCurrentDisplay__proxy: 'sync',
   eglGetCurrentDisplay: () => EGL.currentContext ? {{{ eglDefaultDisplay }}} : 0,
 
   // EGLAPI EGLBoolean EGLAPIENTRY eglSwapBuffers(EGLDisplay dpy, EGLSurface surface);
-  eglSwapBuffers__proxy: 'sync',
   eglSwapBuffers: (dpy, surface) => {
 #if PROXY_TO_WORKER
     if (Browser.doSwapBuffers) Browser.doSwapBuffers();
@@ -657,7 +631,6 @@ var LibraryEGL = {
     return 0 /* EGL_FALSE */;
   },
 
-  eglReleaseThread__proxy: 'sync',
   eglReleaseThread: () => {
     // Equivalent to eglMakeCurrent with EGL_NO_CONTEXT and EGL_NO_SURFACE.
     EGL.currentContext = 0;
@@ -671,6 +644,6 @@ var LibraryEGL = {
   }
 };
 
+addDefaultProxyMode(LibraryEGL, 'sync')
 autoAddDeps(LibraryEGL, '$EGL');
-
 addToLibrary(LibraryEGL);
