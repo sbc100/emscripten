@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#if POLYFILL && (ENVIRONMENT_MAY_BE_SHELL || (ENVIRONMENT_MAY_BE_NODE && MIN_NODE_VERSION < 160000))
-#include "polyfill/atob.js"
+#if POLYFILL && (ENVIRONMENT_MAY_BE_SHELL || ENVIRONMENT_MAY_BE_AUDIO_WORKLET || (ENVIRONMENT_MAY_BE_NODE && MIN_NODE_VERSION < 160000))
+//#include "polyfill/atob.js"
 #endif
 
 // Converts a string of base64 into a byte array (Uint8Array).

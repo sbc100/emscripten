@@ -173,6 +173,7 @@ def setup_environment_settings():
   settings.ENVIRONMENT_MAY_BE_WEBVIEW = not settings.ENVIRONMENT or 'webview' in environments
   settings.ENVIRONMENT_MAY_BE_NODE = not settings.ENVIRONMENT or 'node' in environments
   settings.ENVIRONMENT_MAY_BE_SHELL = not settings.ENVIRONMENT or 'shell' in environments
+  settings.ENVIRONMENT_MAY_BE_AUDIO_WORKLET = not settings.ENVIRONMENT or 'worklet' in environments
 
   # The worker case also includes Node.js workers when pthreads are
   # enabled and Node.js is one of the supported environments for the build to

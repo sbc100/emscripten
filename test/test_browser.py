@@ -5379,6 +5379,7 @@ Module["preRun"] = () => {
     'with_fs': (['--preload-file', test_file('hello_world.c') + '@/'],),
     'closure': (['--closure', '1', '-Oz'],),
     'asyncify': (['-sASYNCIFY'],),
+    'single_file': (['-sSINGLE_FILE'],),
     'pthreads': (['-pthread', '-sPTHREAD_POOL_SIZE=2'],),
     'pthreads_and_closure': (['-pthread', '--closure', '1', '-Oz'],),
     'minimal_runtime': (['-sMINIMAL_RUNTIME'],),

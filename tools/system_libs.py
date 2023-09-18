@@ -1479,8 +1479,7 @@ class libwasm_workers(DebugLibrary):
 
   def can_use(self):
     # see src/library_wasm_worker.js
-    return super().can_use() and not settings.SINGLE_FILE \
-      and not settings.RELOCATABLE and not settings.PROXY_TO_WORKER
+    return super().can_use() and not settings.RELOCATABLE and not settings.PROXY_TO_WORKER
 
 
 class libsockets(MuslInternalLibrary, MTLibrary):

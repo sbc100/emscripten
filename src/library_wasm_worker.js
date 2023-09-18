@@ -19,9 +19,6 @@
 #if !SHARED_MEMORY
 #error "Internal error! SHARED_MEMORY should be enabled when building with WASM_WORKERS"
 #endif
-#if SINGLE_FILE
-#error "-sSINGLE_FILE is not supported with -sWASM_WORKERS"
-#endif
 #if LINKABLE
 #error "-sLINKABLE is not supported with -sWASM_WORKERS"
 #endif
