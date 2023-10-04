@@ -219,6 +219,9 @@ if (ENVIRONMENT_IS_WASM_WORKER) {
   },
 
   emscripten_wasm_worker_self_id: () => Module['$ww'],
+  emscripten_wasm_worker_self_id: () => {
+    return Module['$ww'];
+  },
 
   emscripten_wasm_worker_post_function_v: (id, funcPtr) => {
     _wasmWorkers[id].postMessage({'_wsc': funcPtr, 'x': [] }); // "WaSm Call"

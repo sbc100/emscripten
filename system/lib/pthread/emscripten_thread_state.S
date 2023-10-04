@@ -15,6 +15,9 @@ is_main_thread:
 .globaltype is_runtime_thread, i32
 is_runtime_thread:
 
+.globaltype is_wasm_worker, i32
+is_wasm_worker:
+
 .globaltype supports_wait, i32
 supports_wait:
 
@@ -39,6 +42,13 @@ __set_thread_state:
   global.set supports_wait
   end_function
 
+.globl __set_wasm_worker
+__set_wasm_worker:
+  .functype __set_wasm_worker () -> ()
+  i32.const 1
+  global.set is_wasm_worker
+  end_function
+
 # Semantically the same as testing "!ENVIRONMENT_IS_PTHREAD" in JS
 .globl emscripten_is_main_runtime_thread
 emscripten_is_main_runtime_thread:
@@ -51,6 +61,13 @@ emscripten_is_main_runtime_thread:
 emscripten_is_main_browser_thread:
   .functype emscripten_is_main_browser_thread () -> (i32)
   global.get is_main_thread
+  end_function
+
+# Semantically the same as testing "ENVIRONMENT_IS_WASM_WORKER" in JS
+.globl emscripten_current_thread_is_wasm_worker
+emscripten_current_thread_is_wasm_worker:
+  .functype emscripten_current_thread_is_wasm_worker () -> (i32)
+  global.get is_wasm_worker
   end_function
 
 # Semantically the same as testing "!ENVIRONMENT_IS_WEB" in JS

@@ -83,11 +83,15 @@ emscripten_stack_get_free:
   end_function
 
 #ifdef __EMSCRIPTEN_WASM_WORKERS__
+.functype __set_wasm_worker () -> ()
+
 # TODO: Relocate the following to its own file wasm_worker.S, but need to figure out how to reference
 # __stack_base and __stack_end globals from a separate file as externs in order for that to work.
 .globl emscripten_wasm_worker_initialize
 emscripten_wasm_worker_initialize:
   .functype emscripten_wasm_worker_initialize (PTR /*stackLowestAddress*/, i32 /*stackSize*/) -> ()
+
+  call __set_wasm_worker
 
   // __stack_end = stackLowestAddress + (__builtin_wasm_tls_size() + 15) & -16;
   local.get 0
