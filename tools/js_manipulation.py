@@ -113,12 +113,7 @@ def make_dynCall(sig, args):
     args[0] = f'Number({args[0]})'
   if settings.DYNCALLS or not is_legal_sig(sig):
     args = ','.join(args)
-    if not settings.MAIN_MODULE and not settings.SIDE_MODULE:
-      # Optimize dynCall accesses in the case when not building with dynamic
-      # linking enabled.
-      return 'dynCall_%s(%s)' % (sig, args)
-    else:
-      return 'Module["dynCall_%s"](%s)' % (sig, args)
+    return f'dynCall_{sig}({args})'
   else:
     call_args = ",".join(args[1:])
     return f'getWasmTableEntry({args[0]})({call_args})'
