@@ -743,12 +743,13 @@ var LibraryPThread = {
   __pthread_create_js__noleakcheck: true,
 #endif
   __pthread_create_js__deps: ['$spawnThread', 'pthread_self', '$pthreadCreateProxied',
+    'emscripten_has_threading_support',
 #if OFFSCREENCANVAS_SUPPORT
     'malloc',
 #endif
   ],
   __pthread_create_js: (pthread_ptr, attr, startRoutine, arg) => {
-    if (typeof SharedArrayBuffer == 'undefined') {
+    if (!_emscripten_has_threading_support()) {
       err('Current environment does not support SharedArrayBuffer, pthreads are not available!');
       return {{{ cDefs.EAGAIN }}};
     }
