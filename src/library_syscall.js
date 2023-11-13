@@ -1019,8 +1019,8 @@ var SyscallsLibrary = {
   },
 };
 
-for (var x in SyscallsLibrary) {
-  wrapSyscallFunction(x, SyscallsLibrary, false);
+for (var elem of Object.keys(SyscallsLibrary)) {
+  wrapSyscallFunction(elem, SyscallsLibrary, false);
 }
 
 addToLibrary(SyscallsLibrary);

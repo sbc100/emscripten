@@ -200,17 +200,16 @@ var LibraryDylink = {
   },
 
   $updateGOT__internal: true,
-  $updateGOT__deps: ['$GOT', '$isInternalSym', '$addFunction', '$getFunctionAddress'],
+  $updateGOT__deps: ['$GOT', '$isInternalSym', '$addFunction', '$getFunctionAddress', '$entries', '$keys'],
   $updateGOT: (exports, replace) => {
 #if DYLINK_DEBUG
-    dbg("updateGOT: adding " + Object.keys(exports).length + " symbols");
+    dbg("updateGOT: adding " + keys(exports).length + " symbols");
 #endif
-    for (var symName in exports) {
+    for (var [symName, value] of entries(exports)) {
       if (isInternalSym(symName)) {
         continue;
       }
 
-      var value = exports[symName];
 #if !WASM_BIGINT
       if (symName.startsWith('orig$')) {
         symName = symName.split('$')[1];
@@ -255,8 +254,7 @@ var LibraryDylink = {
   $relocateExports: (exports, memoryBase, replace) => {
     var relocated = {};
 
-    for (var e in exports) {
-      var value = exports[e];
+    for (var [e, value] of entries(exports)) {
 #if SPLIT_MODULE
       // Do not modify exports synthesized by wasm-split
       if (e.startsWith('%')) {
@@ -284,7 +282,7 @@ var LibraryDylink = {
 #if DYLINK_DEBUG
     dbg('reportUndefinedSymbols');
 #endif
-    for (var [symName, entry] of Object.entries(GOT)) {
+    for (var [symName, entry] of entries(GOT)) {
       if (entry.value == 0) {
         var value = resolveGlobalSymbol(symName, true).sym;
         if (!value && !entry.required) {
@@ -527,10 +525,10 @@ var LibraryDylink = {
   $mergeLibSymbols__deps: ['$isSymbolDefined'],
   $mergeLibSymbols: (exports, libName) => {
     // add symbols into global namespace TODO: weak linking etc.
-    for (var [sym, exp] of Object.entries(exports)) {
+    for (var [sym, exp] of entries(exports)) {
 #if ASSERTIONS == 2
       if (isSymbolDefined(sym)) {
-        var curr = wasmImports[sym], next = exp;
+        var curr = wasmImports[sym], next = value;
         // don't warn on functions - might be odr, linkonce_odr, etc.
         if (!(typeof curr == 'function' && typeof next == 'function')) {
           err(`warning: symbol '${sym}' from '${libName}' already exists (duplicate symbol? or weak linking, which isn't supported yet?)`); // + [curr, ' vs ', next]);
@@ -795,9 +793,8 @@ var LibraryDylink = {
           var jsArgs = [];
           cSig = cSig.slice(1, -1)
           if (cSig != 'void') {
-            cSig = cSig.split(',');
-            for (var i in cSig) {
-              var jsArg = cSig[i].split(' ').pop();
+            for (var elem of cSig.split(',')) {
+              var jsArg = elem.split(' ').pop();
               jsArgs.push(jsArg.replace('*', ''));
             }
           }
@@ -808,9 +805,8 @@ var LibraryDylink = {
           {{{ makeEval('moduleExports[name] = eval(func)') }}};
         }
 
-        for (var name in moduleExports) {
+        for (var [name, start] of entries(moduleExports)) {
           if (name.startsWith('__em_js__')) {
-            var start = moduleExports[name]
             {{{ from64('start') }}}
             var jsString = UTF8ToString(start);
             // EM_JS strings are stored in the data section in the form
@@ -887,12 +883,12 @@ var LibraryDylink = {
   // Sometimes we load libraries before runtime initialization.  In this case
   // we delay calling __set_stack_limits (which must be called for each
   // module).
+  $setDylinkStackLimits__deps: ['$entries'],
   $setDylinkStackLimits: (stackTop, stackMax) => {
-    for (var name in LDSO.loadedLibsByName) {
+    for (var [name, lib] of entries(LDSO.loadedLibsByName)) {
 #if DYLINK_DEBUG
       dbg(`setDylinkStackLimits for '${name}'`);
 #endif
-      var lib = LDSO.loadedLibsByName[name];
       lib.exports['__set_stack_limits']?.({{{ to64("stackTop") }}}, {{{ to64("stackMax") }}});
     }
   },
@@ -944,7 +940,7 @@ var LibraryDylink = {
   $loadDynamicLibrary: function(libName, flags = {global: true, nodelete: true}, localScope, handle) {
 #if DYLINK_DEBUG
     dbg(`loadDynamicLibrary: ${libName} handle: ${handle}`);
-    dbg(`existing: ${Object.keys(LDSO.loadedLibsByName)}`);
+    dbg(`existing: ${keys(LDSO.loadedLibsByName)}`);
 #endif
     // when loadDynamicLibrary did not have flags, libraries were loaded
     // globally & permanently
@@ -1174,13 +1170,14 @@ var LibraryDylink = {
     }
   },
 
+  _dlsym_catchup_js__deps: ['$keys', '$ptrToString'],
   _dlsym_catchup_js: (handle, symbolIndex) => {
 #if DYLINK_DEBUG
     dbg("_dlsym_catchup: handle=" + ptrToString(handle) + " symbolIndex=" + symbolIndex);
 #endif
     var lib = LDSO.loadedLibsByHandle[handle];
     var symDict = lib.exports;
-    var symName = Object.keys(symDict)[symbolIndex];
+    var symName = keys(symDict)[symbolIndex];
     var sym = symDict[symName];
     var result = addFunction(sym, sym.sig);
 #if DYLINK_DEBUG
@@ -1190,7 +1187,7 @@ var LibraryDylink = {
   },
 
   // void* dlsym(void* handle, const char* symbol);
-  _dlsym_js__deps: ['$dlSetError', '$getFunctionAddress', '$addFunction'],
+  _dlsym_js__deps: ['$dlSetError', '$getFunctionAddress', '$addFunction', '$keys'],
   _dlsym_js: (handle, symbol, symbolIndex) => {
     // void *dlsym(void *restrict handle, const char *restrict name);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/dlsym.html
@@ -1209,12 +1206,12 @@ var LibraryDylink = {
       dlSetError(`Tried to lookup unknown symbol "${symbol}" in dynamic lib: ${lib.name}`)
       return 0;
     }
-    newSymIndex = Object.keys(lib.exports).indexOf(symbol);
+    newSymIndex = keys(lib.exports).indexOf(symbol);
 #if !WASM_BIGINT
     var origSym = 'orig$' + symbol;
     result = lib.exports[origSym];
     if (result) {
-      newSymIndex = Object.keys(lib.exports).indexOf(origSym);
+      newSymIndex = keys(lib.exports).indexOf(origSym);
     }
     else
 #endif

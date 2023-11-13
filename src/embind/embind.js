@@ -258,8 +258,8 @@ var LibraryEmbind = {
     return registeredInstances[ptr];
   },
 
-  $getInheritedInstanceCount__deps: ['$registeredInstances'],
-  $getInheritedInstanceCount: () => Object.keys(registeredInstances).length,
+  $getInheritedInstanceCount__deps: ['$registeredInstances', '$keys'],
+  $getInheritedInstanceCount: () => keys(registeredInstances).length,
 
   $getLiveInheritedInstances__deps: ['$registeredInstances'],
   $getLiveInheritedInstances: () => {
@@ -1147,8 +1147,8 @@ var LibraryEmbind = {
         name: reg.name,
         'fromWireType': (ptr) => {
           var rv = {};
-          for (var i in fields) {
-            rv[i] = fields[i].read(ptr);
+          for (var [key, value] of entries(fields)) {
+            rv[key] = value.read(ptr);
           }
           rawDestructor(ptr);
           return rv;
@@ -1156,14 +1156,14 @@ var LibraryEmbind = {
         'toWireType': (destructors, o) => {
           // todo: Here we have an opportunity for -O3 level "unsafe" optimizations:
           // assume all fields are present without checking.
-          for (var fieldName in fields) {
-            if (!(fieldName in o)) {
-              throw new TypeError(`Missing field: "${fieldName}"`);
+          for (var f of keys(fields)) {
+            if (!(f in o)) {
+              throw new TypeError(`Missing field: "${f}"`);
             }
           }
           var ptr = rawConstructor();
-          for (fieldName in fields) {
-            fields[fieldName].write(ptr, o[fieldName]);
+          for (var [name, value] of entries(fields)) {
+            value.write(ptr, o[name]);
           }
           if (destructors !== null) {
             destructors.push(rawDestructor, ptr);
@@ -1781,7 +1781,7 @@ var LibraryEmbind = {
           }
           var body = registeredClass.constructor_body[arguments.length];
           if (undefined === body) {
-            throw new BindingError(`Tried to invoke ctor of ${name} with invalid number of parameters (${arguments.length}) - expected (${Object.keys(registeredClass.constructor_body).toString()}) parameters instead!`);
+            throw new BindingError(`Tried to invoke ctor of ${name} with invalid number of parameters (${arguments.length}) - expected (${keys(registeredClass.constructor_body).toString()}) parameters instead!`);
           }
           return body.apply(this, arguments);
         });

@@ -46,7 +46,7 @@ var WasiLibrary = {
     return 0;
   },
 
-  $getEnvStrings__deps: ['$ENV', '$getExecutableName'],
+  $getEnvStrings__deps: ['$ENV', '$getExecutableName', "$entries"],
   $getEnvStrings: () => {
     if (!getEnvStrings.strings) {
       // Default values.
@@ -69,16 +69,16 @@ var WasiLibrary = {
 #endif
       };
       // Apply the user-provided values, if any.
-      for (var x in ENV) {
-        // x is a key in ENV; if ENV[x] is undefined, that means it was
-        // explicitly set to be so. We allow user code to do that to
-        // force variables with default values to remain unset.
-        if (ENV[x] === undefined) delete env[x];
-        else env[x] = ENV[x];
+      for (var [key, value] of entries(ENV)) {
+        // if value is undefined, that means it was explicitly set to be so. We
+        // allow user code to do that to force variables with default values to
+        // remain unset.
+        if (value === undefined) delete env[key];
+        else env[key] = value;
       }
       var strings = [];
-      for (var x in env) {
-        strings.push(`${x}=${env[x]}`);
+      for (var [key, value] of entries(env)) {
+        strings.push(`${key}=${value}`);
       }
       getEnvStrings.strings = strings;
     }
@@ -565,8 +565,8 @@ var WasiLibrary = {
   fd_sync__async: true,
 };
 
-for (var x in WasiLibrary) {
-  wrapSyscallFunction(x, WasiLibrary, true);
+for (var elem of Object.keys(WasiLibrary)) {
+  wrapSyscallFunction(elem, WasiLibrary, true);
 }
 
 addToLibrary(WasiLibrary);

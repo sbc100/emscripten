@@ -21,6 +21,12 @@
 // new function with an '_', it will not be found.
 
 addToLibrary({
+  $entries__internal: true,
+  $entries: 'Object.entries',
+
+  $keys__internal: true,
+  $keys: 'Object.keys',
+
   $ptrToString: (ptr) => {
 #if ASSERTIONS
     assert(typeof ptr === 'number');
@@ -2399,9 +2405,7 @@ addToLibrary({
     // '    at Object._main (http://server.com/file.html:4324:12)'
     var chromeRe = new RegExp('\\s*at (.*?) \\\((.*):(.*):(.*)\\\)');
 
-    for (var l in lines) {
-      var line = lines[l];
-
+    for (var line of lines) {
       var symbolName = '';
       var file = '';
       var lineno = 0;
@@ -2947,12 +2951,12 @@ addToLibrary({
     var global_object = this;
 #endif
 
-    for (var __exportedFunc in wasmExports) {
-      var jsname = asmjsMangle(__exportedFunc);
+    for (var [name, value] of entries(wasmExports)) {
+      var jsname = asmjsMangle(name);
 #if MINIMAL_RUNTIME
-      global_object[jsname] = wasmExports[__exportedFunc];
+      global_object[jsname] = wasmExports[value];
 #else
-      global_object[jsname] = Module[jsname] = wasmExports[__exportedFunc];
+      global_object[jsname] = Module[jsname] = wasmExports[value];
 #endif
     }
 
@@ -3622,7 +3626,7 @@ addToLibrary({
 });
 
 function autoAddDeps(object, name) {
-  for (var item in object) {
+  for (var item of Object.getOwnPropertyNames(object)) {
     if (!item.endsWith('__deps')) {
       if (!object[item + '__deps']) {
         object[item + '__deps'] = [];
@@ -3775,3 +3779,6 @@ function wrapSyscallFunction(x, library, isWasi) {
   }
 #endif
 }
+
+extraLibraryFuncs.push('$entries');
+extraLibraryFuncs.push('$keys');

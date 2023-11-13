@@ -43,7 +43,7 @@ addToLibrary({
 #endif
       var importPattern = {{{ new RegExp(`^(${ASYNCIFY_IMPORTS_EXCEPT_JS_LIBS.map(x => x.split('.')[1]).join('|').replace(/\*/g, '.*')})$`) }}};
 
-      for (let [x, original] of Object.entries(imports)) {
+      for (let [x, original] of entries(imports)) {
         let sig = original.sig;
         if (typeof original == 'function') {
           let isAsyncifyImport = original.isAsync || importPattern.test(x);
@@ -120,7 +120,7 @@ addToLibrary({
       Asyncify.asyncExports = new Set();
 #endif
       var ret = {};
-      for (let [x, original] of Object.entries(exports)) {
+      for (let [x, original] of entries(exports)) {
         if (typeof original == 'function') {
 #if ASYNCIFY == 2
           // Wrap all exports with a promising WebAssembly function.

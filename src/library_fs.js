@@ -1420,8 +1420,8 @@ FS.staticInit();` +
         this.setErrno = /** @this{Object} */ function(errno) {
           this.errno = errno;
 #if ASSERTIONS
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
+          for (var [key, value] of entries(ERRNO_CODES)) {
+            if (value === errno) {
               this.code = key;
               break;
             }
