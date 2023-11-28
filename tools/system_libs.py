@@ -12,6 +12,7 @@ import logging
 import os
 import shutil
 import textwrap
+import subprocess
 from enum import IntEnum, auto
 from glob import iglob
 from typing import List, Optional
@@ -417,8 +418,8 @@ class Library:
   def erase(self):
     cache.erase_file(self.get_path())
 
-  def get_path(self, absolute=False):
-    return cache.get_lib_name(self.get_filename(), absolute=absolute)
+  def get_path(self, shared=False, absolute=False):
+    return cache.get_lib_name(self.get_filename(shared=shared), absolute=absolute)
 
   def build(self, deterministic_paths=False):
     """
@@ -427,7 +428,20 @@ class Library:
     This will trigger a build if this library is not in the cache.
     """
     self.deterministic_paths = deterministic_paths
-    return cache.get(self.get_path(), self.do_build, force=USE_NINJA == 2, quiet=USE_NINJA)
+    lib = cache.get(self.get_path(), self.do_build, force=USE_NINJA == 2, quiet=USE_NINJA)
+    if settings.SIDE_MODULE and shared.suffix(lib) == '.a':
+      def create_stub(out_filename):
+        stubs = ['#STUB']
+        lines = shared.run_process([shared.LLVM_NM, lib], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.splitlines()
+        for line in lines:
+          parts = line.split()
+          if len(parts) == 3:
+            addr, linkage, name = parts
+            if linkage.isupper():
+              stubs.append(name)
+        utils.write_file(out_filename, '\n'.join(stubs))
+      lib = cache.get(self.get_path(shared=True), create_stub)
+    return lib
 
   def generate(self):
     self.deterministic_paths = False
@@ -442,7 +456,7 @@ class Library:
     """
     fullpath = self.build()
     # For non-libraries (e.g. crt1.o) we pass the entire path to the linker
-    if self.get_ext() != '.a':
+    if self.get_ext() not in ('.a', '.so'):
       return fullpath
     # For libraries (.a) files, we pass the abbreviated `-l` form.
     base = shared.unsuffixed_basename(fullpath)
@@ -625,17 +639,23 @@ class Library:
     """
     return self.get_base_name_prefix()
 
-  def get_ext(self):
+  def get_ext(self, shared=False):
     """
     Return the appropriate file extension for this library.
     """
-    return '.a'
+    if shared:
+      return '.so'
+    else:
+      return '.a'
 
-  def get_filename(self):
+  def get_filename(self, shared=False):
     """
     Return the full name of the library file, including the file extension.
     """
-    return self.get_base_name() + self.get_ext()
+    basename = self.get_base_name()
+    if shared:
+      basename += '-shared'
+    return basename + self.get_ext(shared=shared)
 
   @classmethod
   def vary_on(cls):
@@ -1466,7 +1486,7 @@ class crt1(MuslInternalLibrary):
 
   force_object_files = True
 
-  def get_ext(self):
+  def get_ext(self, shared=False):
     return '.o'
 
   def can_use(self):
@@ -1480,7 +1500,7 @@ class crt1_reactor(MuslInternalLibrary):
 
   force_object_files = True
 
-  def get_ext(self):
+  def get_ext(self, shared=False):
     return '.o'
 
   def can_use(self):
@@ -1494,7 +1514,7 @@ class crt1_proxy_main(MuslInternalLibrary):
 
   force_object_files = True
 
-  def get_ext(self):
+  def get_ext(self, shared=False):
     return '.o'
 
   def can_use(self):
@@ -1509,7 +1529,7 @@ class crtbegin(MuslInternalLibrary):
 
   force_object_files = True
 
-  def get_ext(self):
+  def get_ext(self, shared=False):
     return '.o'
 
   def can_use(self):
@@ -2237,9 +2257,6 @@ def get_libs_to_link(args, forced, only_forced):
           add_library('crt1_reactor')
       elif settings.PROXY_TO_PTHREAD:
         add_library('crt1_proxy_main')
-
-  if settings.SIDE_MODULE:
-    return libs_to_link
 
   for forced in force_include:
     if forced not in system_libs_map:

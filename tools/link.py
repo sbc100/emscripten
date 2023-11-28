@@ -2943,23 +2943,23 @@ def run(linker_inputs, options, state, newargs):
     return 0
 
   js_syms = {}
-  if (not settings.SIDE_MODULE or settings.ASYNCIFY) and not shared.SKIP_SUBPROCS:
+  if not settings.SIDE_MODULE and not shared.SKIP_SUBPROCS:
     js_info = get_js_sym_info()
-    if not settings.SIDE_MODULE:
-      js_syms = js_info['deps']
+    js_syms = js_info['deps']
 
-      def add_js_deps(sym):
-        if sym in js_syms:
-          native_deps = js_syms[sym]
-          if native_deps:
-            settings.REQUIRED_EXPORTS += native_deps
+    def add_js_deps(sym):
+      if sym in js_syms:
+        native_deps = js_syms[sym]
+        if native_deps:
+          settings.REQUIRED_EXPORTS += native_deps
 
-      for sym in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE:
-        add_js_deps(sym)
-      for sym in js_info['extraLibraryFuncs']:
-        add_js_deps(sym)
-      for sym in settings.EXPORTED_RUNTIME_METHODS:
-        add_js_deps(shared.demangle_c_symbol_name(sym))
+    for sym in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE:
+      add_js_deps(sym)
+    for sym in js_info['extraLibraryFuncs']:
+      add_js_deps(sym)
+    for sym in settings.EXPORTED_RUNTIME_METHODS:
+      add_js_deps(shared.demangle_c_symbol_name(sym))
+
     if settings.ASYNCIFY:
       settings.ASYNCIFY_IMPORTS_EXCEPT_JS_LIBS = settings.ASYNCIFY_IMPORTS[:]
       settings.ASYNCIFY_IMPORTS += ['*.' + x for x in js_info['asyncFuncs']]

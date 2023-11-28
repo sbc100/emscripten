@@ -86,9 +86,6 @@ if (symbolsOnly) {
   INCLUDE_FULL_LIBRARY = 1;
 }
 
-// Side modules are pure wasm and have no JS
-assert(!SIDE_MODULE || (ASYNCIFY && globalThis.symbolsOnly), 'JS compiler should only run on side modules if asyncify is used.');
-
 // Load compiler code
 
 load('modules.js');
