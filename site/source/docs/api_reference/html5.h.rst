@@ -2354,27 +2354,6 @@ Functions
   :param setIntervalId: An ID returned by function :c:func:`emscripten_set_interval()`.
 
 
-.. c:function:: double emscripten_date_now(void)
-
-  Calls JavaScript ``Date.now()`` function in the current thread.
-
-  :returns: The number of msecs elapsed since the UNIX epoch. (00:00:00 Thursday, 1 January 1970)
-
-
-.. c:function:: double emscripten_performance_now(void)
-
-  Calls JavaScript ``performance.now()`` function in the current thread. Note that the returned value of
-  this function is based on different time offset depending on which thread this function is called in.
-  That is, do not compare absolute time values returned by performance.now() across threads. (comparing
-  relative timing values is ok). On the main thread this function returns the number of milliseconds elapsed
-  since page startup time. In a Web Worker/pthread, this function returns the number of milliseconds since
-  the Worker hosting that pthread started up. (Workers are generally not torn down when a pthread quits and
-  a second one starts, but they are kept alive in a pool, so this function is not guaranteed to start
-  counting time from 0 at the time when a pthread starts)
-
-  :returns: A high precision wallclock time value in msecs.
-
-
 Throw
 =====
 

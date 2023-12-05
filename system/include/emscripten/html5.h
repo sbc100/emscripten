@@ -465,9 +465,6 @@ int emscripten_request_animation_frame(EM_BOOL (*cb)(double time, void *userData
 void emscripten_cancel_animation_frame(int requestAnimationFrameId);
 void emscripten_request_animation_frame_loop(EM_BOOL (*cb)(double time, void *userData), void *userData);
 
-double emscripten_date_now(void);
-double emscripten_performance_now(void);
-
 #ifdef __cplusplus
 } // ~extern "C"
 #endif

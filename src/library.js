@@ -2398,6 +2398,10 @@ addToLibrary({
 #endif
   },
 
+  emscripten_date_now: () => Date.now(),
+
+  emscripten_performance_now: () => {{{ getPerformanceNow() }}}(),
+
   // Represents whether emscripten_get_now is guaranteed monotonic; the Date.now
   // implementation is not :(
   $nowIsMonotonic__internal: true,
