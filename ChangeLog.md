@@ -67,6 +67,14 @@ See docs/process.md for more on how version tagging works.
 3.1.51 - 12/13/23
 -----------------
 - Support for explicitly targeting the legacy Internet Explorer or EdgeHTML
+- Emscripten is now more strict about handling unsupported shared library
+  inputs.  For example, under the old behaviour if a system shared library
+  such as `/usr/lib/libz.so` was passed to emscripten it would silently re-write
+  this to `-lz`, which would then search for libz in its own sysroot.  Now
+  this file is passed though the linker like any other input file and you will
+  see an `unknown file type` error from the linker (just like you would with the
+  native clang or gcc toolchains). (#20886)
+- Support for explicitly targeting the legacy Interet Explorer or EdgeHTML
   (edge version prior to the chromium-based edge) browsers via
   `-sMIN_EDGE_VERSION/-sMIN_IE_VERSION` was removed. (#20881)
 - Emscripten is now more strict about handling unsupported shared library
