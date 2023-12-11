@@ -156,7 +156,7 @@ var LibraryEmbind = {
     printModuleEntry(nameMap, out) {
       out.push(`  ${this.name}: {`);
       const entries = [];
-      for(const construct of this.constructors) {
+      for (const construct of this.constructors) {
         const entry = [];
         entry.push('new');
         construct.printSignature(nameMap, entry);

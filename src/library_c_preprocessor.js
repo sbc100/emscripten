@@ -187,7 +187,7 @@ addToLibrary({
           if (operatorAndPriority >= 0) {
             var left = buildExprTree(tokens.slice(0, i));
             var right = buildExprTree(tokens.slice(i+1));
-            switch(tokens[i]) {
+            switch (tokens[i]) {
               case '&&': return [function() { return left() && right(); }];
               case '||': return [function() { return left() || right(); }];
               case '==': return [function() { return left() == right(); }];
@@ -240,7 +240,7 @@ addToLibrary({
       var space = nextWhitespace(code, j);
       var directive = code.substring(j+1, space);
       var expression = code.substring(space, i).trim();
-      switch(directive) {
+      switch (directive) {
       case 'if':
         var tokens = tokenize(expandMacros(expression, 0));
         var exprTree = buildExprTree(tokens);

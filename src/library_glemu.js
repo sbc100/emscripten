@@ -3333,7 +3333,7 @@ var LibraryGLEmulation = {
   glPolygonMode: () => {}, // TODO
 
   glAlphaFunc: (func, ref) => {
-    switch(func) {
+    switch (func) {
       case 0x200: // GL_NEVER
       case 0x201: // GL_LESS
       case 0x202: // GL_EQUAL
