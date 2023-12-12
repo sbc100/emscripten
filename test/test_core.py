@@ -4806,13 +4806,12 @@ res64 - external 64\n''', header='''\
     self.do_runf("main.cpp", "side: caught int 3\n")
 
   @needs_dylink
-  @disabled('https://github.com/emscripten-core/emscripten/issues/12815')
   def test_dylink_hyper_dupe(self):
     self.set_setting('INITIAL_MEMORY', '64mb')
     self.set_setting('ASSERTIONS', 2)
 
     # test hyper-dynamic linking, and test duplicate warnings
-    create_file('third.cpp', r'''
+    create_file('third.c', r'''
       #include <stdio.h>
       int sidef() { return 36; }
       int sideg = 49;
@@ -4832,11 +4831,7 @@ res64 - external 64\n''', header='''\
         printf("only_in_third_1: %d, %d, %d, %d\n", sidef(), sideg, second_to_third, x);
       }
     ''')
-    if self.is_wasm():
-      libname = 'third.wasm'
-    else:
-      libname = 'third.js'
-    self.run_process([EMCC, 'third.cpp', '-o', libname, '-sSIDE_MODULE'] + self.get_emcc_args())
+    self.run_process([EMCC, 'third.c', '-o', 'third.wasm', '-sSIDE_MODULE'] + self.get_emcc_args())
     self.dylink_test(main=r'''
       #include <stdio.h>
       #include <emscripten.h>
@@ -4848,14 +4843,13 @@ res64 - external 64\n''', header='''\
       extern void only_in_third_0();
       int main() {
         EM_ASM({
-          loadDynamicLibrary('%s'); // hyper-dynamic! works at least for functions (and consts not used in same block)
+          loadDynamicLibrary('third.wasm'); // hyper-dynamic! works at least for functions (and consts not used in same block)
         });
-        printf("sidef: %%d, sideg: %%d.\n", sidef(), sideg);
-        printf("bsidef: %%d.\n", bsidef());
+        printf("sidef: %d, sideg: %d.\n", sidef(), sideg);
+        printf("bsidef: %d.\n", bsidef());
         only_in_second_0();
         only_in_third_0();
-      }
-    ''' % libname,
+      }''',
                      side=r'''
       #include <stdio.h>
       int sidef() { return 10; } // third will try to override these, but fail!
@@ -4874,8 +4868,9 @@ res64 - external 64\n''', header='''\
       }
     ''',
                      expected=['sidef: 10, sideg: 20.\nbsidef: 536.\nonly_in_second_0: 10, 20, 1337\nonly_in_third_1: 36, 49, 500, 1221\nonly_in_third_0: 36, 49, 500\nonly_in_second_1: 10, 20, 1337, 2112\n'],
-                     # in wasm, we can't flip as the side would have an EM_ASM, which we don't support yet TODO
-                     need_reverse=not self.is_wasm())
+                     emcc_args=['-sWARN_ON_UNDEFINED_SYMBOLS=0'],
+                     main_module=1,
+                     force_c=True)
 
     print('check warnings')
     full = self.run_js('src.js')

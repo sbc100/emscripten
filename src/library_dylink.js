@@ -1072,7 +1072,7 @@ var LibraryDylink = {
 #if DYLINK_DEBUG
       dbg('loadDylibs: no libraries to preload');
 #endif
-      reportUndefinedSymbols();
+      //reportUndefinedSymbols();
       return;
     }
 
@@ -1088,7 +1088,7 @@ var LibraryDylink = {
       ), Promise.resolve())
       .then(() => {
         // we got them all, wonderful
-        reportUndefinedSymbols();
+        //reportUndefinedSymbols();
         removeRunDependency('loadDylibs');
   #if DYLINK_DEBUG
         dbg('loadDylibs done!');
