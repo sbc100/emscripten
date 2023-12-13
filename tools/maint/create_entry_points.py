@@ -28,6 +28,7 @@ em++
 entry_points = '''
 bootstrap
 emar
+emlink
 embuilder
 emcmake
 em-config

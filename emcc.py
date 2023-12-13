@@ -310,14 +310,10 @@ def is_dash_s_for_emcc(args, i):
 
 def parse_s_args(args):
   settings_changes = []
-  for i in range(len(args)):
-    if args[i].startswith('-s'):
+  for i, arg in enumerate(args):
+    if arg.startswith('-s') and len(arg) > 2:
       if is_dash_s_for_emcc(args, i):
-        if args[i] == '-s':
-          key = args[i + 1]
-          args[i + 1] = ''
-        else:
-          key = removeprefix(args[i], '-s')
+        key = removeprefix(arg, '-s')
         args[i] = ''
 
         # If not = is specified default to 1
@@ -475,6 +471,57 @@ def get_library_basename(filename):
       return filename
 
 
+def is_emcc_arg(arg):
+  if arg.startswith('-s'):
+    arg = removeprefix(arg, '-s').split('=')[0]
+    return arg.isidentifier() and arg.isupper()
+  if arg.startswith('-W') and diagnostics.is_emcc_only(arg):
+    return True
+  prefixes = {'--output_eol=', '--js-library=', '--closure=', '--pre-js=', '--post-js='}
+  return any(arg.startswith(p) for p in prefixes)
+
+
+def get_language_mode(args):
+  return_next = False
+  for item in args:
+    if return_next:
+      return item
+    if item == '-x':
+      return_next = True
+      continue
+    if item.startswith('-x'):
+      return removeprefix(item, '-x')
+  return ''
+
+
+def run_clang_driver(clang, args):
+  args = normalize_args(args)
+  linking = not any(a in args for a in ('-c', '--precompile', '-S', '-E'))
+  if linking:
+    wrapped_args = []
+    for a in args:
+      if is_emcc_arg(a):
+        wrapped_args.append('-Xlinker')
+      wrapped_args.append(a)
+    args = wrapped_args
+  else:
+    args = [a for a in args if not is_emcc_arg(a)]
+  language_mode = get_language_mode(args)
+  use_cxx = 'c++' in language_mode or shared.run_via_emxx
+  cmd = [clang, '-Wno-unused-command-line-argument']
+  cmd += get_cflags(args, use_cxx)
+  if linking:
+    cmd.append('-nostdlib')
+    cmd.append('-fuse-ld=' + shared.EMLINK)
+    if '-o' not in args:
+      cmd += ['-o', 'a.out.js']
+    for a in args:
+      if a.startswith('-O'):
+        cmd += ['-Xlinker', a]
+  cmd += args
+  shared.exec_process(cmd)
+
+
 #
 # Main run() function
 #
@@ -591,6 +638,10 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
 
   newargs, input_files = phase_setup(options, state, newargs)
 
+  if os.environ.get('USE_CLANG_DRIVER'):
+    run_clang_driver(clang, args)
+
+
   if '-dumpmachine' in newargs or '-print-target-triple' in newargs or '--print-target-triple' in newargs:
     print(shared.get_llvm_target())
     return 0
@@ -616,6 +667,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
     else:
       print(libname)
     return 0
+
 
   if options.reproduce:
     create_reproduce_file(options.reproduce, args)
@@ -651,6 +703,22 @@ def normalize_boolean_setting(name, value):
   return name, value
 
 
+def normalize_args(args):
+  for i in range(len(args)):
+    if args[i] not in {'-l', '-L', '-I', '-z', '-s', '--js-library', '--pre-js', '--post-js'}:
+      continue
+    if args[i] == '-s' and not is_dash_s_for_emcc(args, i):
+      continue
+    # Scan for flags that can be written as either one or two arguments
+    # and normalize them to the single argument form.
+    if args[i] in {'--js-library', '--pre-js', '--post-js'}:
+      args[i] += '=' + args[i + 1]
+    else:
+      args[i] += args[i + 1]
+    args[i + 1] = ''
+  return [a for a in args if a]
+
+
 @ToolchainProfiler.profile_block('parse arguments')
 def phase_parse_arguments(state):
   """The first phase of the compiler.  Parse command line argument and
@@ -663,12 +731,7 @@ def phase_parse_arguments(state):
   # warnings are properly printed during arg parse.
   newargs = diagnostics.capture_warnings(newargs)
 
-  for i in range(len(newargs)):
-    if newargs[i] in ('-l', '-L', '-I', '-z'):
-      # Scan for flags that can be written as either one or two arguments
-      # and normalize them to the single argument form.
-      newargs[i] += newargs[i + 1]
-      newargs[i + 1] = ''
+  newargs = normalize_args(newargs)
 
   options, settings_changes, user_js_defines, newargs = parse_args(newargs)
 
@@ -929,18 +992,6 @@ def phase_compile_inputs(options, state, newargs, input_files):
 
   compile_args = newargs
   system_libs.ensure_sysroot()
-
-  def get_language_mode(args):
-    return_next = False
-    for item in args:
-      if return_next:
-        return item
-      if item == '-x':
-        return_next = True
-        continue
-      if item.startswith('-x'):
-        return removeprefix(item, '-x')
-    return ''
 
   language_mode = get_language_mode(newargs)
   use_cxx = 'c++' in language_mode or shared.run_via_emxx

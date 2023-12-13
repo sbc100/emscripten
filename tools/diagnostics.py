@@ -12,6 +12,7 @@ import os
 import sys
 from typing import Dict
 
+from . import utils
 
 WINDOWS = sys.platform.startswith('win')
 
@@ -252,6 +253,16 @@ def warning(warning_type, message, *args):
 
 def capture_warnings(argv):
   return manager.capture_warnings(argv)
+
+
+def is_emcc_only(arg):
+  if not arg.startswith('-W'):
+    return False
+  warning_name = utils.removeprefix(arg, '-W')
+  warning_name = utils.removeprefix(warning_name, 'no-')
+  if warning_name not in manager.warnings:
+    return False
+  return not manager.warnings[warning_name]['shared']
 
 
 if WINDOWS:
