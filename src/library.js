@@ -2295,7 +2295,7 @@ addToLibrary({
     // respective time origins.
     _emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
 #else
-#if MIN_FIREFOX_VERSION <= 14 || MIN_CHROME_VERSION <= 23 || MIN_SAFARI_VERSION <= 80400 || AUDIO_WORKLET // https://caniuse.com/#feat=high-resolution-time
+#if AUDIO_WORKLET
     // AudioWorkletGlobalScope does not have performance.now()
     // (https://github.com/WebAudio/web-audio-api/issues/2527), so if building
     // with
@@ -2324,35 +2324,9 @@ addToLibrary({
       return 1; // nanoseconds
     }
 #endif
-#if MIN_FIREFOX_VERSION <= 14 || MIN_CHROME_VERSION <= 23 || MIN_SAFARI_VERSION <= 80400 // https://caniuse.com/#feat=high-resolution-time
-    if (typeof performance == 'object' && performance && typeof performance['now'] == 'function') {
-      return 1000; // microseconds (1/1000 of a millisecond)
-    }
-    return 1000*1000; // milliseconds
-#else
     // Modern environment where performance.now() is supported:
     return 1000; // microseconds (1/1000 of a millisecond)
-#endif
   },
-
-  // Represents whether emscripten_get_now is guaranteed monotonic; the Date.now
-  // implementation is not :(
-  $nowIsMonotonic__internal: true,
-#if MIN_FIREFOX_VERSION <= 14 || MIN_CHROME_VERSION <= 23 || MIN_SAFARI_VERSION <= 80400 // https://caniuse.com/#feat=high-resolution-time
-  $nowIsMonotonic: `
-     ((typeof performance == 'object' && performance && typeof performance['now'] == 'function')
-#if ENVIRONMENT_MAY_BE_NODE
-      || ENVIRONMENT_IS_NODE
-#endif
-    );`,
-#else
-  // Modern environment where performance.now() is supported
-  $nowIsMonotonic: 1,
-#endif
-
-  _emscripten_get_now_is_monotonic__internal: true,
-  _emscripten_get_now_is_monotonic__deps: ['$nowIsMonotonic'],
-  _emscripten_get_now_is_monotonic: () => nowIsMonotonic,
 
   $warnOnce: (text) => {
     warnOnce.shown ||= {};

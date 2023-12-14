@@ -60,7 +60,7 @@ uintptr_t emscripten_stack_snapshot(void);
 uint32_t
 emscripten_stack_unwind_buffer(uintptr_t pc, uintptr_t* buffer, uint32_t depth);
 
-bool _emscripten_get_now_is_monotonic(void);
+#define _emscripten_get_now_is_monotonic(void) true
 
 void _emscripten_get_progname(char*, int);
 
