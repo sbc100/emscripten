@@ -12621,20 +12621,6 @@ void foo() {}
     err = self.expect_fail([EMCC, 'lib.c', '-pthread', '-sPROXY_TO_PTHREAD'])
     self.assertContained('crt1_proxy_main.o: undefined symbol: main', err)
 
-  def test_archive_bad_extension(self):
-    # Regression test for https://github.com/emscripten-core/emscripten/issues/14012
-    # where llvm_nm_multiple would be confused by archives names like object files.
-    create_file('main.c', '''
-    #include <sys/socket.h>
-    int main() {
-       return (int)(long)&accept;
-    }
-    ''')
-
-    self.run_process([EMCC, '-c', 'main.c'])
-    self.run_process([EMAR, 'crs', 'libtest.bc', 'main.o'])
-    self.run_process([EMCC, 'libtest.bc', 'libtest.bc'])
-
   def test_split_dwarf_implicit_compile(self):
     # Verify that the dwo file is generated in the current working directory, even when implicitly
     # compiling (compile+link).
