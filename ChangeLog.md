@@ -63,6 +63,9 @@ See docs/process.md for more on how version tagging works.
 - The `SUPPORT_ERRNO` setting is now deprecated as it only controlled setting
   errno from JS library functions and emscripten no longer requires this.
   (#21074)
+  current set of minimum versions are: Chrome 32, Firefox 34, Safari 9 and Node
+  current set of minimum versions are: Chrome 45, Firefox 34, Safari 9 and Node
+  10.19.0. (#20924)
 
 3.1.51 - 12/13/23
 -----------------
