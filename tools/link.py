@@ -2294,13 +2294,6 @@ def modularize():
      shared.target_environment_may_be('web'):
     async_emit = 'async '
 
-  if settings.WASM_ASYNC_COMPILATION:
-    return_value = 'readyPromise'
-    if not settings.EXPORT_READY_PROMISE:
-      return_value = '{}'
-  else:
-    return_value = 'Module'
-
   # TODO: Remove when https://bugs.webkit.org/show_bug.cgi?id=223533 is resolved.
   if async_emit != '' and settings.EXPORT_NAME == 'config':
     diagnostics.warning('emcc', 'EXPORT_NAME should not be named "config" when targeting Safari')

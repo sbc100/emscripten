@@ -652,6 +652,18 @@ var proxiedFunctionTable = [
     const postFile = MINIMAL_RUNTIME ? 'postamble_minimal.js' : 'postamble.js';
     includeFile(postFile);
 
+    if (MODULARIZE) {
+      if (WASM_ASYNC_COMPILATION) {
+        if (EXPORT_READY_PROMISE) {
+          print('return readyPromise;\n');
+        } else {
+          print('return {};\n');
+        }
+      } else {
+        print('return Module;\n');
+      }
+    }
+
     for (const fileName of POST_JS_FILES) {
       includeFileRaw(fileName);
     }
