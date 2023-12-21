@@ -2325,23 +2325,16 @@ def modularize():
   if async_emit != '' and settings.EXPORT_NAME == 'config':
     diagnostics.warning('emcc', 'EXPORT_NAME should not be named "config" when targeting Safari')
 
-  src = '''
-%(maybe_async)sfunction(moduleArg = {}) {
+  module_function = f'''
+{async_emit}(moduleArg = {{}}) => {{
+  {src}
+  return {return_value};
+}}'''
 
-%(src)s
-
-  return %(return_value)s
-}
-''' % {
-    'maybe_async': async_emit,
-    'src': src,
-    'return_value': return_value,
-  }
-
-  if settings.MINIMAL_RUNTIME and not settings.PTHREADS:
-    # Single threaded MINIMAL_RUNTIME programs do not need access to
-    # document.currentScript, so a simple export declaration is enough.
-    src = '/** @nocollapse */ var %s = %s' % (settings.EXPORT_NAME, src)
+  if not settings.PTHREADS and not settings.WASM_WORKERS:
+    # Single threaded programs do not need access to document.currentScript
+    # (AKA _scriptDir), so a simple export declaration is enough.
+    src = f'var {settings.EXPORT_NAME} = {module_function}'
   else:
     script_url_node = ''
     # When MODULARIZE this JS may be executed later,
@@ -2355,19 +2348,16 @@ def modularize():
       script_url = "typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined"
       if shared.target_environment_may_be('node'):
         script_url_node = "if (typeof __filename !== 'undefined') _scriptDir ||= __filename;"
-    src = '''%(node_imports)s
-var %(EXPORT_NAME)s = (() => {
-  var _scriptDir = %(script_url)s;
-  %(script_url_node)s
-  return (%(src)s);
-})();
-''' % {
-      'node_imports': node_es6_imports(),
-      'EXPORT_NAME': settings.EXPORT_NAME,
-      'script_url': script_url,
-      'script_url_node': script_url_node,
-      'src': src,
-    }
+    # Use an IFFI here to capture the value of _scriptDir when the script
+    # is first loaded.
+    src = f'''{node_es6_imports()}
+var {settings.EXPORT_NAME} = (() => {{
+  var _scriptDir = {script_url};
+  {script_url_node}
+  return ({module_function});
+}})();
+'''
+
     # Given the async nature of how the Module function and Module object
     # come into existence in AudioWorkletGlobalScope, store the Module
     # function under a different variable name so that AudioWorkletGlobalScope
@@ -2378,14 +2368,14 @@ var %(EXPORT_NAME)s = (() => {
 
   # Export using a UMD style export, or ES6 exports if selected
   if settings.EXPORT_ES6:
-    src += 'export default %s;' % settings.EXPORT_NAME
+    src += f'export default {settings.EXPORT_NAME};'
   elif not settings.MINIMAL_RUNTIME:
-    src += '''\
+    src += f'''
 if (typeof exports === 'object' && typeof module === 'object')
-  module.exports = %(EXPORT_NAME)s;
+  module.exports = {settings.EXPORT_NAME};
 else if (typeof define === 'function' && define['amd'])
-  define([], () => %(EXPORT_NAME)s);
-''' % {'EXPORT_NAME': settings.EXPORT_NAME}
+  define([], () => {settings.EXPORT_NAME});
+'''
 
   final_js += '.modular.js'
   write_file(final_js, src)
