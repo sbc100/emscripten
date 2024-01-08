@@ -56,6 +56,8 @@ See docs/process.md for more on how version tagging works.
 -----------------
 - Fix html5 input event bug that was introduced in 3.1.62. (#22201)
 - Fix webpack + pthreads bug that was introduced in 3.1.60. (#22165)
+- Emscripten now uses `strptime` from musl rather than using a custom
+  JavaScript implementation. (#21379)
 
 3.1.62 - 07/02/24
 -----------------
