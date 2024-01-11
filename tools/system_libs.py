@@ -31,7 +31,7 @@ LIBC_SOCKETS = ['socket.c', 'socketpair.c', 'shutdown.c', 'bind.c', 'connect.c',
                 'getsockopt.c', 'setsockopt.c', 'freeaddrinfo.c',
                 'gethostbyaddr.c', 'gethostbyaddr_r.c', 'gethostbyname.c',
                 'gethostbyname_r.c', 'gethostbyname2.c', 'gethostbyname2_r.c',
-                'in6addr_any.c', 'in6addr_loopback.c', 'accept4.c']
+                'getaddrinfo.c', 'in6addr_any.c', 'in6addr_loopback.c', 'accept4.c']
 
 # Experimental: Setting EMCC_USE_NINJA will cause system libraries to get built with ninja rather
 # than simple subprocesses.  The primary benefit here is that we get accurate dependency tracking.
@@ -1064,7 +1064,7 @@ class libc(MuslInternalLibrary,
 
     # individual files
     ignore += [
-        'memcpy.c', 'memset.c', 'memmove.c', 'getaddrinfo.c', 'getnameinfo.c',
+        'memcpy.c', 'memset.c', 'memmove.c', 'getnameinfo.c',
         'res_query.c', 'res_querydomain.c',
         'proto.c',
         'syscall.c', 'popen.c', 'pclose.c',
@@ -1436,7 +1436,7 @@ class libwasm_workers(MTLibrary):
 class libsockets(MuslInternalLibrary, MTLibrary):
   name = 'libsockets'
 
-  cflags = ['-Os', '-fno-inline-functions', '-fno-builtin', '-Wno-shift-op-parentheses']
+  cflags = ['-Os', '-fno-inline-functions', '-fno-builtin', '-Wno-shift-op-parentheses', '-Wno-bitwise-op-parentheses']
 
   def get_files(self):
     return files_in_path(

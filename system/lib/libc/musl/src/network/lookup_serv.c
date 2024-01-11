@@ -39,7 +39,11 @@ int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int pro
 	case 0:
 		break;
 	default:
+#if __EMSCRIPTEN__
+		if (name) return EAI_SOCKTYPE;
+#else
 		if (name) return EAI_SERVICE;
+#endif
 		buf[0].port = 0;
 		buf[0].proto = proto;
 		buf[0].socktype = socktype;
@@ -67,6 +71,12 @@ int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int pro
 
 	if (flags & AI_NUMERICSERV) return EAI_NONAME;
 
+#if __EMSCRIPTEN__
+	// TODO support resolving well-known service names from:
+	// http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+	// Either via `/etc/services` or some other mechanism.
+	return EAI_SERVICE;
+#else
 	size_t l = strlen(name);
 
 	unsigned char _buf[1032];
@@ -111,4 +121,5 @@ int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int pro
 	}
 	__fclose_ca(f);
 	return cnt > 0 ? cnt : EAI_SERVICE;
+#endif
 }

@@ -31,3 +31,6 @@ int __lookup_name(struct address buf[static MAXADDRS], char canon[static 256], c
 	memcpy(&buf[0].addr, &addr, sizeof(addr));
 	return 1;
 }
+
+        // TODO support resolving well-known service names from:
+        // http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
