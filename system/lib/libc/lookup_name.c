@@ -16,7 +16,6 @@ int __lookup_name(struct address buf[static MAXADDRS], char canon[static 256], c
 		return EAI_SYSTEM;
 	}
 
-	/* This hunk is a duplicated from musl/src/network/lookup_name.c */
 	*canon = 0;
 	if (name) {
 		/* reject empty name and check len so it fits into temp bufs */
