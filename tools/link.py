@@ -126,6 +126,14 @@ UBSAN_SANITIZERS = {
 final_js = None
 
 
+# In MINIMAL_RUNTIME mode, keep suffixes of generated files simple
+# ('.mem' instead of '.js.mem'; .'symbols' instead of '.js.symbols' etc)
+# Retain the original naming scheme in traditional runtime.
+def replace_or_append_suffix(filename, new_suffix):
+  assert new_suffix[0] == '.'
+  return utils.replace_suffix(filename, new_suffix) if settings.MINIMAL_RUNTIME else filename + new_suffix
+
+
 # this function uses the global 'final' variable, which contains the current
 # final output file. if a method alters final, and calls this method, then it
 # must modify final globally (i.e. it can't receive final as a param and
@@ -1891,7 +1899,7 @@ def phase_post_link(options, state, in_wasm, wasm_target, target, js_syms):
   if settings.MEM_INIT_IN_WASM:
     memfile = None
   else:
-    memfile = shared.replace_or_append_suffix(target, '.mem')
+    memfile = replace_or_append_suffix(target, '.mem')
 
   phase_binaryen(target, options, wasm_target, memfile)
 
@@ -2226,7 +2234,7 @@ def phase_binaryen(target, options, wasm_target, memfile):
 
   symbols_file = None
   if options.emit_symbol_map:
-    symbols_file = shared.replace_or_append_suffix(target, '.symbols')
+    symbols_file = replace_or_append_suffix(target, '.symbols')
 
   if settings.WASM2JS:
     symbols_file_js = None
@@ -2238,11 +2246,11 @@ def phase_binaryen(target, options, wasm_target, memfile):
       write_file(wasm2js_template, wasm2js_polyfill)
       # generate secondary file for JS symbols
       if options.emit_symbol_map:
-        symbols_file_js = shared.replace_or_append_suffix(wasm2js_template, '.symbols')
+        symbols_file_js = replace_or_append_suffix(wasm2js_template, '.symbols')
     else:
       wasm2js_template = final_js
       if options.emit_symbol_map:
-        symbols_file_js = shared.replace_or_append_suffix(target, '.symbols')
+        symbols_file_js = replace_or_append_suffix(target, '.symbols')
 
     wasm2js = building.wasm2js(wasm2js_template,
                                wasm_target,
@@ -2614,7 +2622,7 @@ def generate_worker_js(target, js_target, target_basename):
     proxy_worker_filename = get_subresource_location(js_target)
   else:
     # compiler output goes in .worker.js file
-    move_file(js_target, shared.replace_suffix(js_target, get_worker_js_suffix()))
+    move_file(js_target, utils.replace_suffix(js_target, get_worker_js_suffix()))
     worker_target_basename = target_basename + '.worker'
     proxy_worker_filename = (settings.PROXY_TO_WORKER_FILENAME or worker_target_basename) + '.js'
 
@@ -2909,7 +2917,7 @@ def package_files(options, target):
     file_args += ['--obj-output=' + object_file]
     rtn.append(object_file)
 
-  cmd = [shared.FILE_PACKAGER, shared.replace_suffix(target, '.data')] + file_args
+  cmd = [shared.FILE_PACKAGER, utils.replace_suffix(target, '.data')] + file_args
   if options.preload_files:
     # Preloading files uses --pre-js code that runs before the module is loaded.
     file_code = shared.check_call(cmd, stdout=PIPE).stdout

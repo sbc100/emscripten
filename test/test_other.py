@@ -3328,7 +3328,7 @@ int f() {
 
     self.run_process([FILE_PACKAGER, 'test.data', '--js-output=test.js', '--depfile=test.data.d', '--from-emcc', '--preload', '.'])
     output = read_file('test.data.d')
-    file_packager = utils.normalize_path(shared.replace_suffix(FILE_PACKAGER, '.py'))
+    file_packager = utils.normalize_path(utils.replace_suffix(FILE_PACKAGER, '.py'))
     file_packager = file_packager.replace(' ', '\\ ')
     lines = output.splitlines()
     split = lines.index(': \\')

@@ -22,7 +22,7 @@ if __name__ == '__main__':
 from tools.shared import PIPE
 from tools.shared import EMCC, EMAR, FILE_PACKAGER
 from tools.utils import WINDOWS, MACOS, write_file, delete_file
-from tools import shared, building, config, webassembly
+from tools import shared, utils, building, config, webassembly
 import common
 from common import RunnerCore, path_from_root, requires_native_clang, test_file, create_file
 from common import skip_if, needs_dylink, no_windows, no_mac, is_slow_test, parameterized
@@ -1815,7 +1815,7 @@ int main() {
 
   def test_emscripten_get_compiler_setting(self):
     src = test_file('core/emscripten_get_compiler_setting.c')
-    output = shared.replace_suffix(src, '.out')
+    output = utils.replace_suffix(src, '.out')
     # with assertions, a nice message is shown
     self.set_setting('ASSERTIONS')
     self.do_runf(src, 'You must build with -sRETAIN_COMPILER_SETTINGS', assert_returncode=NON_ZERO)
@@ -3933,7 +3933,7 @@ ok
     # Same as dylink_test but takes source code as filenames on disc.
     old_args = self.emcc_args.copy()
     if not expected:
-      outfile = shared.replace_suffix(main, '.out')
+      outfile = utils.replace_suffix(main, '.out')
       expected = read_file(outfile)
     if not side:
       side, ext = os.path.splitext(main)
