@@ -1008,7 +1008,7 @@ def phase_compile_inputs(options, state, newargs, input_files):
     return unsuffixed(name) + '_' + seen_names[name] + shared.suffix(name)
 
   def get_object_filename(input_file):
-    return in_temp(shared.replace_suffix(uniquename(input_file), '.o'))
+    return in_temp(utils.replace_suffix(uniquename(input_file), '.o'))
 
   def compile_source_file(i, input_file):
     logger.debug(f'compiling source file: {input_file}')

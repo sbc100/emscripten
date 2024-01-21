@@ -36,6 +36,11 @@ def normalize_path(path):
   return path.replace('\\', '/').replace('//', '/')
 
 
+def replace_suffix(filename, new_suffix):
+  assert new_suffix[0] == '.'
+  return os.path.splitext(filename)[0] + new_suffix
+
+
 def safe_ensure_dirs(dirname):
   os.makedirs(dirname, exist_ok=True)
 

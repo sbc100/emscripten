@@ -559,19 +559,6 @@ def bat_suffix(cmd):
   return cmd + '.bat' if WINDOWS else cmd
 
 
-def replace_suffix(filename, new_suffix):
-  assert new_suffix[0] == '.'
-  return os.path.splitext(filename)[0] + new_suffix
-
-
-# In MINIMAL_RUNTIME mode, keep suffixes of generated files simple
-# ('.mem' instead of '.js.mem'; .'symbols' instead of '.js.symbols' etc)
-# Retain the original naming scheme in traditional runtime.
-def replace_or_append_suffix(filename, new_suffix):
-  assert new_suffix[0] == '.'
-  return replace_suffix(filename, new_suffix) if settings.MINIMAL_RUNTIME else filename + new_suffix
-
-
 # Temp dir. Create a random one, unless EMCC_DEBUG is set, in which case use the canonical
 # temp directory (TEMP_DIR/emscripten_temp).
 @memoize
