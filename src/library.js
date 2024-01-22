@@ -3451,9 +3451,11 @@ addToLibrary({
 
   $asmjsMangle: (x) => {
     var unmangledSymbols = {{{ buildStringArray(WASM_SYSTEM_EXPORTS) }}};
-    if (x == '__main_argc_argv') {
-      x = 'main';
-    }
+    x = {
+      '__main_argc_argv': 'main',
+      'memory': 'wasmMemory',
+      '__indirect_function_table': 'wasmTable',
+    }[x] || x
     return x.startsWith('dynCall_') || unmangledSymbols.includes(x) ? x : '_' + x;
   },
 

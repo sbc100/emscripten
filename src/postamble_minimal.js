@@ -187,12 +187,6 @@ WebAssembly.instantiate(Module['wasm'], imports).then((output) => {
 #else
   <<< WASM_MODULE_EXPORTS >>>
 #endif
-#if '$wasmTable' in addedLibraryItems
-  wasmTable = wasmExports['__indirect_function_table'];
-#if ASSERTIONS
-  assert(wasmTable);
-#endif
-#endif
 
 #if AUDIO_WORKLET
   // If we are in the audio worklet environment, we can only access the Module object
@@ -213,7 +207,6 @@ WebAssembly.instantiate(Module['wasm'], imports).then((output) => {
 #endif
 
 #if !IMPORTED_MEMORY
-  wasmMemory = wasmExports['memory'];
 #if ASSERTIONS
   assert(wasmMemory);
   assert(wasmMemory.buffer.byteLength === {{{ INITIAL_MEMORY }}});

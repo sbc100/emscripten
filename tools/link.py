@@ -1771,8 +1771,6 @@ def phase_linker_setup(options, state, newargs):
     # (https://github.com/emscripten-core/emscripten/issues/17115).
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$getExceptionMessage', '$incrementExceptionRefcount', '$decrementExceptionRefcount']
     settings.EXPORTED_FUNCTIONS += ['getExceptionMessage', '$incrementExceptionRefcount', '$decrementExceptionRefcount']
-    if settings.WASM_EXCEPTIONS:
-      settings.REQUIRED_EXPORTS += ['__cpp_exception']
 
   if settings.SIDE_MODULE:
     # For side modules, we ignore all REQUIRED_EXPORTS that might have been added above.

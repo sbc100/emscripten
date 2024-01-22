@@ -968,8 +968,6 @@ function createWasm() {
     wasmExports = applySignatureConversions(wasmExports);
 #endif
 
-    {{{ receivedSymbol('wasmExports') }}}
-
 #if PTHREADS
 #if MAIN_MODULE
     registerTLSInit(wasmExports['_emscripten_tls_init'], instance.exports, metadata);
@@ -978,35 +976,18 @@ function createWasm() {
 #endif
 #endif
 
-#if !IMPORTED_MEMORY
-    wasmMemory = wasmExports['memory'];
-    {{{ receivedSymbol('wasmMemory') }}}
-#if ASSERTIONS
-    assert(wasmMemory, 'memory not found in wasm exports');
-    // This assertion doesn't hold when emscripten is run in --post-link
-    // mode.
-    // TODO(sbc): Read INITIAL_MEMORY out of the wasm file in post-link mode.
-    //assert(wasmMemory.buffer.byteLength === {{{ INITIAL_MEMORY }}});
+#if !DECLARE_ASM_MODULE_EXPORTS
+    // If we didn't declare the asm exports as top level enties this function
+    // is in charge of programatically exporting them on the global object.
+    exportWasmSymbols(wasmExports);
 #endif
+
+#if !IMPORTED_MEMORY
     updateMemoryViews();
 #endif
+
 #if !MEM_INIT_IN_WASM
     runMemoryInitializer();
-#endif
-
-#if '$wasmTable' in addedLibraryItems && !RELOCATABLE
-    wasmTable = wasmExports['__indirect_function_table'];
-    {{{ receivedSymbol('wasmTable') }}}
-#if ASSERTIONS && !PURE_WASI
-    assert(wasmTable, 'table not found in wasm exports');
-#endif
-
-#if AUDIO_WORKLET
-    // If we are in the audio worklet environment, we can only access the Module object
-    // and not the global scope of the main JS script. Therefore we need to export
-    // all functions that the audio worklet scope needs onto the Module object.
-    Module['wasmTable'] = wasmTable;
-#endif
 #endif
 
 #if hasExportedSymbol('__wasm_call_ctors')
@@ -1019,12 +1000,6 @@ function createWasm() {
 
 #if ABORT_ON_WASM_EXCEPTIONS
     instrumentWasmTableWithAbort();
-#endif
-
-#if !DECLARE_ASM_MODULE_EXPORTS
-    // If we didn't declare the asm exports as top level enties this function
-    // is in charge of programatically exporting them on the global object.
-    exportWasmSymbols(wasmExports);
 #endif
 
 #if PTHREADS || WASM_WORKERS
