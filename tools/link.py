@@ -485,6 +485,11 @@ def get_worker_js_suffix():
   return '.worker.mjs' if settings.EXPORT_ES6 else '.worker.js'
 
 
+def include_and_export(name):
+  settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$' + name]
+  settings.EXPORTED_FUNCTIONS += [name]
+
+
 def setup_pthreads(target):
   if settings.RELOCATABLE:
     # phtreads + dyanmic linking has certain limitations
@@ -537,6 +542,7 @@ def setup_pthreads(target):
   ]
   if settings.EMBIND:
     worker_imports.append('__embind_initialize_bindings')
+
   settings.EXPORTED_FUNCTIONS += worker_imports
   building.user_requested_exports.update(worker_imports)
 
@@ -547,10 +553,6 @@ def setup_pthreads(target):
     building.user_requested_exports.add('exit')
 
   # pthread stack setup and other necessary utilities
-  def include_and_export(name):
-    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$' + name]
-    settings.EXPORTED_FUNCTIONS += [name]
-
   include_and_export('establishStackSpace')
   include_and_export('invokeEntryPoint')
   include_and_export('PThread')
@@ -1769,8 +1771,9 @@ def phase_linker_setup(options, state, newargs):
     # JS, you may need to manipulate the refcount manually not to leak memory.
     # What you need to do is different depending on the kind of EH you use
     # (https://github.com/emscripten-core/emscripten/issues/17115).
-    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$getExceptionMessage', '$incrementExceptionRefcount', '$decrementExceptionRefcount']
-    settings.EXPORTED_FUNCTIONS += ['getExceptionMessage', '$incrementExceptionRefcount', '$decrementExceptionRefcount']
+    include_and_export('getExceptionMessage')
+    include_and_export('incrementExceptionRefcount')
+    include_and_export('decrementExceptionRefcount')
     if settings.WASM_EXCEPTIONS:
       settings.REQUIRED_EXPORTS += ['__cpp_exception']
 
