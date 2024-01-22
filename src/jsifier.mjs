@@ -124,6 +124,9 @@ function getTransitiveDeps(symbol, debug) {
       directDeps = directDeps.filter((d) => typeof d === 'string');
       for (const dep of directDeps) {
         const resolved = resolveAlias(dep);
+        if (VERBOSE && !transitiveDeps.has(d)) {
+          printErr(`adding dependency ${symbol} -> ${d}`);
+        }
         transitiveDeps.add(resolved);
         toVisit.push(resolved);
       }
