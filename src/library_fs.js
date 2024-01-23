@@ -5,10 +5,53 @@
  */
 
 addToLibrary({
+  $readMode: {{{ cDefs.S_IRUGO }}} | {{{ cDefs.S_IXUGO }}},
+  $writeMode: {{{ cDefs.S_IWUGO }}},
+  $FSNode__deps: ['$readMode', '$writeMode'],
+  $FSNode: class {
+    constructor(parent, name, mode, rdev) {
+      if (!parent) {
+        parent = this;  // root node sets parent to itself
+      }
+      this.parent = parent;
+      this.mount = parent.mount;
+      this.name = name;
+      this.mode = mode;
+      this.rdev = rdev;
+      // TODO(sbc): Use the inline member delclaration syntax
+      // for the below members, once we support it.
+      this.node_ops = {};
+      this.stream_ops = {};
+      this.mounted = null;
+      this.id = FS.nextInode++;
+#if USE_CLOSURE_COMPILER
+      this.contents = null;
+#endif
+    }
+    get read() {
+      return (this.mode & readMode) === readMode;
+    }
+    set read(val) {
+      val ? this.mode |= readMode : this.mode &= ~readMode;
+    }
+    get write() {
+      return (this.mode & writeMode) === writeMode;
+    }
+    set write(val) {
+      val ? this.mode |= writeMode : this.mode &= ~writeMode;
+    }
+    get isFolder() {
+      return FS.isDir(this.mode);
+    }
+    get isDevice() {
+      return FS.isChrdev(this.mode);
+    }
+  },
   $FS__deps: ['$randomFill', '$PATH', '$PATH_FS', '$TTY', '$MEMFS',
     '$FS_createPreloadedFile',
     '$FS_modeStringToFlags',
     '$FS_getMode',
+    '$FSNode',
     '$intArrayFromString',
     '$stringToUTF8Array',
     '$lengthBytesUTF8',
@@ -42,60 +85,14 @@ if (!Module['noFSInit'] && !FS.init.initialized)
 FS.ignorePermissions = false;
 `)
     addAtExit('FS.quit();');
-    // We must statically create FS.FSNode here so that it is created in a manner
-    // that is visible to Closure compiler. That lets us use type annotations for
-    // Closure to the "this" pointer in various node creation functions.
     return `
-var FSNode = /** @constructor */ function(parent, name, mode, rdev) {
-  if (!parent) {
-    parent = this;  // root node sets parent to itself
-  }
-  this.parent = parent;
-  this.mount = parent.mount;
-  this.mounted = null;
-  this.id = FS.nextInode++;
-  this.name = name;
-  this.mode = mode;
-  this.node_ops = {};
-  this.stream_ops = {};
-  this.rdev = rdev;
-};
-var readMode = 292/*{{{ cDefs.S_IRUGO }}}*/ | 73/*{{{ cDefs.S_IXUGO }}}*/;
-var writeMode = 146/*{{{ cDefs.S_IWUGO }}}*/;
-Object.defineProperties(FSNode.prototype, {
- read: {
-  get: /** @this{FSNode} */function() {
-   return (this.mode & readMode) === readMode;
-  },
-  set: /** @this{FSNode} */function(val) {
-   val ? this.mode |= readMode : this.mode &= ~readMode;
-  }
- },
- write: {
-  get: /** @this{FSNode} */function() {
-   return (this.mode & writeMode) === writeMode;
-  },
-  set: /** @this{FSNode} */function(val) {
-   val ? this.mode |= writeMode : this.mode &= ~writeMode;
-  }
- },
- isFolder: {
-  get: /** @this{FSNode} */function() {
-   return FS.isDir(this.mode);
-  }
- },
- isDevice: {
-  get: /** @this{FSNode} */function() {
-   return FS.isChrdev(this.mode);
-  }
- }
-});
 FS.FSNode = FSNode;
 FS.createPreloadedFile = FS_createPreloadedFile;
 FS.staticInit();` +
            // Get module methods from settings
            '{{{ EXPORTED_RUNTIME_METHODS.filter(function(func) { return func.substr(0, 3) === 'FS_' }).map(function(func){return 'Module["' + func + '"] = FS.' + func.substr(3) + ";"}).reduce(function(str, func){return str + func;}, '') }}}';
   },
+
   $FS: {
     root: null,
     mounts: [],
