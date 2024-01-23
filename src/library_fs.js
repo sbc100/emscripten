@@ -1417,18 +1417,15 @@ FS.staticInit();` +
         // the test `err instanceof FS.ErrnoError` won't detect an error coming from another filesystem, causing bugs.
         // we'll use the reliable test `err.name == "ErrnoError"` instead
         this.name = 'ErrnoError';
-        this.setErrno = /** @this{Object} */ function(errno) {
-          this.errno = errno;
+        this.errno = errno;
 #if ASSERTIONS
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
-            }
+        for (var key in ERRNO_CODES) {
+          if (ERRNO_CODES[key] === errno) {
+            this.code = key;
+            break;
           }
+        }
 #endif
-        };
-        this.setErrno(errno);
 #if ASSERTIONS
         this.message = ERRNO_MESSAGES[errno];
 #else
