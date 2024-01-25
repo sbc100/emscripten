@@ -629,6 +629,9 @@ def phase_linker_setup(options, state, newargs):
   if not shared.SKIP_SUBPROCS:
     shared.check_llvm_version()
 
+  if not settings.FILESYSTEM:
+    settings.SYSCALLS_REQUIRE_FILESYSTEM = 0
+
   autoconf = os.environ.get('EMMAKEN_JUST_CONFIGURE') or 'conftest.c' in state.orig_args or 'conftest.cpp' in state.orig_args
   if autoconf:
     # configure tests want a more shell-like style, where we emit return codes on exit()

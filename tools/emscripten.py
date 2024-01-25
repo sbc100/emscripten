@@ -91,28 +91,24 @@ def maybe_disable_filesystem(imports):
   if settings.MAIN_MODULE == 1:
     return
 
-  if settings.FILESYSTEM == 0:
-    # without filesystem support, it doesn't matter what syscalls need
+  # TODO(sbc): Find a better way to identify wasi syscalls
+  syscall_prefixes = ('__syscall_', 'fd_')
+  side_module_imports = [shared.demangle_c_symbol_name(s) for s in settings.SIDE_MODULE_IMPORTS]
+  all_imports = set(imports).union(side_module_imports)
+  syscalls = {d for d in all_imports if d.startswith(syscall_prefixes) or d in ['path_open']}
+  # check if the only filesystem syscalls are in: close, ioctl, llseek, write
+  # (without open, etc.. nothing substantial can be done, so we can disable
+  # extra filesystem support in that case)
+  if syscalls.issubset({
+    '__syscall_ioctl',
+    'fd_seek',
+    'fd_write',
+    'fd_close',
+    'fd_fdstat_get',
+  }):
+    if DEBUG:
+      logger.debug('very limited syscalls (%s) so disabling full filesystem support', ', '.join(str(s) for s in syscalls))
     settings.SYSCALLS_REQUIRE_FILESYSTEM = 0
-  else:
-    # TODO(sbc): Find a better way to identify wasi syscalls
-    syscall_prefixes = ('__syscall_', 'fd_')
-    side_module_imports = [shared.demangle_c_symbol_name(s) for s in settings.SIDE_MODULE_IMPORTS]
-    all_imports = set(imports).union(side_module_imports)
-    syscalls = {d for d in all_imports if d.startswith(syscall_prefixes) or d in ['path_open']}
-    # check if the only filesystem syscalls are in: close, ioctl, llseek, write
-    # (without open, etc.. nothing substantial can be done, so we can disable
-    # extra filesystem support in that case)
-    if syscalls.issubset({
-      '__syscall_ioctl',
-      'fd_seek',
-      'fd_write',
-      'fd_close',
-      'fd_fdstat_get',
-    }):
-      if DEBUG:
-        logger.debug('very limited syscalls (%s) so disabling full filesystem support', ', '.join(str(s) for s in syscalls))
-      settings.SYSCALLS_REQUIRE_FILESYSTEM = 0
 
 
 def is_int(x):
@@ -127,8 +123,9 @@ def align_memory(addr):
   return (addr + 15) & -16
 
 
-def update_settings_glue(wasm_file, metadata, base_metadata):
-  maybe_disable_filesystem(metadata.imports)
+def update_settings_glue(wasm_file, metadata, basename):
+  if settings.SYSCALLS_REQUIRE_FILESYSTEM:
+    maybe_disable_filesystem(metadata.imports)
 
   # Integrate info from backend
   if settings.SIDE_MODULE:
