@@ -7669,6 +7669,7 @@ void* operator new(size_t size) {
   def test_webidl(self, mode, allow_memory_growth):
     self.uses_es6 = True
     self.set_setting('WASM_ASYNC_COMPILATION', 0)
+    self.set_setting('STRICT')
     if self.maybe_closure():
       # avoid closure minified names competing with our test code in the global name space
       self.set_setting('MODULARIZE')
