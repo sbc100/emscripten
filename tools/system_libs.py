@@ -86,10 +86,6 @@ def clean_env():
 
 
 def run_build_commands(commands, num_inputs, build_dir=None):
-  # Before running a set of build commands make sure the common sysroot
-  # headers are installed.  This prevents each sub-process from attempting
-  # to setup the sysroot itself.
-  ensure_sysroot()
   start_time = time()
   shared.run_multiple_processes(commands, env=clean_env(), cwd=build_dir)
   logger.info(f'compiled {num_inputs} inputs in {time() - start_time:.2f}s')
@@ -556,6 +552,11 @@ class Library:
         for i in range(0, len(srcs), chunk_size):
           chunk_srcs = srcs[i:i + chunk_size]
           commands.append(building.get_command_with_possible_response_file(cmd + chunk_srcs))
+
+    # Before running a set of build commands make sure the common sysroot
+    # headers are installed.  This prevents each sub-process from attempting
+    # to setup the sysroot itself.
+    ensure_sysroot()
 
     run_build_commands(commands, num_inputs=len(objects), build_dir=build_dir)
     return objects
@@ -2476,6 +2477,27 @@ def install_system_headers(stamp):
   #define __EMSCRIPTEN_minor__ {shared.EMSCRIPTEN_VERSION_MINOR}
   #define __EMSCRIPTEN_tiny__ {shared.EMSCRIPTEN_VERSION_TINY}
   '''))
+
+  modules_src = utils.path_from_root('system/lib/libcxx/modules')
+  modules_dest = cache.get_sysroot_dir('modules')
+  copytree_exist_ok(modules_src, modules_dest)
+
+  args = ['-std=c++23',
+          '-D_LIBCPP_ENABLE_EXPERIMENTAL',
+          '-nostdinc++',
+          '--precompile',
+          '--sysroot', cache.get_sysroot_dir(),
+          '-I' + shared.path_from_root('system/lib/libcxx/include'),
+          '-Wno-reserved-module-identifier',
+          '-Wno-reserved-user-defined-literal']
+  cmds = []
+  for root, _, files in os.walk(os.path.join(modules_dest, 'std')):
+    for f in files:
+      f = os.path.join(root, f)
+      if shared.suffix(f) == '.cppm':
+        cmds.append([shared.CLANG_CXX, f, '-o', shared.replace_suffix(f, '.pcm')] + args)
+
+  run_build_commands(cmds, len(cmds))
 
   # Create a stamp file that signal that the headers have been installed
   # Removing this file, or running `emcc --clear-cache` or running
