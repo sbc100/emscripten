@@ -31,15 +31,25 @@ hidden char *__gettextdomain(void);
 
 #define LOC_MAP_FAILED ((const struct __locale_map *)-1)
 
+#if __EMSCRIPTEN__
+#define LCTRANS(msg, lc, loc) msg
+#define LCTRANS_CUR(msg) msg
+#else
 #define LCTRANS(msg, lc, loc) __lctrans(msg, (loc)->cat[(lc)])
 #define LCTRANS_CUR(msg) __lctrans_cur(msg)
+#endif
 
 #define C_LOCALE ((locale_t)&__c_locale)
 #define UTF8_LOCALE ((locale_t)&__c_dot_utf8_locale)
 
+#if __EMSCRIPTEN__
+extern hidden locale_t __locale_singleton;
+#define CURRENT_LOCALE (__locale_singleton)
+#else
 #define CURRENT_LOCALE (__pthread_self()->locale)
+#endif
 
-#define CURRENT_UTF8 (!!__pthread_self()->locale->cat[LC_CTYPE])
+#define CURRENT_UTF8 (!!CURRENT_LOCALE->cat[LC_CTYPE])
 
 #undef MB_CUR_MAX
 #define MB_CUR_MAX (CURRENT_UTF8 ? 4 : 1)
