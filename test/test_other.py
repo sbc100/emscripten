@@ -14859,7 +14859,6 @@ addToLibrary({
     self.do_runf(test_file('hello_world.c'), 'assertions disabled\n4', emcc_args=['-sASSERTIONS=0'])
     self.assertNotContained('#preprocess', read_file('hello_world.js'))
 
-  @with_both_compilers
   def test_use_port_errors(self, compiler):
     stderr = self.expect_fail([compiler, test_file('hello_world.c'), '--use-port=invalid', '-o', 'out.js'])
     self.assertFalse(os.path.exists('out.js'))
@@ -14911,3 +14910,14 @@ addToLibrary({
       }
     ''')
     self.run_process([EMXX, 'src.cpp', '-pthread'] + list(args))
+
+  def test_bigint_required(self):
+    # Certain settings require WASM_BIGINT and make disabling it impossible
+    err = self.expect_fail([EMCC, '-sMEMORY64', '-sWASM_BIGINT=0', test_file('hello_world.c')])
+    self.assertContained('emcc: error: WASM_BIGINT cannot be disabled due to MEMORY64', err);
+
+    err = self.expect_fail([EMCC, '-sSIDE_MODULE', '-sWASM_BIGINT=0', test_file('hello_world.c')])
+    self.assertContained('emcc: error: WASM_BIGINT cannot be disabled due to dynamic linking', err);
+
+    err = self.expect_fail([EMCC, '-sMAIN_MODULE', '-sWASM_BIGINT=0', test_file('hello_world.c')])
+    self.assertContained('emcc: error: WASM_BIGINT cannot be disabled due to dynamic linking', err);
