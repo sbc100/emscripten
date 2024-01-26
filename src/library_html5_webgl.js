@@ -220,10 +220,8 @@ var LibraryHtml5WebGL = {
   },
 
   emscripten_webgl_do_commit_frame: () => {
-#if TRACE_WEBGL_CALLS
     var threadId = (typeof _pthread_self != 'undefined') ? _pthread_self : () => 1;
     err(`[Thread ${threadId()}, GL ctx: ${GL.currentContext.handle}]: emscripten_webgl_do_commit_frame()`);
-#endif
     if (!GL.currentContext || !GL.currentContext.GLctx) {
 #if GL_DEBUG
       dbg('emscripten_webgl_commit_frame() failed: no GL context set current via emscripten_webgl_make_context_current()!');
