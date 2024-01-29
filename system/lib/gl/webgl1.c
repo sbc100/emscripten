@@ -66,7 +66,7 @@ static inline pthread_t GetCurrentTargetThread() {
   return GetOwningThread(emscripten_webgl_get_current_context());
 }
 
-EMSCRIPTEN_WEBGL_CONTEXT_HANDLE emscripten_webgl_create_context(const char *target, const EmscriptenWebGLContextAttributes *attributes) {
+EMSCRIPTEN_WEBGL_CONTEXT_HANDLE emscripten_webgl_create_context(const char *target, const EmscriptenWebGLContextAttributes *attr) {
   GL_FUNCTION_TRACE();
   if (!attributes) {
     emscripten_err("emscripten_webgl_create_context: attributes pointer is null!");
@@ -74,7 +74,12 @@ EMSCRIPTEN_WEBGL_CONTEXT_HANDLE emscripten_webgl_create_context(const char *targ
   }
   pthread_once(&tlsInit, InitWebGLTls);
 
-  return emscripten_webgl_do_create_context(target, attributes);
+  return emscripten_webgl_do_create_context(target, attr.powerPreference,
+      attr.alpha, depth, attr.stencil, attr.antialias, attr.premultipliedAlpha,
+      attr.preserveDrawingBuffer, attr.failIfMajorPerformanceCaveat,
+      attr.majorVersion, attr.minorVersion, attr.enableExtensionsByDefault,
+      attr.explicitSwapControl, attr.proxyContextToMainThread,
+      attr.renderViaOffscreenBackBuffer);
 }
 
 EMSCRIPTEN_RESULT emscripten_webgl_make_context_current(EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context) {

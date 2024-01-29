@@ -27,8 +27,8 @@ var LibraryHtml5WebGL = {
   // emscripten_webgl_create_context() function in JS.
   emscripten_webgl_create_context_proxied__proxy: 'sync',
   emscripten_webgl_create_context_proxied__deps: ['emscripten_webgl_do_create_context'],
-  emscripten_webgl_create_context_proxied: (target, attributes) =>
-    _emscripten_webgl_do_create_context(target, attributes),
+  emscripten_webgl_create_context_proxied: (target, powerPreference, alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, failIfMajorPerformanceCaveat, majorVersion, minorVersion, enableExtensionsByDefault, explicitSwapControl, proxyContextToMainThread, renderViaOffscreenBackBuffer) =>
+    _emscripten_webgl_do_create_context(target, powerPreference, alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, failIfMajorPerformanceCaveat, majorVersion, minorVersion, enableExtensionsByDefault, explicitSwapControl, proxyContextToMainThread, renderViaOffscreenBackBuffer),
 
   // The other proxied GL commands are defined in C (guarded by the
   // __EMSCRIPTEN_OFFSCREEN_FRAMEBUFFER__ definition).
@@ -51,29 +51,9 @@ var LibraryHtml5WebGL = {
 #endif
   '$JSEvents', '$emscripten_webgl_power_preferences', '$findEventTarget', '$findCanvasEventTarget'],
   // This function performs proxying manually, depending on the style of context that is to be created.
-  emscripten_webgl_do_create_context: (target, attributes) => {
+  emscripten_webgl_do_create_context: (target, powerPreference, alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, failIfMajorPerformanceCaveat, majorVersion, minorVersion, enableExtensionsByDefault, explicitSwapControl, proxyContextToMainThread, renderViaOffscreenBackBuffer) => {
 #if ASSERTIONS
-    assert(attributes);
 #endif
-    var a = attributes >> 2;
-    var powerPreference = HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.powerPreference }}}>>2)];
-    var contextAttributes = {
-      'alpha': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.alpha }}}>>2)],
-      'depth': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.depth }}}>>2)],
-      'stencil': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.stencil }}}>>2)],
-      'antialias': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.antialias }}}>>2)],
-      'premultipliedAlpha': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.premultipliedAlpha }}}>>2)],
-      'preserveDrawingBuffer': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.preserveDrawingBuffer }}}>>2)],
-      'powerPreference': emscripten_webgl_power_preferences[powerPreference],
-      'failIfMajorPerformanceCaveat': !!HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.failIfMajorPerformanceCaveat }}}>>2)],
-      // The following are not predefined WebGL context attributes in the WebGL specification, so the property names can be minified by Closure.
-      majorVersion: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.majorVersion }}}>>2)],
-      minorVersion: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.minorVersion }}}>>2)],
-      enableExtensionsByDefault: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.enableExtensionsByDefault }}}>>2)],
-      explicitSwapControl: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.explicitSwapControl }}}>>2)],
-      proxyContextToMainThread: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.proxyContextToMainThread }}}>>2)],
-      renderViaOffscreenBackBuffer: HEAP32[a + ({{{ C_STRUCTS.EmscriptenWebGLContextAttributes.renderViaOffscreenBackBuffer }}}>>2)]
-    };
 
     var canvas = findCanvasEventTarget(target);
 
@@ -85,8 +65,8 @@ var LibraryHtml5WebGL = {
     // Create a WebGL context that is proxied to main thread if canvas was not
     // found on worker, or if explicitly requested to do so.
     if (ENVIRONMENT_IS_PTHREAD) {
-      if (contextAttributes.proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_ALWAYS }}} ||
-         (!canvas && contextAttributes.proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_FALLBACK }}})) {
+      if (proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_ALWAYS }}} ||
+         (!canvas && proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_FALLBACK }}})) {
         // When WebGL context is being proxied via the main thread, we must
         // render using an offscreen FBO render target to avoid WebGL's
         // "implicit swap when callback exits" behavior. TODO: If
@@ -94,10 +74,10 @@ var LibraryHtml5WebGL = {
         // proxying, then this can be avoided, since OffscreenCanvas enables
         // explicit swap control.
 #if GL_DEBUG
-        if (contextAttributes.proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_ALWAYS }}}) {
+        if (proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_ALWAYS }}}) {
           dbg('EMSCRIPTEN_WEBGL_CONTEXT_PROXY_ALWAYS enabled, proxying WebGL rendering from pthread to main thread.');
         }
-        if (!canvas && contextAttributes.proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_FALLBACK }}}) {
+        if (!canvas && proxyContextToMainThread === {{{ cDefs.EMSCRIPTEN_WEBGL_CONTEXT_PROXY_FALLBACK }}}) {
           dbg(`Specified canvas target "${targetStr}" is not an OffscreenCanvas in the current pthread, but EMSCRIPTEN_WEBGL_CONTEXT_PROXY_FALLBACK is set. Proxying WebGL rendering from pthread to main thread.`);
           dbg('Performance warning: forcing renderViaOffscreenBackBuffer=true and preserveDrawingBuffer=true since proxying WebGL rendering.');
         }
@@ -105,10 +85,10 @@ var LibraryHtml5WebGL = {
         // We will be proxying - if OffscreenCanvas is supported, we can proxy a
         // bit more efficiently by avoiding having to create an Offscreen FBO.
         if (typeof OffscreenCanvas == 'undefined') {
-          {{{ makeSetValue('attributes', C_STRUCTS.EmscriptenWebGLContextAttributes.renderViaOffscreenBackBuffer, '1', 'i32') }}};
-          {{{ makeSetValue('attributes', C_STRUCTS.EmscriptenWebGLContextAttributes.preserveDrawingBuffer, '1', 'i32') }}};
+          renderViaOffscreenBackBuffer = 1;
+          preserveDrawingBuffer = 1;
         }
-        return _emscripten_webgl_create_context_proxied(target, attributes);
+        return _emscripten_webgl_create_context_proxied(target, powerPreference, alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, failIfMajorPerformanceCaveat, majorVersion, minorVersion, enableExtensionsByDefault, explicitSwapControl, proxyContextToMainThread, renderViaOffscreenBackBuffer);
       }
     }
 #endif
@@ -128,13 +108,13 @@ var LibraryHtml5WebGL = {
     else if (typeof HTMLCanvasElement != 'undefined' && canvas instanceof HTMLCanvasElement) dbg(`emscripten_webgl_create_context: Creating an HTMLCanvasElement-based WebGL context on target "${targetStr}"`);
 #endif
 
-    if (contextAttributes.explicitSwapControl) {
+    if (explicitSwapControl) {
       var supportsOffscreenCanvas = canvas.transferControlToOffscreen || (typeof OffscreenCanvas != 'undefined' && canvas instanceof OffscreenCanvas);
 
       if (!supportsOffscreenCanvas) {
 #if OFFSCREEN_FRAMEBUFFER
-        if (!contextAttributes.renderViaOffscreenBackBuffer) {
-          contextAttributes.renderViaOffscreenBackBuffer = true;
+        if (!renderViaOffscreenBackBuffer) {
+          renderViaOffscreenBackBuffer = true;
 #if GL_DEBUG
           dbg('emscripten_webgl_create_context: Performance warning, OffscreenCanvas is not supported but explicitSwapControl was requested, so force-enabling renderViaOffscreenBackBuffer=true to allow explicit swapping!');
 #endif
@@ -169,14 +149,14 @@ var LibraryHtml5WebGL = {
     }
 #else // !OFFSCREENCANVAS_SUPPORT
 #if OFFSCREEN_FRAMEBUFFER
-    if (contextAttributes.explicitSwapControl && !contextAttributes.renderViaOffscreenBackBuffer) {
-      contextAttributes.renderViaOffscreenBackBuffer = true;
+    if (explicitSwapControl && !renderViaOffscreenBackBuffer) {
+      renderViaOffscreenBackBuffer = true;
 #if GL_DEBUG
       dbg('emscripten_webgl_create_context: Performance warning, not building with OffscreenCanvas support enabled but explicitSwapControl was requested, so force-enabling renderViaOffscreenBackBuffer=true to allow explicit swapping!');
 #endif
     }
 #else
-    if (contextAttributes.explicitSwapControl) {
+    if (explicitSwapControl) {
 #if GL_DEBUG
       dbg('emscripten_webgl_create_context failed: explicitSwapControl is not supported, please rebuild with -sOFFSCREENCANVAS_SUPPORT to enable targeting the experimental OffscreenCanvas specification, or rebuild with -sOFFSCREEN_FRAMEBUFFER to emulate explicitSwapControl in the absence of OffscreenCanvas support!');
 #endif
@@ -185,6 +165,25 @@ var LibraryHtml5WebGL = {
 #endif // ~!OFFSCREEN_FRAMEBUFFER
 
 #endif // ~!OFFSCREENCANVAS_SUPPORT
+
+    var contextAttributes = {
+      'alpha': alpha,
+      'depth': depth,
+      'stencil': stencil,
+      'antialias': antialias,
+      'premultipliedAlpha': premultipliedAlpha,
+      'preserveDrawingBuffer': preserveDrawingBuffer,
+      'powerPreference': emscripten_webgl_power_preferences[powerPreference],
+      'failIfMajorPerformanceCaveat': failIfMajorPerformanceCaveat,
+      // The following are not predefined WebGL context attributes in the WebGL
+      // specification, so the property names can be minified by Closure.
+      majorVersion: majorVersion,
+      minorVersion: minorVersion,
+      enableExtensionsByDefault: enableExtensionsByDefault,
+      explicitSwapControl: explicitSwapControl,
+      proxyContextToMainThread: proxyContextToMainThread,
+      renderViaOffscreenBackBuffer: renderViaOffscreenBackBuffer,
+    };
 
     var contextHandle = GL.createContext(canvas, contextAttributes);
     return contextHandle;
