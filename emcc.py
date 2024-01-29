@@ -22,7 +22,6 @@ emcc can be influenced by a few environment variables:
 
 from tools.toolchain_profiler import ToolchainProfiler
 
-import json
 import logging
 import os
 import re
@@ -284,8 +283,8 @@ def apply_user_settings():
       value = parse_symbol_list_file(value)
     else:
       try:
-        value = parse_value(value, expected_type)
-      except Exception as e:
+        value = parse_setting_value(value, expected_type)
+      except SettingsParseError as e:
         exit_with_error(f'error parsing "-s" setting "{key}={value}": {e}')
 
     setattr(settings, user_key, value)
@@ -1477,7 +1476,12 @@ def parse_symbol_list_file(contents):
   return [v.strip() for v in values if not v.startswith('#')]
 
 
-def parse_value(text, expected_type):
+class SettingsParseError(Exception):
+  def __init__(self, msg):
+    super().__init__(msg)
+
+
+def parse_setting_value(text, expected_type):
   # Note that using response files can introduce whitespace, if the file
   # has a newline at the end. For that reason, we rstrip() in relevant
   # places here.
@@ -1486,7 +1490,7 @@ def parse_value(text, expected_type):
     if first == "'" or first == '"':
       text = text.rstrip()
       if text[-1] != text[0] or len(text) < 2:
-         raise ValueError(f'unclosed quoted string. expected final character to be "{text[0]}" and length to be greater than 1 in "{text[0]}"')
+         raise SettingsParseError(f'unclosed quoted string. expected final character to be "{text[0]}" and length to be greater than 1 in "{text[0]}"')
       return text[1:-1]
     return text
 
@@ -1498,7 +1502,7 @@ def parse_value(text, expected_type):
     while True:
       current = values[index].lstrip() # Cannot safely rstrip for cases like: "HERE-> ,"
       if not len(current):
-        raise ValueError('empty value in string list')
+        raise SettingsParseError('empty value in string list')
       first = current[0]
       if not (first == "'" or first == '"'):
         result.append(current.rstrip())
@@ -1506,7 +1510,7 @@ def parse_value(text, expected_type):
         start = index
         while True: # Continue until closing quote found
           if index >= len(values):
-            raise ValueError(f"unclosed quoted string. expected final character to be '{first}' in '{values[start]}'")
+            raise SettingsParseError(f"unclosed quoted string. expected final character to be '{first}' in '{values[start]}'")
           new = values[index].rstrip()
           if new and new[-1] == first:
             if start == index:
@@ -1527,29 +1531,37 @@ def parse_value(text, expected_type):
     text = text.rstrip()
     if text and text[0] == '[':
       if text[-1] != ']':
-        raise ValueError('unterminated string list. expected final character to be "]"')
+        raise SettingsParseError('unterminated string list. expected final character to be "]"')
       text = text[1:-1]
     if text.strip() == "":
       return []
     return parse_string_list_members(text)
 
-  if expected_type == list or (text and text[0] == '['):
-    # if json parsing fails, we fall back to our own parser, which can handle a few
-    # simpler syntaxes
+  def parse_string_list_as_json(text, orig_error):
+    import json
     try:
-      parsed = json.loads(text)
-    except ValueError:
+      return json.loads(text)
+    except json.JSONDecodeError as json_error:
+      logger.debug('error parsing setting as JSON: %s', str(json_error))
+      raise orig_error
+
+  if expected_type == list or (text and text[0] == '['):
+    try:
       return parse_string_list(text)
+    except SettingsParseError as e:
+      # If regular parsing fails when try parsing as JSON
+      # TODO(sbc): Remove the json fallback some day.
+      parsed = parse_string_list_as_json(text, e)
 
-    # if we succeeded in parsing as json, check some properties of it before returning
-    if type(parsed) not in (str, list):
-      raise ValueError(f'settings must be strings or lists (not ${type(parsed)})')
-    if type(parsed) is list:
-      for elem in parsed:
-        if type(elem) is not str:
-          raise ValueError(f'list members in settings must be strings (not ${type(elem)})')
+      # if we succeeded in parsing as json, check some properties of it before returning
+      if type(parsed) not in (str, list):
+        raise SettingsParseError(f'settings must be strings or lists (not ${type(parsed)})')
+      if type(parsed) is list:
+        for elem in parsed:
+          if type(elem) is not str:
+            raise SettingsParseError(f'list members in settings must be strings (not ${type(elem)})')
 
-    return parsed
+      return parsed
 
   if expected_type == float:
     try:
