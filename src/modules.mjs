@@ -82,6 +82,10 @@ export const LibraryManager = {
       libraries.push('library_memoryprofiler.js');
     }
 
+    if (SUPPORT_BASE64_EMBEDDING) {
+      libraries.push('library_base64.js');
+    }
+
     if (AUTODEBUG) {
       libraries.push('library_autodebug.js');
     }
@@ -443,11 +447,6 @@ function exportRuntime() {
   if (STACK_OVERFLOW_CHECK) {
     runtimeElements.push('writeStackCookie');
     runtimeElements.push('checkStackCookie');
-  }
-
-  if (SUPPORT_BASE64_EMBEDDING) {
-    runtimeElements.push('intArrayFromBase64');
-    runtimeElements.push('tryParseAsDataURI');
   }
 
   if (RETAIN_COMPILER_SETTINGS) {

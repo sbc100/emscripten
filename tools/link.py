@@ -1869,6 +1869,14 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
   if settings.USE_CLOSURE_COMPILER or not settings.MINIFY_WHITESPACE:
     settings.MAYBE_CLOSURE_COMPILER = 1
 
+  # No need to support base64 embeddeding in wasm2js mode since
+  # the module is already in JS format.
+  if settings.SINGLE_FILE and not settings.WASM2JS:
+    settings.SUPPORT_BASE64_EMBEDDING = 1
+    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE.append('$base64Decode')
+    if not settings.MINIMAL_RUNTIME:
+      settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE.append('$tryParseAsDataURI')
+
   return target, wasm_target
 
 
@@ -1954,10 +1962,6 @@ def phase_post_link(options, state, in_wasm, wasm_target, target, js_syms, base_
 def phase_emscript(in_wasm, wasm_target, js_syms, base_metadata):
   # Emscripten
   logger.debug('emscript')
-
-  # No need to support base64 embedding in wasm2js mode since
-  # the module is already in JS format.
-  settings.SUPPORT_BASE64_EMBEDDING = settings.SINGLE_FILE and not settings.WASM2JS
 
   if shared.SKIP_SUBPROCS:
     return
@@ -2592,7 +2596,7 @@ def generate_traditional_runtime_html(target, options, js_target, target_basenam
   }
 '''
     # add required helper functions such as tryParseAsDataURI
-    for filename in ('arrayUtils.js', 'base64Utils.js', 'URIUtils.js'):
+    for filename in ('arrayUtils.js', 'URIUtils.js'):
       content = shared.read_and_preprocess(utils.path_from_root('src', filename))
       script.inline = content + script.inline
 
