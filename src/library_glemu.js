@@ -837,32 +837,32 @@ var LibraryGLEmulation = {
       /**
        * A naive implementation of a map backed by an array, and accessed by
        * naive iteration along the array. (hashmap with only one bucket)
-       * @constructor
        */
-      function CNaiveListMap() {
-        var list = [];
+      class CNaiveListMap {
+        constructor() {
+          this.list = [];
+          this.__contains_i;
+        }
 
-        this.insert = function CNaiveListMap_insert(key, val) {
+        insert(key, val) {
           if (this.contains(key|0)) return false;
           list.push([key, val]);
           return true;
-        };
+        }
 
-        var __contains_i;
-        this.contains = function CNaiveListMap_contains(key) {
-          for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
-            if (list[__contains_i][0] === key) return true;
+        contains(key) {
+          for (var i = 0; i < list.length; ++i) {
+            if (list[i][0] === key) return true;
           }
           return false;
         };
 
-        var __get_i;
-        this.get = function CNaiveListMap_get(key) {
-          for (__get_i = 0; __get_i < list.length; ++__get_i) {
-            if (list[__get_i][0] === key) return list[__get_i][1];
+        get(key) {
+          for (i = 0; i < list.length; ++i) {
+            if (list[i][0] === key) return list[i][1];
           }
           return undefined;
-        };
+        }
       };
 
       /**
@@ -889,70 +889,73 @@ var LibraryGLEmulation = {
        * }
        * @constructor
        */
-      function CMapTree() {
-        /** @constructor */
-        function CNLNode() {
-          var map = new CNaiveListMap();
+      class CMapTree {
+        class CNLNode {
+          constructor() {
+            var map = new CNaiveListMap();
+            this.child = function CNLNode_child(keyFrag) {
+              if (!map.contains(keyFrag|0)) {
+                map.insert(keyFrag|0, new CNLNode());
+              }
+              return map.get(keyFrag|0);
+            };
 
-          this.child = function CNLNode_child(keyFrag) {
-            if (!map.contains(keyFrag|0)) {
-              map.insert(keyFrag|0, new CNLNode());
-            }
-            return map.get(keyFrag|0);
-          };
+            this.value = undefined;
+          }
 
-          this.value = undefined;
-          this.get = function CNLNode_get() {
+          get() {
             return this.value;
-          };
+          }
 
-          this.set = function CNLNode_set(val) {
+          set(val) {
             this.value = val;
-          };
+          }
         }
 
-        /** @constructor */
-        function CKeyView(root) {
-          var cur;
+        class CKeyView(root) {
+          constructor(root) {
+            this.cur = this.root = root;
+            this.clear();
+          }
 
-          this.reset = function CKeyView_reset() {
-            cur = root;
+          reset() {
+            this.cur = this.root;
             return this;
-          };
-          this.reset();
+          }
 
-          this.next = function CKeyView_next(keyFrag) {
-            cur = cur.child(keyFrag);
+          next(keyFrag) {
+            this.cur = cur.child(keyFrag);
             return this;
-          };
+          }
 
-          this.get = function CKeyView_get() {
-            return cur.get();
-          };
+          get() {
+            return this.cur.get();
+          }
 
-          this.set = function CKeyView_set(val) {
-            cur.set(val);
-          };
-        };
-
-        var root;
-        var staticKeyView;
-
-        this.createKeyView = function CNLNode_createKeyView() {
-          return new CKeyView(root);
+          set(val) {
+            this.cur.set(val);
+          }
         }
 
-        this.clear = function CNLNode_clear() {
-          root = new CNLNode();
-          staticKeyView = this.createKeyView();
-        };
-        this.clear();
+        constructor() {
+          this.root = undefined;
+          this.staticKeyView = undefined;
+        }
 
-        this.getStaticKeyView = function CNLNode_getStaticKeyView() {
-          staticKeyView.reset();
-          return staticKeyView;
-        };
-      };
+        createKeyView() {
+          return new CKeyView(this.root);
+        }
+
+        clear() {
+          this.root = new CNLNode();
+          this.staticKeyView = this.createKeyView();
+        }
+
+        getStaticKeyView() {
+          this.staticKeyView.reset();
+          this.return staticKeyView;
+        }
+      }
 
       // Exports:
       return {
@@ -1151,70 +1154,71 @@ var LibraryGLEmulation = {
 
 
       // Classes:
-      /** @constructor */
-      function CTexEnv() {
-        this.mode = GL_MODULATE;
-        this.colorCombiner = GL_MODULATE;
-        this.alphaCombiner = GL_MODULATE;
-        this.colorScale = 1;
-        this.alphaScale = 1;
-        this.envColor = [0, 0, 0, 0];
+      class CTexEnv {
+        constructor() {
+          this.mode = GL_MODULATE;
+          this.colorCombiner = GL_MODULATE;
+          this.alphaCombiner = GL_MODULATE;
+          this.colorScale = 1;
+          this.alphaScale = 1;
+          this.envColor = [0, 0, 0, 0];
 
-        this.colorSrc = [
-          GL_TEXTURE,
-          GL_PREVIOUS,
-          GL_CONSTANT
-        ];
-        this.alphaSrc = [
-          GL_TEXTURE,
-          GL_PREVIOUS,
-          GL_CONSTANT
-        ];
-        this.colorOp = [
-          GL_SRC_COLOR,
-          GL_SRC_COLOR,
-          GL_SRC_ALPHA
-        ];
-        this.alphaOp = [
-          GL_SRC_ALPHA,
-          GL_SRC_ALPHA,
-          GL_SRC_ALPHA
-        ];
+          this.colorSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.alphaSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.colorOp = [
+            GL_SRC_COLOR,
+            GL_SRC_COLOR,
+            GL_SRC_ALPHA
+          ];
+          this.alphaOp = [
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA
+          ];
 
-        // Map GLenums to small values to efficiently pack the enums to bits for tighter access.
-        this.traverseKey = {
-          // mode
-          0x1E01 /* GL_REPLACE */: 0,
-          0x2100 /* GL_MODULATE */: 1,
-          0x104 /* GL_ADD */: 2,
-          0xBE2 /* GL_BLEND */: 3,
-          0x2101 /* GL_DECAL */: 4,
-          0x8570 /* GL_COMBINE */: 5,
+          // Map GLenums to small values to efficiently pack the enums to bits for tighter access.
+          this.traverseKey = {
+            // mode
+            0x1E01 /* GL_REPLACE */: 0,
+            0x2100 /* GL_MODULATE */: 1,
+            0x104 /* GL_ADD */: 2,
+            0xBE2 /* GL_BLEND */: 3,
+            0x2101 /* GL_DECAL */: 4,
+            0x8570 /* GL_COMBINE */: 5,
 
-          // additional color and alpha combiners
-          0x84E7 /* GL_SUBTRACT */: 3,
-          0x8575 /* GL_INTERPOLATE */: 4,
+            // additional color and alpha combiners
+            0x84E7 /* GL_SUBTRACT */: 3,
+            0x8575 /* GL_INTERPOLATE */: 4,
 
-          // color and alpha src
-          0x1702 /* GL_TEXTURE */: 0,
-          0x8576 /* GL_CONSTANT */: 1,
-          0x8577 /* GL_PRIMARY_COLOR */: 2,
-          0x8578 /* GL_PREVIOUS */: 3,
+            // color and alpha src
+            0x1702 /* GL_TEXTURE */: 0,
+            0x8576 /* GL_CONSTANT */: 1,
+            0x8577 /* GL_PRIMARY_COLOR */: 2,
+            0x8578 /* GL_PREVIOUS */: 3,
 
-          // color and alpha op
-          0x300 /* GL_SRC_COLOR */: 0,
-          0x301 /* GL_ONE_MINUS_SRC_COLOR */: 1,
-          0x302 /* GL_SRC_ALPHA */: 2,
-          0x303 /* GL_ONE_MINUS_SRC_ALPHA */: 3
-        };
+            // color and alpha op
+            0x300 /* GL_SRC_COLOR */: 0,
+            0x301 /* GL_ONE_MINUS_SRC_COLOR */: 1,
+            0x302 /* GL_SRC_ALPHA */: 2,
+            0x303 /* GL_ONE_MINUS_SRC_ALPHA */: 3
+          };
 
-        // The tuple (key0,key1,key2) uniquely identifies the state of the variables in CTexEnv.
-        // -1 on key0 denotes 'the whole cached key is dirty'
-        this.key0 = -1;
-        this.key1 = 0;
-        this.key2 = 0;
+          // The tuple (key0,key1,key2) uniquely identifies the state of the variables in CTexEnv.
+          // -1 on key0 denotes 'the whole cached key is dirty'
+          this.key0 = -1;
+          this.key1 = 0;
+          this.key2 = 0;
+        }
 
-        this.computeKey0 = function() {
+        computeKey0() {
           var k = this.traverseKey;
           var key = k[this.mode] * 1638400; // 6 distinct values.
           key += k[this.colorCombiner] * 327680; // 5 distinct values.
@@ -1230,7 +1234,8 @@ var LibraryGLEmulation = {
           key += k[this.alphaSrc[2]]; // 24 bits used total.
           return key;
         }
-        this.computeKey1 = function() {
+
+        computeKey1() {
           var k = this.traverseKey;
           var key = k[this.colorOp[0]] * 4096;
           key += k[this.colorOp[1]] * 1024;
@@ -1240,31 +1245,239 @@ var LibraryGLEmulation = {
           key += k[this.alphaOp[2]];
           return key;
         }
+
         // TODO: remove this. The color should not be part of the key!
-        this.computeKey2 = function() {
+        computeKey2() {
           return this.envColor[0] * 16777216 + this.envColor[1] * 65536 + this.envColor[2] * 256 + 1 + this.envColor[3];
         }
-        this.recomputeKey = function() {
+
+        recomputeKey() {
           this.key0 = this.computeKey0();
           this.key1 = this.computeKey1();
           this.key2 = this.computeKey2();
         }
-        this.invalidateKey = function() {
+
+        invalidateKey() {
           this.key0 = -1; // The key of this texture unit must be recomputed when rendering the next time.
           GLImmediate.currentRenderer = null; // The currently used renderer must be re-evaluated at next render.
         }
+
+        genPassLines(passOutputVar, passInputVar, texUnitID) {
+          switch (this.mode) {
+            case GL_REPLACE: {
+              /* RGB:
+               * Cv = Cs
+               * Av = Ap // Note how this is different, and that we'll
+               *            need to track the bound texture internalFormat
+               *            to get this right.
+               *
+               * RGBA:
+               * Cv = Cs
+               * Av = As
+               */
+              return [
+                "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+              ];
+            }
+            case GL_ADD: {
+              /* RGBA:
+               * Cv = Cp + Cs
+               * Av = ApAs
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
+                "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_MODULATE: {
+              /* RGBA:
+               * Cv = CpCs
+               * Av = ApAs
+               */
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  passInputVar,
+                  " * ",
+                  genTexUnitSampleExpr(texUnitID),
+                ";",
+              ];
+              return [line.join("")];
+            }
+            case GL_DECAL: {
+              /* RGBA:
+               * Cv = Cp(1 - As) + CsAs
+               * Av = Ap
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
+                      " + ",
+                    texVar + ".rgb * " + texVar + ".a",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + passInputVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_BLEND: {
+              /* RGBA:
+               * Cv = Cp(1 - Cs) + CcCs
+               * Av = As
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
+                      " + ",
+                    PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_COMBINE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              var colorLines = this.genCombinerLines(true, colorVar,
+                                                     passInputVar, texUnitID,
+                                                     this.colorCombiner, this.colorSrc, this.colorOp);
+              var alphaLines = this.genCombinerLines(false, alphaVar,
+                                                     passInputVar, texUnitID,
+                                                     this.alphaCombiner, this.alphaSrc, this.alphaOp);
+
+              // Generate scale, but avoid generating an identity op that multiplies by one.
+              var scaledColor = (this.colorScale == 1) ? colorVar : (colorVar + " * " + valToFloatLiteral(this.colorScale));
+              var scaledAlpha = (this.alphaScale == 1) ? alphaVar : (alphaVar + " * " + valToFloatLiteral(this.alphaScale));
+
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  "vec4(",
+                      scaledColor,
+                      ", ",
+                      scaledAlpha,
+                  ")",
+                ";",
+              ].join("");
+              return [].concat(colorLines, alphaLines, [line]);
+            }
+          }
+
+          return abort_noSupport("Unsupported TexEnv mode: " + ptrToString(this.mode));
+        }
+
+        genCombinerLines(isColor, outputVar, passInputVar, texUnitID, combiner, srcArr, opArr) {
+          var argsNeeded = null;
+          switch (combiner) {
+            case GL_REPLACE:
+              argsNeeded = 1;
+              break;
+
+            case GL_MODULATE:
+            case GL_ADD:
+            case GL_SUBTRACT:
+              argsNeeded = 2;
+              break;
+
+            case GL_INTERPOLATE:
+              argsNeeded = 3;
+              break;
+
+            default:
+              return abort_noSupport("Unsupported combiner: " + ptrToString(combiner));
+          }
+
+          var constantExpr = [
+            "vec4(",
+              valToFloatLiteral(this.envColor[0]),
+              ", ",
+              valToFloatLiteral(this.envColor[1]),
+              ", ",
+              valToFloatLiteral(this.envColor[2]),
+              ", ",
+              valToFloatLiteral(this.envColor[3]),
+            ")",
+          ].join("");
+          var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
+                                           : null;
+          var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
+                                           : null;
+          var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
+                                           : null;
+
+          var outputType = isColor ? "vec3" : "float";
+          var lines = null;
+          switch (combiner) {
+            case GL_REPLACE: {
+              lines = [`${outputType} ${outputVar} = ${src0Expr};`]
+              break;
+            }
+            case GL_MODULATE: {
+              lines = [`${outputType} ${outputVar} = ${src0Expr} * ${src1Expr};`];
+              break;
+            }
+            case GL_ADD: {
+              lines = [`${outputType} ${outputVar} = ${src0Expr} + ${src1Expr};`]
+              break;
+            }
+            case GL_SUBTRACT: {
+              lines = [`${outputType} ${outputVar} = ${src0Expr} - ${src1Expr};`]
+              break;
+            }
+            case GL_INTERPOLATE: {
+              var prefix = `${TEXENVJIT_NAMESPACE_PREFIX}env${texUnitID}_`;
+              var arg2Var = `${prefix}colorSrc2`;
+              var arg2Type = getTypeFromCombineOp(this.colorOp[2]);
+
+              lines = [
+                `${arg2Type} ${arg2Var} = ${src2Expr};`,
+                `${outputType} ${outputVar} = ${src0Expr} * ${arg2Var} + ${src1Expr} * (1.0 - ${arg2Var});`,
+              ];
+              break;
+            }
+
+            default:
+              return abort_sanity("Unmatched TexEnv.colorCombiner?");
+          }
+
+          return lines;
+        }
       }
 
-      /** @constructor */
-      function CTexUnit() {
-        this.env = new CTexEnv();
-        this.enabled_tex1D   = false;
-        this.enabled_tex2D   = false;
-        this.enabled_tex3D   = false;
-        this.enabled_texCube = false;
-        this.texTypesEnabled = 0; // A bitfield combination of the four flags above, used for fast access to operations.
+      class CTexUnit() {
+        constructor() {
+          this.env = new CTexEnv();
+          this.enabled_tex1D   = false;
+          this.enabled_tex2D   = false;
+          this.enabled_tex3D   = false;
+          this.enabled_texCube = false;
+          this.texTypesEnabled = 0; // A bitfield combination of the four flags above, used for fast access to operations.
+        }
 
-        this.traverseState = function CTexUnit_traverseState(keyView) {
+        traverseState(keyView) {
           if (this.texTypesEnabled) {
             if (this.env.key0 == -1) {
               this.env.recomputeKey();
@@ -1276,261 +1489,53 @@ var LibraryGLEmulation = {
             // For correctness, must traverse a zero value, theoretically a subsequent integer key could collide with this value otherwise.
             keyView.next(0);
           }
-        };
-      };
-
-      // Class impls:
-      CTexUnit.prototype.enabled = function CTexUnit_enabled() {
-        return this.texTypesEnabled;
-      }
-
-      CTexUnit.prototype.genPassLines = function CTexUnit_genPassLines(passOutputVar, passInputVar, texUnitID) {
-        if (!this.enabled()) {
-          return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
-        }
-        var lines = this.env.genPassLines(passOutputVar, passInputVar, texUnitID).join('\n');
-
-        var texLoadLines = '';
-        var texLoadRegex = /(texture.*?\(.*?\))/g;
-        var loadCounter = 0;
-        var load;
-
-        // As an optimization, merge duplicate identical texture loads to one var.
-        while (load = texLoadRegex.exec(lines)) {
-          var texLoadExpr = load[1];
-          var secondOccurrence = lines.slice(load.index+1).indexOf(texLoadExpr);
-          if (secondOccurrence != -1) { // And also has a second occurrence of same load expression..
-            // Create new var to store the common load.
-            var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-            var texLoadVar = prefix + 'texload' + loadCounter++;
-            var texLoadLine = 'vec4 ' + texLoadVar + ' = ' + texLoadExpr + ';\n';
-            texLoadLines += texLoadLine + '\n'; // Store the generated texture load statements in a temp string to not confuse regex search in progress.
-            lines = lines.split(texLoadExpr).join(texLoadVar);
-            // Reset regex search, since we modified the string.
-            texLoadRegex = /(texture.*\(.*\))/g;
-          }
-        }
-        return [texLoadLines + lines];
-      }
-
-      CTexUnit.prototype.getTexType = function CTexUnit_getTexType() {
-        if (this.enabled_texCube) {
-          return GL_TEXTURE_CUBE_MAP;
-        } else if (this.enabled_tex3D) {
-          return GL_TEXTURE_3D;
-        } else if (this.enabled_tex2D) {
-          return GL_TEXTURE_2D;
-        } else if (this.enabled_tex1D) {
-          return GL_TEXTURE_1D;
-        }
-        return 0;
-      }
-
-      CTexEnv.prototype.genPassLines = function CTexEnv_genPassLines(passOutputVar, passInputVar, texUnitID) {
-        switch (this.mode) {
-          case GL_REPLACE: {
-            /* RGB:
-             * Cv = Cs
-             * Av = Ap // Note how this is different, and that we'll
-             *            need to track the bound texture internalFormat
-             *            to get this right.
-             *
-             * RGBA:
-             * Cv = Cs
-             * Av = As
-             */
-            return [
-              "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-            ];
-          }
-          case GL_ADD: {
-            /* RGBA:
-             * Cv = Cp + Cs
-             * Av = ApAs
-             */
-            var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-            var texVar = prefix + "tex";
-            var colorVar = prefix + "color";
-            var alphaVar = prefix + "alpha";
-
-            return [
-              "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-              "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
-              "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
-              "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-            ];
-          }
-          case GL_MODULATE: {
-            /* RGBA:
-             * Cv = CpCs
-             * Av = ApAs
-             */
-            var line = [
-              "vec4 " + passOutputVar,
-              " = ",
-                passInputVar,
-                " * ",
-                genTexUnitSampleExpr(texUnitID),
-              ";",
-            ];
-            return [line.join("")];
-          }
-          case GL_DECAL: {
-            /* RGBA:
-             * Cv = Cp(1 - As) + CsAs
-             * Av = Ap
-             */
-            var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-            var texVar = prefix + "tex";
-            var colorVar = prefix + "color";
-            var alphaVar = prefix + "alpha";
-
-            return [
-              "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-              [
-                "vec3 " + colorVar + " = ",
-                  passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
-                    " + ",
-                  texVar + ".rgb * " + texVar + ".a",
-                ";"
-              ].join(""),
-              "float " + alphaVar + " = " + passInputVar + ".a;",
-              "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-            ];
-          }
-          case GL_BLEND: {
-            /* RGBA:
-             * Cv = Cp(1 - Cs) + CcCs
-             * Av = As
-             */
-            var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-            var texVar = prefix + "tex";
-            var colorVar = prefix + "color";
-            var alphaVar = prefix + "alpha";
-
-            return [
-              "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-              [
-                "vec3 " + colorVar + " = ",
-                  passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
-                    " + ",
-                  PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
-                ";"
-              ].join(""),
-              "float " + alphaVar + " = " + texVar + ".a;",
-              "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-            ];
-          }
-          case GL_COMBINE: {
-            var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-            var colorVar = prefix + "color";
-            var alphaVar = prefix + "alpha";
-            var colorLines = this.genCombinerLines(true, colorVar,
-                                                   passInputVar, texUnitID,
-                                                   this.colorCombiner, this.colorSrc, this.colorOp);
-            var alphaLines = this.genCombinerLines(false, alphaVar,
-                                                   passInputVar, texUnitID,
-                                                   this.alphaCombiner, this.alphaSrc, this.alphaOp);
-
-            // Generate scale, but avoid generating an identity op that multiplies by one.
-            var scaledColor = (this.colorScale == 1) ? colorVar : (colorVar + " * " + valToFloatLiteral(this.colorScale));
-            var scaledAlpha = (this.alphaScale == 1) ? alphaVar : (alphaVar + " * " + valToFloatLiteral(this.alphaScale));
-
-            var line = [
-              "vec4 " + passOutputVar,
-              " = ",
-                "vec4(",
-                    scaledColor,
-                    ", ",
-                    scaledAlpha,
-                ")",
-              ";",
-            ].join("");
-            return [].concat(colorLines, alphaLines, [line]);
-          }
         }
 
-        return abort_noSupport("Unsupported TexEnv mode: " + ptrToString(this.mode));
-      }
-
-      CTexEnv.prototype.genCombinerLines = function CTexEnv_getCombinerLines(isColor, outputVar,
-                                                                             passInputVar, texUnitID,
-                                                                             combiner, srcArr, opArr)
-      {
-        var argsNeeded = null;
-        switch (combiner) {
-          case GL_REPLACE:
-            argsNeeded = 1;
-            break;
-
-          case GL_MODULATE:
-          case GL_ADD:
-          case GL_SUBTRACT:
-            argsNeeded = 2;
-            break;
-
-          case GL_INTERPOLATE:
-            argsNeeded = 3;
-            break;
-
-          default:
-            return abort_noSupport("Unsupported combiner: " + ptrToString(combiner));
+        enabled() {
+          return this.texTypesEnabled;
         }
 
-        var constantExpr = [
-          "vec4(",
-            valToFloatLiteral(this.envColor[0]),
-            ", ",
-            valToFloatLiteral(this.envColor[1]),
-            ", ",
-            valToFloatLiteral(this.envColor[2]),
-            ", ",
-            valToFloatLiteral(this.envColor[3]),
-          ")",
-        ].join("");
-        var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
-                                         : null;
-        var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
-                                         : null;
-        var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
-                                         : null;
+        genPassLines(passOutputVar, passInputVar, texUnitID) {
+          if (!this.enabled()) {
+            return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
+          }
+          var lines = this.env.genPassLines(passOutputVar, passInputVar, texUnitID).join('\n');
 
-        var outputType = isColor ? "vec3" : "float";
-        var lines = null;
-        switch (combiner) {
-          case GL_REPLACE: {
-            lines = [`${outputType} ${outputVar} = ${src0Expr};`]
-            break;
-          }
-          case GL_MODULATE: {
-            lines = [`${outputType} ${outputVar} = ${src0Expr} * ${src1Expr};`];
-            break;
-          }
-          case GL_ADD: {
-            lines = [`${outputType} ${outputVar} = ${src0Expr} + ${src1Expr};`]
-            break;
-          }
-          case GL_SUBTRACT: {
-            lines = [`${outputType} ${outputVar} = ${src0Expr} - ${src1Expr};`]
-            break;
-          }
-          case GL_INTERPOLATE: {
-            var prefix = `${TEXENVJIT_NAMESPACE_PREFIX}env${texUnitID}_`;
-            var arg2Var = `${prefix}colorSrc2`;
-            var arg2Type = getTypeFromCombineOp(this.colorOp[2]);
+          var texLoadLines = '';
+          var texLoadRegex = /(texture.*?\(.*?\))/g;
+          var loadCounter = 0;
+          var load;
 
-            lines = [
-              `${arg2Type} ${arg2Var} = ${src2Expr};`,
-              `${outputType} ${outputVar} = ${src0Expr} * ${arg2Var} + ${src1Expr} * (1.0 - ${arg2Var});`,
-            ];
-            break;
+          // As an optimization, merge duplicate identical texture loads to one var.
+          while (load = texLoadRegex.exec(lines)) {
+            var texLoadExpr = load[1];
+            var secondOccurrence = lines.slice(load.index+1).indexOf(texLoadExpr);
+            if (secondOccurrence != -1) { // And also has a second occurrence of same load expression..
+              // Create new var to store the common load.
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texLoadVar = prefix + 'texload' + loadCounter++;
+              var texLoadLine = 'vec4 ' + texLoadVar + ' = ' + texLoadExpr + ';\n';
+              texLoadLines += texLoadLine + '\n'; // Store the generated texture load statements in a temp string to not confuse regex search in progress.
+              lines = lines.split(texLoadExpr).join(texLoadVar);
+              // Reset regex search, since we modified the string.
+              texLoadRegex = /(texture.*\(.*\))/g;
+            }
           }
-
-          default:
-            return abort_sanity("Unmatched TexEnv.colorCombiner?");
+          return [texLoadLines + lines];
         }
 
-        return lines;
+        getTexType() {
+          if (this.enabled_texCube) {
+            return GL_TEXTURE_CUBE_MAP;
+          } else if (this.enabled_tex3D) {
+            return GL_TEXTURE_3D;
+          } else if (this.enabled_tex2D) {
+            return GL_TEXTURE_2D;
+          } else if (this.enabled_tex1D) {
+            return GL_TEXTURE_1D;
+          }
+          return 0;
+        }
       }
 
       return {
@@ -2146,8 +2151,7 @@ var LibraryGLEmulation = {
         hasTextures = true;
       }
 
-      /** @constructor */
-      function Renderer() {
+      class Renderer() {
         this.init = function() {
           // For fixed-function shader generation.
           var uTexUnitPrefix = 'u_texUnit';

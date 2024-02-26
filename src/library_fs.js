@@ -136,6 +136,7 @@ FS.staticInit();` +
         this.shared.position = val;
       }
     },
+
     FSNode: class {
       constructor(parent, name, mode, rdev) {
         if (!parent) {
