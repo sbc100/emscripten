@@ -4487,12 +4487,14 @@ Module["preRun"] = () => {
       self.assertLess(abs(size - 4800), 100)
 
   # Tests that it is possible to initialize and render WebGL content in a
-  # pthread by using OffscreenCanvas.  -DTEST_CHAINED_WEBGL_CONTEXT_PASSING:
-  # Tests that it is possible to transfer WebGL canvas in a chain from main
-  # thread -> thread 1 -> thread 2 and then init and render WebGL content there.
-  @no_chrome('see https://crbug.com/961765')
+  # pthread by using OffscreenCanvas.
+  @no_chrome('https://crbug.com/961765')
+  @no_firefox('')
   @parameterized({
     '': ([],),
+    # -DTEST_CHAINED_WEBGL_CONTEXT_PASSING:
+    # Tests that it is possible to transfer WebGL canvas in a chain from main
+    # thread -> thread 1 -> thread 2 and then init and render WebGL content there.
     'chained': (['-DTEST_CHAINED_WEBGL_CONTEXT_PASSING'],),
   })
   @requires_threads
@@ -4688,11 +4690,12 @@ Module["preRun"] = () => {
     self.btest_exit('webgl2_simple_enable_extensions.c', args=cmd)
 
   @parameterized({
-    'default': ([],),
+    '': ([],),
     'closure': (['-sASSERTIONS', '--closure=1'],),
     'main_module': (['-sMAIN_MODULE=1'],),
   })
   @requires_graphics_hardware
+  @no_firefox('')
   def test_webgpu_basic_rendering(self, args):
     self.btest_exit('webgpu_basic_rendering.cpp', args=['-sUSE_WEBGPU'] + args)
 
