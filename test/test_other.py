@@ -11569,6 +11569,12 @@ int main(void) {
                  emcc_args=['-sASSERTIONS', '--pre-js', 'pre.js'],
                  assert_returncode=NON_ZERO)
 
+  def test_assertions_on_incoming_module_api_misuse(self):
+    create_file('post.js', 'Module.printErr = () => {};')
+    self.do_runf('hello_world.c', 'Aborted(`Module.printErr` is part of the incomming module API.  Assigning a value to it after intializations has no effect)',
+                 emcc_args=['-sASSERTIONS', '--post-js', 'post.js'],
+                 assert_returncode=NON_ZERO)
+
   def test_assertions_on_outgoing_module_api_changes(self):
     create_file('src.cpp', r'''
       #include <emscripten.h>

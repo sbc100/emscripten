@@ -461,11 +461,11 @@ if (ENVIRONMENT_IS_NODE) {
   defaultPrint = (...args) => fs.writeSync(1, args.join(' ') + '\n');
   defaultPrintErr = (...args) => fs.writeSync(2, args.join(' ') + '\n');
 }
-{{{ makeModuleReceiveWithVar('out', 'print',    'defaultPrint',    true) }}}
-{{{ makeModuleReceiveWithVar('err', 'printErr', 'defaultPrintErr', true) }}}
+{{{ makeModuleReceiveWithVar('out', 'print',    'defaultPrint') }}}
+{{{ makeModuleReceiveWithVar('err', 'printErr', 'defaultPrintErr') }}}
 #else
-{{{ makeModuleReceiveWithVar('out', 'print',    'console.log.bind(console)',  true) }}}
-{{{ makeModuleReceiveWithVar('err', 'printErr', 'console.error.bind(console)', true) }}}
+{{{ makeModuleReceiveWithVar('out', 'print',    'console.log.bind(console)') }}}
+{{{ makeModuleReceiveWithVar('err', 'printErr', 'console.error.bind(console)') }}}
 #endif
 
 // Merge back in the overrides

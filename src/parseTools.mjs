@@ -849,7 +849,7 @@ function makeModuleReceiveExpr(name, defaultValue) {
   }
 }
 
-function makeModuleReceiveWithVar(localName, moduleName, defaultValue, noAssert) {
+function makeModuleReceiveWithVar(localName, moduleName, defaultValue) {
   moduleName ||= localName;
   checkReceiving(moduleName);
   let ret = `var ${localName}`;
@@ -866,9 +866,7 @@ function makeModuleReceiveWithVar(localName, moduleName, defaultValue, noAssert)
       return ret;
     }
   }
-  if (!noAssert) {
-    ret += makeRemovedModuleAPIAssert(moduleName, localName);
-  }
+  ret += makeRemovedModuleAPIAssert(moduleName, localName);
   return ret;
 }
 

@@ -14,7 +14,10 @@ function legacyModuleProp(prop, newName, incoming=true) {
         let extra = incoming ? ' (the initial value can be provided on Module, but after startup the value is only looked for on a local variable of that name)' : '';
         abort(`\`Module.${prop}\` has been replaced by \`${newName}\`` + extra);
 
-      }
+      },
+      set(val) {
+        abort(`\`Module.${prop}\` is part of the incomming module API.  Assigning a value to it after intializations has no effect`);
+      },
     });
   }
 }
