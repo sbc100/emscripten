@@ -32,6 +32,7 @@ HEADER_SIZE = 8
 LIMITS_HAS_MAX = 0x1
 
 SEG_PASSIVE = 0x1
+SEG_EXPLICIT_INDEX = 0x2
 
 PREFIX_MATH = 0xfc
 PREFIX_THREADS = 0xfe
@@ -175,6 +176,7 @@ Dylink = namedtuple('Dylink', ['mem_size', 'mem_align', 'table_size', 'table_ali
 Table = namedtuple('Table', ['elem_type', 'limits'])
 FunctionBody = namedtuple('FunctionBody', ['offset', 'size'])
 DataSegment = namedtuple('DataSegment', ['flags', 'init', 'offset', 'size'])
+ElemSegment = namedtuple('ElemSegment', ['flags', 'table_index', 'init', 'funcs'])
 FuncType = namedtuple('FuncType', ['params', 'returns'])
 
 
@@ -493,6 +495,28 @@ class Module:
       offset = self.tell()
       segments.append(DataSegment(flags, init, offset, size))
       self.seek(offset + size)
+    return segments
+
+  @memoize
+  def get_elem_segments(self):
+    segments = []
+    elem_section = self.get_section(SecType.ELEM)
+    self.seek(elem_section.offset)
+    num_segments = self.read_uleb()
+    for _ in range(num_segments):
+      flags = self.read_uleb()
+      table_index = 0
+      init = None
+      if flags & SEG_PASSIVE:
+        assert False
+      else:
+        init = self.read_init()
+      count = self.read_uleb()
+      funcs = []
+      for _ in range(count):
+        func_index = self.read_uleb()
+        funcs.append(func_index)
+      segments.append(ElemSegment(flags, table_index, init, funcs))
     return segments
 
   @memoize

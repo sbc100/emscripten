@@ -106,6 +106,13 @@ def isidentifier(name):
   return name.replace('$', '_').isidentifier()
 
 
+def make_dynCall_func(sig):
+  name = 'dynCall_' + sig
+  num_args = len(sig) - 1
+  args = [f'a{i}' for i in range(num_args)]
+  args = ', '.join(args)
+  return f"Module['x_{name}'] = x_{name} = (f, {args}) => getWasmTableEntry(f)({args});"
+
 def make_dynCall(sig, args):
   # wasm2c and asyncify are not yet compatible with direct wasm table calls
   if settings.MEMORY64:

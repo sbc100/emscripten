@@ -992,6 +992,8 @@ function assignWasmImports() {
     module.append("var wasmExports = createWasm();\n")
 
   module.append(receiving)
+  if settings.DYNCALLS:
+    module.append(create_dyncall_functions(metadata))
   if settings.SUPPORT_LONGJMP == 'emscripten' or not settings.DISABLE_EXCEPTION_CATCHING:
     module.append(create_invoke_wrappers(metadata))
   else:
@@ -1008,6 +1010,17 @@ def create_invoke_wrappers(metadata):
     sig = removeprefix(invoke, 'invoke_')
     invoke_wrappers += '\n' + js_manipulation.make_invoke(sig) + '\n'
   return invoke_wrappers
+
+
+def create_dyncall_functions(metadata):
+  dyncalls = ''
+  seen = set()
+  for t in metadata.dyncall_types:
+    sig = func_type_to_sig(t)
+    if sig not in seen:
+      dyncalls += '\n' + js_manipulation.make_dynCall_func(sig) + '\n'
+      seen.add(sig)
+  return dyncalls
 
 
 def create_pointer_conversion_wrappers(metadata):

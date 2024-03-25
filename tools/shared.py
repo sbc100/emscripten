@@ -672,9 +672,9 @@ def print_compiler_stage(cmd):
 
 
 def demangle_c_symbol_name(name):
-  if not is_c_symbol(name):
-    return '$' + name
-  return name[1:] if name.startswith('_') else name
+  if is_c_symbol(name):
+    return name[1:] if name.startswith('_') else name
+  return '$' + name
 
 
 def is_c_symbol(name):

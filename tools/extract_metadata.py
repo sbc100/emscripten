@@ -276,6 +276,16 @@ def update_metadata(filename, metadata):
   metadata.invoke_funcs = invoke_funcs
 
 
+def calculate_dyncall_types(module, types):
+  segments = module.get_elem_segments()
+  func_types = []
+  for s in segments:
+    for func in s.funcs:
+      func_type = module.get_function_type(func)
+      func_types.append(func_type)
+  return func_types
+
+
 def get_string_at(module, address):
   seg, offset = find_segment_with_address(module, address)
   data = module.read_at(seg.offset, seg.size)
@@ -308,6 +318,7 @@ def extract_metadata(filename):
   with webassembly.Module(filename) as module:
     exports = module.get_exports()
     imports = module.get_imports()
+    types = module.get_types()
 
     export_map = {e.name: e for e in exports}
     for e in exports:
@@ -323,7 +334,6 @@ def extract_metadata(filename):
           invoke_funcs.append(i.field)
         else:
           if i.field in em_js_funcs:
-            types = module.get_types()
             em_js_func_types[i.field] = types[i.type]
           import_names.append(i.field)
       elif i.kind in (webassembly.ExternType.GLOBAL, webassembly.ExternType.TAG):
@@ -346,6 +356,7 @@ def extract_metadata(filename):
     metadata.em_js_funcs = em_js_funcs
     metadata.em_js_func_types = em_js_func_types
     metadata.features = features
+    metadata.dyncall_types = calculate_dyncall_types(module, types);
     metadata.invoke_funcs = invoke_funcs
     metadata.main_reads_params = get_main_reads_params(module, export_map)
     metadata.global_exports = get_global_exports(module, exports)
