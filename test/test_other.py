@@ -13532,6 +13532,10 @@ int main() {
   def test_wasm_worker_closure(self):
     self.run_process([EMCC, test_file('wasm_worker/lock_async_acquire.c'), '-O2', '-sWASM_WORKERS', '--closure=1'])
 
+  def test_wasm_worker_single_file(self):
+    err = self.expect_fail([EMCC, test_file('wasm_worker/lock_async_acquire.c'), '-sWASM_WORKERS', '-sSINGLE_FILE'])
+    self.assertContained('-sSINGLE_FILE is not supported with -sWASM_WORKERS', err)
+
   def test_clock_nanosleep(self):
     self.do_runf('other/test_clock_nanosleep.c')
 
