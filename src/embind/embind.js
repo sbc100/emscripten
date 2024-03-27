@@ -919,30 +919,7 @@ var LibraryEmbind = {
   ],
   $embind__requireFunction: (signature, rawFunction) => {
     signature = readLatin1String(signature);
-
-    function makeDynCaller() {
-#if DYNCALLS
-      return getDynCaller(signature, rawFunction);
-#else
-#if !WASM_BIGINT
-      if (signature.includes('j')) {
-        return getDynCaller(signature, rawFunction);
-      }
-#endif
-#if MEMORY64 || CAN_ADDRESS_2GB
-      if (signature.includes('p')) {
-        return getDynCaller(signature, rawFunction);
-      }
-#endif
-      return getWasmTableEntry(rawFunction);
-#endif
-    }
-
-    var fp = makeDynCaller();
-    if (typeof fp != "function") {
-        throwBindingError(`unknown function pointer with signature ${signature}: ${rawFunction}`);
-    }
-    return fp;
+    return getDynCaller(signature, rawFunction);
   },
 
   _embind_register_function__deps: [
