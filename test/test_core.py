@@ -19,7 +19,7 @@ if __name__ == '__main__':
   raise Exception('do not run this file directly; do something like: test/runner')
 
 from tools.shared import PIPE
-from tools.shared import EMCC, EMAR, FILE_PACKAGER
+from tools.shared import EMCC, EMXX, EMAR, FILE_PACKAGER
 from tools.utils import WINDOWS, MACOS, write_file, delete_file
 from tools import shared, building, config, webassembly
 import common
@@ -7658,6 +7658,34 @@ void* operator new(size_t size) {
     '''
     self.emcc_args += ['-lembind', '-fno-rtti', '-frtti']
     self.do_run(src, '418\ndotest returned: 42\n')
+
+  def test_embind_mixed_rtti(self):
+    create_file('src1.cpp', '''
+      #include <emscripten/bind.h>
+      int test() {
+        return 42;
+      }
+
+      EMSCRIPTEN_BINDINGS(bindings1) {
+        emscripten::function("dotest", &test);
+      }
+    ''')
+
+    create_file('src2.cpp', '''
+      #include <emscripten/bind.h>
+      int test2() {
+        return 43;
+      }
+
+      EMSCRIPTEN_BINDINGS(bindings2) {
+        emscripten::function("dotest2", &test2);
+      }
+    ''')
+
+    self.emcc('src1.cpp', ['-c', '-fno-rtti', '-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0'])
+    self.emcc('src2.cpp', ['-c'])
+    err = self.expect_fail([EMXX, test_file('hello_world.cpp'), 'src1.o', 'src2.o', '-lembind'])
+    self.assertContained('wasm-ld: error: duplicate symbol: mixing_embind_rtti_with_light_typeid_does_not_work', err)
 
   @parameterized({
     '': ('DEFAULT', False),

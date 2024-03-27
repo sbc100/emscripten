@@ -61,6 +61,16 @@ struct Canonicalized {
     typedef typename std::remove_cv<typename std::remove_reference<T>::type>::type type;
 };
 
+// Use linker tricks to avoid linking object build with conflicting typeids
+int embind_uses_rtti_typeid();
+int embind_uses_light_typeid();
+
+#if EMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES
+inline int dummy = embind_uses_rtti_typeid();
+#else
+inline int dummy = embind_uses_light_typeid();
+#endif
+
 template<typename T>
 struct LightTypeID {
     static constexpr TYPEID get() {

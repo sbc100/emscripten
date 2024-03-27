@@ -1897,6 +1897,8 @@ class libwebgpu_cpp(MTLibrary):
 class libembind(Library):
   name = 'libembind'
   never_force = True
+  src_dir = 'system/lib/embind'
+  src_glob = '*.cpp'
 
   def __init__(self, **kwargs):
     self.with_rtti = kwargs.pop('with_rtti', False)
@@ -1918,9 +1920,6 @@ class libembind(Library):
     if self.with_rtti:
       name += '-rtti'
     return name
-
-  def get_files(self):
-    return [utils.path_from_root('system/lib/embind/bind.cpp')]
 
   @classmethod
   def get_default_variation(cls, **kwargs):
