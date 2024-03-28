@@ -2720,7 +2720,7 @@ More info: https://emscripten.org
     # noInitialRun prevents run
     for no_initial_run, run_dep in [(0, 0), (1, 0), (0, 1)]:
       print(no_initial_run, run_dep)
-      args = ['-sWASM_ASYNC_COMPILATION=0', '-sEXPORTED_RUNTIME_METHODS=callMain']
+      args = ['-sWASM_ASYNC_COMPILATION=0', '-sEXPORTED_RUNTIME_METHODS=callMain,out']
       if no_initial_run:
         args += ['-sINVOKE_RUN=0']
       if run_dep:
@@ -2736,7 +2736,7 @@ More info: https://emscripten.org
         # Calling main later should still work, filesystem etc. must be set up.
         print('call main later')
         src = read_file('a.out.js')
-        src += '\nout("callMain -> " + Module.callMain());\n'
+        src += '\nModule.out("callMain -> " + Module.callMain());\n'
         create_file('a.out.js', src)
         self.assertContained('hello from main\ncallMain -> 0\n', self.run_js('a.out.js'))
 
@@ -3532,6 +3532,7 @@ More info: https://emscripten.org
     self.assertContained(MESSAGE, err)
     # do not mention from emcc
     err = self.run_process([EMCC, test_file('hello_world.c'), '--preload-file', 'data.txt'], stdout=PIPE, stderr=PIPE).stderr
+    print(err)
     self.assertEqual(len(err), 0)
 
   def test_file_packager_returns_error_if_target_equal_to_jsoutput(self):
@@ -8383,7 +8384,7 @@ int main() {
       js = read_file('a.out.js')
       assert expect_clean_js == ('// ' not in js), 'cleaned-up js must not have comments'
       assert expect_whitespace_js == ('{\n  ' in js), 'whitespace-minified js must not have excess spacing'
-      assert expect_closured == ('var a;' in js or 'var a,' in js or 'var a=' in js or 'var a ' in js), 'closured js must have tiny variable names'
+      assert expect_closured == any(a in js for a in ['var a;', 'var a,', 'var a=', 'var a ', '(a)']), 'closured js must have tiny variable names'
 
   @uses_canonical_tmp
   def test_binaryen_ignore_implicit_traps(self):
@@ -9351,7 +9352,7 @@ end
     ''')
 
     def test(check, extra):
-      cmd = [EMCC, test_file('hello_world.c'), '-O2', '--closure=1', '--pre-js', 'pre.js'] + extra
+      cmd = [EMCC, test_file('hello_world.c'), '-O2', '-sMODULARIZE_INSTANCE=0', '--closure=1', '--pre-js', 'pre.js'] + extra
       proc = self.run_process(cmd, check=check, stderr=PIPE)
       if not check:
         self.assertNotEqual(proc.returncode, 0)

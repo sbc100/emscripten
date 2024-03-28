@@ -7,6 +7,7 @@
 "use strict";
 
 #endif
+
 // The Module object: Our interface to the outside world. We import
 // and export values on it. There are various ways Module can be used:
 // 1. Not defined. We create it here
@@ -20,7 +21,31 @@
 // after the generated code, you will need to define   var Module = {};
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
-#if MODULARIZE
+#if MODULARIZE_INSTANCE
+#if USE_CLOSURE_COMPILER
+// if (!Module)` is crucial for Closure Compiler here as it will otherwise replace every `Module` occurrence with a string
+var /** @type {{
+  noImageDecoding: boolean,
+  noAudioDecoding: boolean,
+  noWasmDecoding: boolean,
+  canvas: HTMLCanvasElement,
+  ctx: Object,
+  dataFileDownloads: Object,
+  preloadResults: Object,
+  useWebGL: boolean,
+  expectedDataFileDownloads: number,
+}}
+ */ Module;
+if (!Module) /** @suppress{checkTypes}*/Module = {"__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__":1};
+#endif
+// Create new function scope in which all the emscripten-generated code lives
+var moduleArg = Module;
+#if !USE_CLOSURE_COMPILER
+var
+#endif
+Module = (() => {
+  var Module = moduleArg || {};
+#elif MODULARIZE
 var Module = moduleArg;
 #elif USE_CLOSURE_COMPILER
 // if (!Module)` is crucial for Closure Compiler here as it will otherwise replace every `Module` occurrence with a string
@@ -41,7 +66,7 @@ if (!Module) /** @suppress{checkTypes}*/Module = {"__EMSCRIPTEN_PRIVATE_MODULE_E
 var Module = globalThis.Module || (typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {});
 #else
 var Module = typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {};
-#endif // USE_CLOSURE_COMPILER
+#endif
 
 #if POLYFILL
 #if ((MAYBE_WASM2JS && WASM != 2) || MODULARIZE) && (MIN_CHROME_VERSION < 33 || MIN_FIREFOX_VERSION < 29 || MIN_SAFARI_VERSION < 80000)

@@ -1329,6 +1329,11 @@ var DETERMINISTIC = false;
 // [link]
 var MODULARIZE = false;
 
+// In this mode all emscripten generated code is places inside a function scope
+// rather than on the global object.  The only global variable that is generated
+// is `Module` (or whatever `EXPORT_NAME` is set to).
+var MODULARIZE_INSTANCE = true;
+
 // Export using an ES6 Module export rather than a UMD export.  MODULARIZE must
 // be enabled for ES6 exports and is implicitly enabled if not already set.
 //

@@ -211,7 +211,7 @@ var LibraryHtml5WebGL = {
 
   emscripten_webgl_get_drawing_buffer_size__proxy: 'sync_on_webgl_context_handle_thread',
   emscripten_webgl_get_drawing_buffer_size: (contextHandle, width, height) => {
-    var GLContext = GL.getContext(contextHandle);
+    var GLContext = GL.getCtx(contextHandle);
 
     if (!GLContext || !GLContext.GLctx || !width || !height) {
       return {{{ cDefs.EMSCRIPTEN_RESULT_INVALID_PARAM }}};
@@ -316,7 +316,7 @@ var LibraryHtml5WebGL = {
   ],
   emscripten_webgl_enable_extension__proxy: 'sync_on_webgl_context_handle_thread',
   emscripten_webgl_enable_extension: (contextHandle, extension) => {
-    var context = GL.getContext(contextHandle);
+    var context = GL.getCtx(contextHandle);
     var extString = UTF8ToString(extension);
 #if GL_EXTENSIONS_IN_PREFIXED_FORMAT
     if (extString.startsWith('GL_')) extString = extString.substr(3); // Allow enabling extensions both with "GL_" prefix and without.

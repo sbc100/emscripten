@@ -27,7 +27,7 @@ var LibraryBrowser = {
 #endif
     Module["requestAnimationFrame"] = Browser.requestAnimationFrame;
     Module["setCanvasSize"] = Browser.setCanvasSize;
-    Module["pauseMainLoop"] = Browser.mainLoop.pause;
+    Module["pauseMainLoop"] = Browser.mainLoop.doPause;
     Module["resumeMainLoop"] = Browser.mainLoop.resume;
     Module["getUserMedia"] = Browser.getUserMedia;
     Module["createContext"] = Browser.createContext;
@@ -57,7 +57,7 @@ var LibraryBrowser = {
 #if USE_CLOSURE_COMPILER
       expectedBlockers: 0,
 #endif
-      pause() {
+      doPause() {
         Browser.mainLoop.scheduler = null;
         // Incrementing this signals the previous main loop that it's now become old, and it must return.
         Browser.mainLoop.currentlyRunningMainloop++;
@@ -297,7 +297,7 @@ var LibraryBrowser = {
         if (typeof GL != 'undefined') {
           contextHandle = GL.createContext(canvas, contextAttributes);
           if (contextHandle) {
-            ctx = GL.getContext(contextHandle).GLctx;
+            ctx = GL.getCtx(contextHandle).GLctx;
           }
         }
       } else {
@@ -1065,13 +1065,13 @@ var LibraryBrowser = {
 
   // Runs natively in pthread, no __proxy needed.
   emscripten_cancel_main_loop: () => {
-    Browser.mainLoop.pause();
+    Browser.mainLoop.doPause();
     Browser.mainLoop.func = null;
   },
 
   // Runs natively in pthread, no __proxy needed.
   emscripten_pause_main_loop: () => {
-    Browser.mainLoop.pause();
+    Browser.mainLoop.doPause();
   },
 
   // Runs natively in pthread, no __proxy needed.

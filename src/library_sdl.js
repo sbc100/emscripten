@@ -1522,7 +1522,9 @@ var LibrarySDL = {
       }
     }
     var audio = /** @type {HTMLMediaElement} */ (SDL.music.audio);
-    audio?.pause();
+    if (audio) {
+      audio.pause();
+    }
     SDL.music.audio = undefined;
   },
 

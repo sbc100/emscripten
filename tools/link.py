@@ -885,6 +885,7 @@ def phase_linker_setup(options, state, newargs):
     default_setting('AUTO_NATIVE_LIBRARIES', 0)
     default_setting('IGNORE_MISSING_MAIN', 0)
     default_setting('ALLOW_UNIMPLEMENTED_SYSCALLS', 0)
+    default_setting('MODULARIZE_INSTANCE', 1)
     if options.oformat == OFormat.HTML and options.shell_path == DEFAULT_SHELL_HTML:
       # Out default shell.html file has minimal set of INCOMING_MODULE_JS_API elements that it expects
       default_setting('INCOMING_MODULE_JS_API', 'canvas,monitorRunDependencies,onAbort,onExit,print,setStatus'.split(','))
@@ -1120,6 +1121,7 @@ def phase_linker_setup(options, state, newargs):
   # see https://github.com/emscripten-core/emscripten/issues/18723#issuecomment-1429236996
   if settings.MODULARIZE:
     default_setting('NODEJS_CATCH_REJECTION', 0)
+    default_setting('MODULARIZE_INSTANCE', 0)
     default_setting('NODEJS_CATCH_EXIT', 0)
     if settings.NODEJS_CATCH_REJECTION or settings.NODEJS_CATCH_EXIT:
       exit_with_error('cannot use -sNODEJS_CATCH_REJECTION or -sNODEJS_CATCH_EXIT with -sMODULARIZE')
@@ -1408,6 +1410,7 @@ def phase_linker_setup(options, state, newargs):
       if 'MODULARIZE' in user_settings:
         exit_with_error('EXPORT_ES6 requires MODULARIZE to be set')
       settings.MODULARIZE = 1
+      settings.MODULARIZE_INSTANCE = 0
     if shared.target_environment_may_be('node') and not settings.USE_ES6_IMPORT_META:
       # EXPORT_ES6 + ENVIRONMENT=*node* requires the use of import.meta.url
       if 'USE_ES6_IMPORT_META' in user_settings:

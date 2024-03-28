@@ -1133,7 +1133,7 @@ for (/**@suppress{duplicate}*/var i = 0; i < {{{ GL_POOL_TEMP_BUFFERS_SIZE }}}; 
       return !(contextHandle && !GLctx);
     },
 
-    getContext: (contextHandle) => {
+    getCtx: (contextHandle) => {
       return GL.contexts[contextHandle];
     },
 

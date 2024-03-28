@@ -5108,7 +5108,7 @@ main main sees -524, -534, 72.
   def test_dylink_argv_argc(self):
     # Verify that argc and argv can be sent to main when main is in a side module
 
-    self.emcc_args += ['--extern-pre-js', 'pre.js']
+    self.emcc_args += ['-sMODULARIZE_INSTANCE', '--extern-pre-js', 'pre.js']
 
     create_file('pre.js', '''
       var Module = { arguments: ['hello', 'world!'] }
