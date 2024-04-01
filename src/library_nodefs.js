@@ -64,9 +64,9 @@ addToLibrary({
 #if ASSERTIONS
       assert(ENVIRONMENT_IS_NODE);
 #endif
-      return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root), 0);
+      return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root));
     },
-    createNode(parent, name, mode, dev) {
+    createNode(parent, name, mode) {
       if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
         throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
       }
@@ -176,7 +176,7 @@ addToLibrary({
         return NODEFS.createNode(parent, name, mode);
       },
       mknod(parent, name, mode, dev) {
-        var node = NODEFS.createNode(parent, name, mode, dev);
+        var node = NODEFS.createNode(parent, name, mode);
         // create the backing node for this in the fs root as well
         var path = NODEFS.realPath(node);
         NODEFS.tryFSOperation(() => {
@@ -277,7 +277,7 @@ addToLibrary({
         return { ptr, allocated: true };
       },
       msync(stream, buffer, offset, length, mmapFlags) {
-        NODEFS.stream_ops.write(stream, buffer, 0, length, offset, false);
+        NODEFS.stream_ops.write(stream, buffer, 0, length, offset);
         // should we check if bytesWritten and length are the same?
         return 0;
       }
