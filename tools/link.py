@@ -2066,10 +2066,6 @@ def phase_final_emitting(options, state, target, wasm_target):
 throw new Error('Dummy worker.js file should never be used');
 ''')
 
-  # Deploy the Wasm Worker bootstrap file as an output file (*.ww.js)
-  if settings.WASM_WORKERS == 1:
-    create_worker_file('src/wasm_worker.js', target_dir, settings.WASM_WORKER_FILE, options)
-
   # Deploy the Audio Worklet module bootstrap file (*.aw.js)
   if settings.AUDIO_WORKLET == 1:
     create_worker_file('src/audio_worklet.js', target_dir, settings.AUDIO_WORKLET_FILE, options)

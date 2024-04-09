@@ -134,12 +134,15 @@ function ready() {
 #endif
 #endif
 
-#if PTHREADS
-// MINIMAL_RUNTIME does not support --proxy-to-worker option, so Worker and Pthread environments
-// coincide.
+#if ENVIRONMENT_MAY_BE_WORKER
 var ENVIRONMENT_IS_WORKER = typeof importScripts == 'function';
-var ENVIRONMENT_IS_PTHREAD = ENVIRONMENT_IS_WORKER && self.name == 'em-pthread';
+#endif
 
+#if PTHREADS
+var ENVIRONMENT_IS_PTHREAD = ENVIRONMENT_IS_WORKER && self.name == 'em-pthread';
+#endif
+
+#if SHARED_MEMORY
 #if !MODULARIZE
 // In MODULARIZE mode _scriptName needs to be captured already at the very top of the page immediately when the page is parsed, so it is generated there
 // before the page load. In non-MODULARIZE modes generate it here.
@@ -151,16 +154,21 @@ if (ENVIRONMENT_IS_NODE) {
   var worker_threads = require('worker_threads');
   global.Worker = worker_threads.Worker;
   ENVIRONMENT_IS_WORKER = !worker_threads.isMainThread;
+#if PTHREADS
   // Under node we set `workerData` to `em-pthread` to signal that the worker
   // is hosting a pthread.
   ENVIRONMENT_IS_PTHREAD = ENVIRONMENT_IS_WORKER && worker_threads['workerData'] == 'em-pthread'
+#endif
+#if WASM_WORKERS
+  ENVIRONMENT_IS_WASM_WORKER = ENVIRONMENT_IS_WORKER && worker_threads['workerData'] == 'em-ww'
+#endif
   _scriptName = __filename;
 } else
 #endif
 if (ENVIRONMENT_IS_WORKER) {
   _scriptName = self.location.href;
 }
-#endif // PTHREADS
+#endif // SHARED_MEMORY
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)

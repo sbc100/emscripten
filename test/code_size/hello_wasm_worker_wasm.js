@@ -1,35 +1,46 @@
-var b = Module, c = b.$ww, e = b.mem || new WebAssembly.Memory({
+var b = Module, c = b.$ww, e = "undefined" != typeof document ? document.currentScript?.src : void 0, k, q, r;
+
+"function" == typeof importScripts && (e = self.location.href);
+
+c && (onmessage = a => {
+    onmessage = null;
+    a = a.data;
+    self.Module = a;
+});
+
+var f = b.mem || new WebAssembly.Memory({
     initial: 256,
     maximum: 256,
     shared: !0
-}), f = e.buffer, g = [], h, k = a => {
+}), g = f.buffer, h = [], l = a => {
     a = a.data;
     let d = a._wsc;
-    d && h.get(d)(...a.x);
-}, l = a => {
-    g.push(a);
-}, m = {}, n = 1, p, q;
+    d && k.get(d)(...a.x);
+}, m = a => {
+    h.push(a);
+}, n = {}, p = 1;
 
-c && (m[0] = this, addEventListener("message", l));
+c && (n[0] = this, addEventListener("message", m));
 
 WebAssembly.instantiate(b.wasm, {
     a: {
         b: (a, d) => {
-            let r = m[n] = new Worker(b.$wb);
-            r.postMessage({
-                $ww: n,
+            let t = n[p] = new Worker(e, {
+                workerData: "em-ww"
+            });
+            t.postMessage({
+                workerID: p,
                 wasm: b.wasm,
-                js: b.js,
-                mem: e,
+                wasmMemory: f,
                 sb: a,
                 sz: d
             });
-            r.onmessage = k;
-            return n++;
+            t.onmessage = l;
+            return p++;
         },
         c: () => !1,
         d: (a, d) => {
-            m[a].postMessage({
+            n[a].postMessage({
                 _wsc: d,
                 x: []
             });
@@ -37,14 +48,14 @@ WebAssembly.instantiate(b.wasm, {
         e: function() {
             console.log("Hello from wasm worker!");
         },
-        a: e
+        a: f
     }
 }).then((a => {
     a = a.instance.exports;
-    p = a.g;
-    q = a.i;
-    h = a.h;
-    c ? (a = b, q(a.sb, a.sz), removeEventListener("message", l), g = g.forEach(k), 
-    addEventListener("message", k)) : a.f();
-    c || p();
+    q = a.g;
+    r = a.i;
+    k = a.h;
+    c ? (a = b, r(a.sb, a.sz), removeEventListener("message", m), h = h.forEach(l), 
+    addEventListener("message", l)) : a.f();
+    c || q();
 }));

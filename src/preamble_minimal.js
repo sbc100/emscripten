@@ -16,6 +16,10 @@
 #include "runtime_pthread.js"
 #endif
 
+#if WASM_WORKERS
+#include "runtime_wasm_worker.js"
+#endif
+
 #if ASSERTIONS
 /** @type {function(*, string=)} */
 function assert(condition, text) {

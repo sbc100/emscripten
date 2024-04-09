@@ -18,6 +18,10 @@
 #include "runtime_pthread.js"
 #endif
 
+#if WASM_WORKERS
+#include "runtime_wasm_worker.js"
+#endif
+
 #if RELOCATABLE
 {{{ makeModuleReceiveWithVar('dynamicLibraries', undefined, '[]', true) }}}
 #endif

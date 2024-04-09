@@ -4,16 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#if WASM_WORKERS == 2
-// Helpers for _wasmWorkerBlobUrl used in WASM_WORKERS == 2 mode
-{{{
-  globalThis.captureModuleArg = () => MODULARIZE ? '' : 'self.Module=d;';
-  globalThis.instantiateModule = () => MODULARIZE ? `${EXPORT_NAME}(d);` : '';
-  globalThis.instantiateWasm = () => MINIMAL_RUNTIME ? '' : 'd[`instantiateWasm`]=(i,r)=>{var n=new WebAssembly.Instance(d[`wasm`],i);return r(n,d[`wasm`]);};';
-  null;
-}}}
-#endif
-
 #if WASM_WORKERS
 
 #if !SHARED_MEMORY
@@ -40,7 +30,8 @@
 
 addToLibrary({
   $_wasmWorkers: {},
-  $_wasmWorkersID: 1,
+  $_wasmWorkerID: 1,
+  $_nextWorkerID: 1,
 
   // Starting up a Wasm Worker is an asynchronous operation, hence if the parent
   // thread performs any postMessage()-based wasm function calls s to the
@@ -126,21 +117,9 @@ addToLibrary({
 #endif
   },
 
-#if WASM_WORKERS == 2
-  // In WASM_WORKERS == 2 build mode, we create the Wasm Worker global scope
-  // script from a string bundled in the main application JS file. This
-  // simplifies the number of deployed JS files with the app, but has a downside
-  // that the generated build output will no longer be csp-eval compliant.
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src#unsafe_eval_expressions
-  $_wasmWorkerBlobUrl: "URL.createObjectURL(new Blob(['onmessage=function(d){onmessage=null;d=d.data;{{{ captureModuleArg() }}}{{{ instantiateWasm() }}}importScripts(d.js);{{{ instantiateModule() }}}d.wasm=d.mem=d.js=0;}'],{type:'application/javascript'}))",
-#endif
-
   _emscripten_create_wasm_worker__deps: [
-    '$_wasmWorkers', '$_wasmWorkersID',
+    '$_wasmWorkers', '$_nextWorkerID',
     '$_wasmWorkerAppendToQueue', '$_wasmWorkerRunPostMessage',
-#if WASM_WORKERS == 2
-    '$_wasmWorkerBlobUrl',
-#endif
   ],
   _emscripten_create_wasm_worker__postset: `
 if (ENVIRONMENT_IS_WASM_WORKER
@@ -153,35 +132,27 @@ if (ENVIRONMENT_IS_WASM_WORKER
   addEventListener("message", _wasmWorkerAppendToQueue);
 }`,
   _emscripten_create_wasm_worker: (stackLowestAddress, stackSize) => {
-    let worker = _wasmWorkers[_wasmWorkersID] = new Worker(
-#if WASM_WORKERS == 2
-      // WASM_WORKERS=2 mode embeds .ww.js file contents into the main .js file
-      // as a Blob URL. (convenient, but not CSP security safe, since this is
-      // eval-like)
-      _wasmWorkerBlobUrl
-#elif MINIMAL_RUNTIME
-      // MINIMAL_RUNTIME has a structure where the .ww.js file is loaded from
-      // the main HTML file in parallel to all other files for best performance
-      Module['$wb'] // $wb="Wasm worker Blob", abbreviated since not DCEable
-#else
-      // default runtime loads the .ww.js file on demand.
-      locateFile('{{{ WASM_WORKER_FILE }}}')
+    let jsFile = _scriptName;
+#if expectToReceiveOnModule('mainScriptUrlOrBlob')
+    if (Module['mainScriptUrlOrBlob']) {
+      jsFile = URL.createObjectURL(Module['mainScriptUrlOrBlob']);
+    }
 #endif
-    );
+    let options = {
+      'workerData': 'em-ww',
+    };
+    let worker = _wasmWorkers[_nextWorkerID] = new Worker(jsFile, options);
     // Craft the Module object for the Wasm Worker scope:
     worker.postMessage({
       // Signal with a non-zero value that this Worker will be a Wasm Worker,
       // and not the main browser thread.
-      '$ww': _wasmWorkersID,
+      'workerID': _nextWorkerID,
 #if MINIMAL_RUNTIME
       'wasm': Module['wasm'],
-      'js': Module['js'],
-      'mem': wasmMemory,
 #else
       'wasm': wasmModule,
-      'js': Module['mainScriptUrlOrBlob'] || _scriptName,
-      'wasmMemory': wasmMemory,
 #endif
+      'wasmMemory': wasmMemory,
       'sb': stackLowestAddress, // sb = stack bottom (lowest stack address, SP points at this when stack is full)
       'sz': stackSize,          // sz = stack size
 #if USE_OFFSET_CONVERTER
@@ -192,7 +163,7 @@ if (ENVIRONMENT_IS_WASM_WORKER
 #endif
     });
     worker.onmessage = _wasmWorkerRunPostMessage;
-    return _wasmWorkersID++;
+    return _nextWorkerID++;
   },
 
   emscripten_terminate_wasm_worker: (id) => {
@@ -223,7 +194,8 @@ if (ENVIRONMENT_IS_WASM_WORKER
 #endif
   },
 
-  emscripten_wasm_worker_self_id: () => Module['$ww'],
+  emscripten_wasm_worker_self_id__deps: ['$_wasmWorkerID'],
+  emscripten_wasm_worker_self_id: () => _wasmWorkerID,
 
   emscripten_wasm_worker_post_function_v: (id, funcPtr) => {
     _wasmWorkers[id].postMessage({'_wsc': funcPtr, 'x': [] }); // "WaSm Call"
