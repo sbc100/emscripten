@@ -34,7 +34,7 @@ if (ENVIRONMENT_IS_NODE) {
 }
 #endif // ENVIRONMENT_MAY_BE_NODE
 
-{{{ implicitSelf() }}}onmessage = function(d) {
+{{{ implicitSelf() }}}onmessage = (d) => {
   // The first message sent to the Worker is always the bootstrap message.
   // Drop this message listener, it served its purpose of bootstrapping
   // the Wasm Module load, and is no longer needed. Let user code register
@@ -51,7 +51,4 @@ if (ENVIRONMENT_IS_NODE) {
 #if MODULARIZE
   {{{ EXPORT_NAME }}}(d);
 #endif
-  // Drop now unneeded references to from the Module object in this Worker,
-  // these are not needed anymore.
-  d.wasm = d.mem = d.js = 0;
 }
