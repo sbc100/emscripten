@@ -92,13 +92,11 @@ var LibraryPThread = {
 #if ASSERTIONS
       PThread.debugInit();
 #endif
-      if (ENVIRONMENT_IS_PTHREAD
+      if (!ENVIRONMENT_IS_PTHREAD
 #if AUDIO_WORKLET
-        || ENVIRONMENT_IS_AUDIO_WORKLET
+          && !ENVIRONMENT_IS_AUDIO_WORKLET
 #endif
-        ) {
-        PThread.initWorker();
-      } else {
+         ) {
         PThread.initMainThread();
       }
     },
@@ -123,19 +121,6 @@ var LibraryPThread = {
       // Finished threads are threads that have finished running but we not yet
       // joined.
       PThread.finishedThreads = new Set();
-#endif
-    },
-
-    initWorker() {
-#if isSymbolNeeded('$noExitRuntime')
-      // The default behaviour for pthreads is always to exit once they return
-      // from their entry point (or call pthread_exit).  If we set noExitRuntime
-      // to true here on pthreads they would never complete and attempt to
-      // pthread_join to them would block forever.
-      // pthreads can still choose to set `noExitRuntime` explicitly, or
-      // call emscripten_unwind_to_js_event_loop to extend their lifetime beyond
-      // their main function.  See comment in src/runtime_pthread.js for more.
-      noExitRuntime = false;
 #endif
     },
 
@@ -1104,6 +1089,17 @@ var LibraryPThread = {
 #if PTHREADS_DEBUG
     dbg(`invokeEntryPoint: ${ptrToString(ptr)}`);
 #endif
+#if isSymbolNeeded('$noExitRuntime')
+    // The default behaviour for pthreads is always to exit once they return
+    // from their entry point (or call pthread_exit).  If we set noExitRuntime
+    // to true here on pthreads they would never complete and attempt to
+    // pthread_join to them would block forever.
+    // pthreads can still choose to set `noExitRuntime` explicitly, or
+    // call emscripten_unwind_to_js_event_loop to extend their lifetime beyond
+    // their main function.  See comment in runtime_pthread.js for more.
+    noExitRuntime = false;
+#endif
+
 #if !MINIMAL_RUNTIME
     // An old thread on this worker may have been canceled without returning the
     // `runtimeKeepaliveCounter` to zero. Reset it now so the new thread won't
