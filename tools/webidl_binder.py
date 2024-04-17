@@ -105,7 +105,7 @@ extern "C" {
 
 // Define custom allocator functions that we can force export using
 // EMSCRIPTEN_KEEPALIVE.  This avoids all webidl users having to add
-// malloc/free to -sEXPORTED_FUNCTIONS.
+// malloc/free to -sEXPORTS.
 EMSCRIPTEN_KEEPALIVE void webidl_free(void* p) { free(p); }
 EMSCRIPTEN_KEEPALIVE void* webidl_malloc(size_t len) { return malloc(len); }
 
@@ -201,11 +201,11 @@ var ensureCache = {
     if (ensureCache.needed) {
       // clear the temps
       for (var i = 0; i < ensureCache.temps.length; i++) {
-        Module['_webidl_free'](ensureCache.temps[i]);
+        Module['webidl_free'](ensureCache.temps[i]);
       }
       ensureCache.temps.length = 0;
       // prepare to allocate a bigger buffer
-      Module['_webidl_free'](ensureCache.buffer);
+      Module['webidl_free'](ensureCache.buffer);
       ensureCache.buffer = 0;
       ensureCache.size += ensureCache.needed;
       // clean up
@@ -213,7 +213,7 @@ var ensureCache = {
     }
     if (!ensureCache.buffer) { // happens first time, or when we need to grow
       ensureCache.size += 128; // heuristic, avoid many small grow events
-      ensureCache.buffer = Module['_webidl_malloc'](ensureCache.size);
+      ensureCache.buffer = Module['webidl_malloc'](ensureCache.size);
       assert(ensureCache.buffer);
     }
     ensureCache.pos = 0;
@@ -228,7 +228,7 @@ var ensureCache = {
       // we failed to allocate in the buffer, ensureCache time around :(
       assert(len > 0); // null terminator, at least
       ensureCache.needed += len;
-      ret = Module['_webidl_malloc'](len);
+      ret = Module['webidl_malloc'](len);
       ensureCache.temps.push(ret);
     } else {
       // we can allocate in the buffer
@@ -555,13 +555,13 @@ def render_function(class_name, func_name, sigs, return_type, non_pointer,
     else:
       after_call = '; ' + cache + 'return'
     args_for_call = make_call_args(i)
-    body += '  if (%s === undefined) { %s_%s(%s)%s%s }\n' % (args[i], call_prefix, c_names[i],
+    body += '  if (%s === undefined) { %s%s(%s)%s%s }\n' % (args[i], call_prefix, c_names[i],
                                                              args_for_call,
                                                              call_postfix, after_call)
   dbg(call_prefix)
   c_names[max_args] = f'emscripten_bind_{bindings_name}_{max_args}'
   args_for_call = make_call_args(len(args))
-  body += '  %s_%s(%s)%s;\n' % (call_prefix, c_names[max_args], args_for_call, call_postfix)
+  body += '  %s%s(%s)%s;\n' % (call_prefix, c_names[max_args], args_for_call, call_postfix)
   if cache:
     body += f'  {cache}\n'
 
@@ -876,15 +876,15 @@ for name, enum in enums.items():
     symbols = value.split('::')
     if len(symbols) == 1:
       identifier = symbols[0]
-      deferred_js += ["Module['%s'] = _%s();\n" % (identifier, function_id)]
+      deferred_js += ["Module['%s'] = %s();\n" % (identifier, function_id)]
     elif len(symbols) == 2:
       [namespace, identifier] = symbols
       if namespace in interfaces:
         # namespace is a class
-        deferred_js += ["Module['%s']['%s'] = _%s();\n" % (namespace, identifier, function_id)]
+        deferred_js += ["Module['%s']['%s'] = %s();\n" % (namespace, identifier, function_id)]
       else:
         # namespace is a namespace, so the enums get collapsed into the top level namespace.
-        deferred_js += ["Module['%s'] = _%s();\n" % (identifier, function_id)]
+        deferred_js += ["Module['%s'] = %s();\n" % (identifier, function_id)]
     else:
       raise Exception(f'Illegal enum value ${value}')
 

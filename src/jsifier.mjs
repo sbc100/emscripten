@@ -46,12 +46,8 @@ const extraLibraryFuncs = [];
 // the same namespace as function pointers in general).
 const proxiedFunctionTable = [];
 
-// Mangles the given C/JS side function name to assembly level function name (adds an underscore)
-function mangleCSymbolName(f) {
-  if (f === '__main_argc_argv') {
-    f = 'main';
-  }
-  return f[0] == '$' ? f.substr(1) : '_' + f;
+function getOutputName(sym) {
+  return sym[0] == '$' ? sym.substr(1) : sym;
 }
 
 // Splits out items that pass filter. Returns also the original sans the filtered
@@ -175,7 +171,7 @@ export function runJSify(symbolsOnly) {
 
   for (const key of Object.keys(LibraryManager.library)) {
     if (!isDecorator(key)) {
-      if (INCLUDE_FULL_LIBRARY || EXPORTED_FUNCTIONS.has(mangleCSymbolName(key))) {
+      if (INCLUDE_FULL_LIBRARY || EXPORTS.has(getOutputName(key))) {
         symbolsNeeded.push(key);
       }
     }
@@ -261,7 +257,7 @@ ${argConversions}
     });
   }
 
-  function processLibraryFunction(snippet, symbol, mangled, deps, isStub) {
+  function processLibraryFunction(snippet, symbol, outputName, deps, isStub) {
     // It is possible that when printing the function as a string on Windows,
     // the js interpreter we are in returns the string with Windows line endings
     // \r\n. This is undesirable, since line endings are managed in the form \n
@@ -285,7 +281,7 @@ ${argConversions}
         snippet,
         (args, body, async) => `\
 function(${args}) {
-  var ret = (() => { if (runtimeDebug) err("[library call:${mangled}: " + Array.prototype.slice.call(arguments).map(prettyPrint) + "]");
+  var ret = (() => { if (runtimeDebug) err("[library call:${outputName}: " + Array.prototype.slice.call(arguments).map(prettyPrint) + "]");
   ${body}
   })();
   if (runtimeDebug && typeof ret != "undefined") err("  [     return:" + prettyPrint(ret));
@@ -334,12 +330,12 @@ ${body}
             snippet,
             (args, body) => `
 function(${args}) {
-  assert(!ENVIRONMENT_IS_WASM_WORKER, "Attempted to call proxied function '${mangled}' in a Wasm Worker, but in Wasm Worker enabled builds, proxied function architecture is not available!");
+  assert(!ENVIRONMENT_IS_WASM_WORKER, "Attempted to call proxied function '${outputName}' in a Wasm Worker, but in Wasm Worker enabled builds, proxied function architecture is not available!");
   ${body}
 }\n`,
           );
         }
-        proxiedFunctionTable.push(mangled);
+        proxiedFunctionTable.push(outputName);
       }
     }
 
@@ -417,7 +413,7 @@ function(${args}) {
         // Without WASM_BIGINT functions that return i64 depend on setTempRet0
         // to return the upper 32-bits of the result.
         // See makeReturn64 in parseTools.py.
-        deps.push('setTempRet0');
+        deps.push('$setTempRet0');
       }
 
       let isAsyncFunction = false;
@@ -450,7 +446,7 @@ function(${args}) {
       // will resolve the correct symbol at runtime, or assert if its missing.
       let isStub = false;
 
-      const mangled = mangleCSymbolName(symbol);
+      const outputName = getOutputName(symbol);
 
       if (!LibraryManager.library.hasOwnProperty(symbol)) {
         const isWeakImport = WEAK_IMPORTS.has(symbol);
@@ -471,8 +467,8 @@ function(${args}) {
               'To disable errors for undefined symbols use `-sERROR_ON_UNDEFINED_SYMBOLS=0`',
             );
             warnOnce(
-              mangled +
-                ' may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library',
+              outputName +
+                ' may need to be added to EXPORTS if it arrives from a system library',
             );
           } else if (VERBOSE || WARN_ON_UNDEFINED_SYMBOLS) {
             warn(msg);
@@ -509,7 +505,7 @@ function(${args}) {
         }
       }
 
-      librarySymbols.push(mangled);
+      librarySymbols.push(symbol);
 
       const original = LibraryManager.library[symbol];
       let snippet = original;
@@ -532,7 +528,7 @@ function(${args}) {
             // make ourselves equal to it.  This avoid having duplicate
             // functions with identical content.
             aliasTarget = snippet;
-            snippet = mangleCSymbolName(aliasTarget);
+            snippet = getOutputName(aliasTarget);
             deps.push(aliasTarget);
           }
         }
@@ -541,7 +537,7 @@ function(${args}) {
         addImplicitDeps(snippet, deps);
       } else if (typeof snippet == 'function') {
         isFunction = true;
-        snippet = processLibraryFunction(snippet, symbol, mangled, deps, isStub);
+        snippet = processLibraryFunction(snippet, symbol, outputName, deps, isStub);
         addImplicitDeps(snippet, deps);
       }
 
@@ -592,28 +588,28 @@ function(${args}) {
         } else {
           contentText = snippet; // Regular JS function that will be executed in the context of the calling thread.
         }
-        // Give the function the correct (mangled) name. Overwrite it if it's
+        // Give the function the correct name. Overwrite it if it's
         // already named.  This must happen after the last call to
         // modifyJSFunction which could have changed or removed the name.
         if (contentText.match(/^\s*([^}]*)\s*=>/s)) {
           // Handle arrow functions
-          contentText = `var ${mangled} = ` + contentText + ';';
+          contentText = `var ${outputName} = ` + contentText + ';';
         } else if (contentText.startsWith('class ')) {
-          contentText = contentText.replace(/^class /, `class ${mangled} `);
+          contentText = contentText.replace(/^class /, `class ${outputName} `);
         } else {
           // Handle regular (non-arrow) functions
-          contentText = contentText.replace(/function(?:\s+([^(]+))?\s*\(/, `function ${mangled}(`);
+          contentText = contentText.replace(/function(?:\s+([^(]+))?\s*\(/, `function ${outputName}(`);
         }
       } else if (typeof snippet == 'string' && snippet.startsWith(';')) {
         // In JS libraries
         //   foo: ';[code here verbatim]'
         //  emits
         //   'var foo;[code here verbatim];'
-        contentText = 'var ' + mangled + snippet;
+        contentText = 'var ' + outputName + snippet;
         if (snippet[snippet.length - 1] != ';' && snippet[snippet.length - 1] != '}')
           contentText += ';';
       } else if (typeof snippet == 'undefined') {
-        contentText = `var ${mangled};`;
+        contentText = `var ${outputName};`;
       } else {
         // In JS libraries
         //   foo: '=[value]'
@@ -622,25 +618,27 @@ function(${args}) {
         if (typeof snippet == 'string' && snippet[0] == '=') {
           snippet = snippet.substr(1);
         }
-        contentText = `var ${mangled} = ${snippet};`;
+        if (snippet != outputName) {
+          contentText = `var ${outputName} = ${snippet};`;
+        }
       }
       // asm module exports are done in emscripten.py, after the asm module is ready. Here
       // we also export library methods as necessary.
-      if ((EXPORT_ALL || EXPORTED_FUNCTIONS.has(mangled)) && !isStub) {
-        contentText += `\nModule['${mangled}'] = ${mangled};`;
+      if ((EXPORT_ALL || EXPORTS.has(outputName)) && !isStub) {
+        contentText += `\nModule['${outputName}'] = ${outputName};`;
       }
       // Relocatable code needs signatures to create proper wrappers.
       if (sig && RELOCATABLE) {
         if (!WASM_BIGINT) {
           sig = sig[0].replace('j', 'i') + sig.slice(1).replace(/j/g, 'ii');
         }
-        contentText += `\n${mangled}.sig = '${sig}';`;
+        contentText += `\n${outputName}.sig = '${sig}';`;
       }
       if (ASYNCIFY && isAsyncFunction) {
-        contentText += `\n${mangled}.isAsync = true;`;
+        contentText += `\n${outputName}.isAsync = true;`;
       }
       if (isStub) {
-        contentText += `\n${mangled}.stub = true;`;
+        contentText += `\n${outputName}.stub = true;`;
         if (ASYNCIFY && MAIN_MODULE) {
           contentText += `\nasyncifyStubs['${symbol}'] = undefined;`;
         }
@@ -657,7 +655,7 @@ function(${args}) {
       }
 
       if (EMIT_TSD) {
-        LibraryManager.libraryDefinitions[mangled] = {
+        LibraryManager.libraryDefinitions[outputName] = {
           docs: docs ?? null,
           snippet: snippet ?? null,
         };

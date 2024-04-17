@@ -913,7 +913,7 @@ function hasExportedSymbol(sym) {
 // wasmTable are set. In this case we maybe need to re-export them on the
 // Module object.
 function receivedSymbol(sym) {
-  if (EXPORTED_RUNTIME_METHODS.has(sym)) {
+  if (EXPORTS.has(sym)) {
     return `Module['${sym}'] = ${sym};`;
   }
   return '';
@@ -973,7 +973,7 @@ function addReadyPromiseAssertions() {
   //  var instance = Module();
   //  ...
   //  instance._main();
-  const properties = Array.from(EXPORTED_FUNCTIONS.values());
+  const properties = Object.values(EXPORTS)
   // Also warn on onRuntimeInitialized which might be a common pattern with
   // older MODULARIZE-using codebases.
   properties.push('onRuntimeInitialized');
@@ -985,8 +985,8 @@ function addReadyPromiseAssertions() {
     `.forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(readyPromise, prop)) {
     Object.defineProperty(readyPromise, prop, {
-      get: () => abort('You are getting ' + prop + '${warningEnding}'),
-      set: () => abort('You are setting ' + prop + '${warningEnding}'),
+      get: () => abort('You are getting \`' + prop + '\`${warningEnding}'),
+      set: () => abort('You are setting \`' + prop + '\`${warningEnding}'),
     });
   }
 });`
@@ -1055,7 +1055,7 @@ function getEntryFunction() {
   if (MAIN_MODULE) {
     return `resolveGlobalSymbol('${entryFunction}').sym;`;
   }
-  return `_${entryFunction}`;
+  return entryFunction;
 }
 
 function formattedMinNodeVersion() {

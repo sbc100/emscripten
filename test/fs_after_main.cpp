@@ -59,14 +59,14 @@ int main() {
     var counter = 0;
     function looper() {
       out('js looping');
-      Module['_looper']();
+      Module['looper']();
       counter++;
       if (counter < 5) {
         out('js queueing');
         setTimeout(looper, 1);
       } else {
         out('js finishing');
-        setTimeout(Module['_finish'], 1);
+        setTimeout(Module['finish'], 1);
       }
     }
     looper();

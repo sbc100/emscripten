@@ -93,18 +93,18 @@ addToLibrary({
     // remove this in the future.  Note that this call is not exactly correct,
     // since this limit will include the TLS slot, that will be part of the
     // region between m['sb'] and m['sz'], so we need to fix up the call below.
-    ___set_stack_limits(m['sb'] + m['sz'], m['sb']);
+    __set_stack_limits(m['sb'] + m['sz'], m['sb']);
 #endif
     // Run the C side Worker initialization for stack and TLS.
-    __emscripten_wasm_worker_initialize(m['sb'], m['sz']);
+    _emscripten_wasm_worker_initialize(m['sb'], m['sz']);
 #if PTHREADS
     // Record that this Wasm Worker supports synchronous blocking in emscripten_futex_wake().
-    ___set_thread_state(/*thread_ptr=*/0, /*is_main_thread=*/0, /*is_runtime_thread=*/0, /*supports_wait=*/0);
+    __set_thread_state(/*thread_ptr=*/0, /*is_main_thread=*/0, /*is_runtime_thread=*/0, /*supports_wait=*/0);
 #endif
 #if STACK_OVERFLOW_CHECK >= 2
     // Fix up stack base. (TLS frame is created at the bottom address end of the stack)
     // See https://github.com/emscripten-core/emscripten/issues/16496
-    ___set_stack_limits(_emscripten_stack_get_base(), _emscripten_stack_get_end());
+    __set_stack_limits(emscripten_stack_get_base(), emscripten_stack_get_end());
 #endif
 
 #if AUDIO_WORKLET

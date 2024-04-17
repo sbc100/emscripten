@@ -297,7 +297,7 @@ function asmy() {
  f(HEAPU32[12]);
  f(HEAP32[5]);
  f(HEAPU32[5]);
- if ((_sbrk($419 | 0) | 0) == -1) {
+ if ((sbrk($419 | 0) | 0) == -1) {
   print("fleefl");
  }
 }

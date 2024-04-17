@@ -45,10 +45,7 @@ addToLibrary({
   $FS_createPreloadedFile__deps: [
     '$asyncLoad',
     '$PATH_FS',
-    '$FS_createDataFile',
-#if !MINIMAL_RUNTIME
-    '$FS_handledByPreloadPlugin',
-#endif
+    '$FS',
   ],
   $FS_createPreloadedFile: (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn, preFinish) => {
     // TODO we should allow people to just pass in a complete filename instead
@@ -59,13 +56,13 @@ addToLibrary({
       function finish(byteArray) {
         preFinish?.();
         if (!dontCreateFile) {
-          FS_createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
+          FS.createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
         }
         onload?.();
         removeRunDependency(dep);
       }
 #if !MINIMAL_RUNTIME
-      if (FS_handledByPreloadPlugin(byteArray, fullname, finish, () => {
+      if (FS.handledByPreloadPlugin(byteArray, fullname, finish, () => {
         onerror?.();
         removeRunDependency(dep);
       })) {

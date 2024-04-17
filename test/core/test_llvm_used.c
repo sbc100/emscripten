@@ -14,6 +14,6 @@ EMSCRIPTEN_KEEPALIVE void foobar(int x) {
 }
 
 int main() {
-    emscripten_run_script("Module['_foobar'](10)");
+    emscripten_run_script("Module['foobar'](10)");
     return 0;
 }

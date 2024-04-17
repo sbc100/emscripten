@@ -67,7 +67,7 @@ var LibraryBrowser = {
         Browser.mainLoop.func = null;
         // do not set timing and call scheduler, we will do it on the next lines
         setMainLoop(func, 0, false, Browser.mainLoop.arg, true);
-        _emscripten_set_main_loop_timing(timingMode, timingValue);
+        emscripten_set_main_loop_timing(timingMode, timingValue);
         Browser.mainLoop.scheduler();
       },
       updateStatus() {
@@ -763,7 +763,7 @@ var LibraryBrowser = {
   emscripten_async_run_script__deps: ['emscripten_run_script', '$safeSetTimeout'],
   emscripten_async_run_script: (script, millis) => {
     // TODO: cache these to avoid generating garbage
-    safeSetTimeout(() => _emscripten_run_script(script), millis);
+    safeSetTimeout(() => emscripten_run_script(script), millis);
   },
 
   // TODO: currently not callable from a pthread, but immediately calls onerror() if not on main thread.
@@ -841,7 +841,7 @@ var LibraryBrowser = {
     }
     if (mode == {{{ cDefs.EM_TIMING_SETTIMEOUT }}}) {
       Browser.mainLoop.scheduler = function Browser_mainLoop_scheduler_setTimeout() {
-        var timeUntilNextTick = Math.max(0, Browser.mainLoop.tickStartTime + value - _emscripten_get_now())|0;
+        var timeUntilNextTick = Math.max(0, Browser.mainLoop.tickStartTime + value - emscripten_get_now())|0;
         setTimeout(Browser.mainLoop.runner, timeUntilNextTick); // doing this each time means that on exception, we stop
       };
       Browser.mainLoop.method = 'timeout';
@@ -943,7 +943,7 @@ var LibraryBrowser = {
     }
 
     // We create the loop runner here but it is not actually running until
-    // _emscripten_set_main_loop_timing is called (which might happen a
+    // emscripten_set_main_loop_timing is called (which might happen a
     // later time).  This member signifies that the current runner has not
     // yet been started so that we can call runtimeKeepalivePush when it
     // gets it timing set for the first time.
@@ -987,7 +987,7 @@ var LibraryBrowser = {
         Browser.mainLoop.scheduler();
         return;
       } else if (Browser.mainLoop.timingMode == {{{ cDefs.EM_TIMING_SETTIMEOUT }}}) {
-        Browser.mainLoop.tickStartTime = _emscripten_get_now();
+        Browser.mainLoop.tickStartTime = emscripten_get_now();
       }
 
       // Signal GL rendering layer that processing of a new frame is about to start. This helps it optimize
@@ -1039,10 +1039,10 @@ var LibraryBrowser = {
 
     if (!noSetTiming) {
       if (fps && fps > 0) {
-        _emscripten_set_main_loop_timing({{{ cDefs.EM_TIMING_SETTIMEOUT }}}, 1000.0 / fps);
+        emscripten_set_main_loop_timing({{{ cDefs.EM_TIMING_SETTIMEOUT }}}, 1000.0 / fps);
       } else {
         // Do rAF by rendering each frame (no decimating)
-        _emscripten_set_main_loop_timing({{{ cDefs.EM_TIMING_RAF }}}, 1);
+        emscripten_set_main_loop_timing({{{ cDefs.EM_TIMING_RAF }}}, 1);
       }
 
       Browser.mainLoop.scheduler();
@@ -1122,13 +1122,13 @@ var LibraryBrowser = {
   emscripten_get_window_title: () => {
     var buflen = 256;
 
-    if (!_emscripten_get_window_title.buffer) {
-      _emscripten_get_window_title.buffer = _malloc(buflen);
+    if (!emscripten_get_window_title.buffer) {
+      emscripten_get_window_title.buffer = malloc(buflen);
     }
 
-    stringToUTF8(document.title, _emscripten_get_window_title.buffer, buflen);
+    stringToUTF8(document.title, emscripten_get_window_title.buffer, buflen);
 
-    return _emscripten_get_window_title.buffer;
+    return emscripten_get_window_title.buffer;
   },
 
   emscripten_set_window_title__proxy: 'sync',
@@ -1196,9 +1196,9 @@ var LibraryBrowser = {
       if (data) {
         if (!data.byteLength) data = new Uint8Array(data);
         if (!info.buffer || info.bufferSize < data.length) {
-          if (info.buffer) _free(info.buffer);
+          if (info.buffer) free(info.buffer);
           info.bufferSize = data.length;
-          info.buffer = _malloc(data.length);
+          info.buffer = malloc(data.length);
         }
         HEAPU8.set(data, info.buffer);
         callbackInfo.func(info.buffer, data.length, callbackInfo.arg);
@@ -1215,7 +1215,7 @@ var LibraryBrowser = {
   emscripten_destroy_worker: (id) => {
     var info = Browser.workers[id];
     info.worker.terminate();
-    if (info.buffer) _free(info.buffer);
+    if (info.buffer) free(info.buffer);
     Browser.workers[id] = null;
   },
 
@@ -1303,7 +1303,7 @@ var LibraryBrowser = {
 
     var ctx = canvas.getContext("2d");
     var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    var buf = _malloc(canvas.width * canvas.height * 4);
+    var buf = malloc(canvas.width * canvas.height * 4);
 
     HEAPU8.set(image.data, buf);
 
@@ -1316,7 +1316,7 @@ var LibraryBrowser = {
   emscripten_get_preloaded_image_data_from_FILE__deps: ['$getPreloadedImageData', 'fileno'],
   emscripten_get_preloaded_image_data_from_FILE__proxy: 'sync',
   emscripten_get_preloaded_image_data_from_FILE: (file, w, h) => {
-    var fd = _fileno(file);
+    var fd = fileno(file);
     var stream = FS.getStream(fd);
     if (stream) {
       return getPreloadedImageData(stream.path, w, h);

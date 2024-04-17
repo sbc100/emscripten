@@ -119,7 +119,7 @@ LibraryJSEventLoop = {
   emscripten_set_timeout_loop__deps: ['$callUserCallback', 'emscripten_get_now'],
   emscripten_set_timeout_loop: (cb, msecs, userData) => {
     function tick() {
-      var t = _emscripten_get_now();
+      var t = emscripten_get_now();
       var n = t + msecs;
       {{{ runtimeKeepalivePop() }}}
       callUserCallback(() => {
@@ -128,7 +128,7 @@ LibraryJSEventLoop = {
           // negative setTimeout as timeout of 0
           // (https://stackoverflow.com/questions/8430966/is-calling-settimeout-with-a-negative-delay-ok)
           {{{ runtimeKeepalivePush() }}}
-          setTimeout(tick, n - _emscripten_get_now());
+          setTimeout(tick, n - emscripten_get_now());
         }
       });
     }

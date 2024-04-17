@@ -23,21 +23,21 @@
 addToLibrary({
   // JS aliases for native stack manipulation functions and tempret handling
   $stackSave__deps: ['emscripten_stack_get_current'],
-  $stackSave: () => _emscripten_stack_get_current(),
+  $stackSave: () => emscripten_stack_get_current(),
   $stackRestore__deps: ['_emscripten_stack_restore'],
-  $stackRestore: (val) => __emscripten_stack_restore(val),
+  $stackRestore: (val) => _emscripten_stack_restore(val),
   $stackAlloc__deps: ['_emscripten_stack_alloc'],
-  $stackAlloc: (sz) => __emscripten_stack_alloc(sz),
+  $stackAlloc: (sz) => _emscripten_stack_alloc(sz),
   $getTempRet0__deps: ['_emscripten_tempret_get'],
-  $getTempRet0: (val) => __emscripten_tempret_get(),
+  $getTempRet0: (val) => _emscripten_tempret_get(),
   $setTempRet0__deps: ['_emscripten_tempret_set'],
-  $setTempRet0: (val) => __emscripten_tempret_set(val),
+  $setTempRet0: (val) => _emscripten_tempret_set(val),
 
   // Aliases that allow legacy names (without leading $) for the
   // functions to continue to work in `__deps` entries.
   stackAlloc: '$stackAlloc',
   stackSave: '$stackSave',
-  stackRestore: '$stackSave',
+  stackRestore: '$stackRestore',
   setTempRet0: '$setTempRet0',
   getTempRet0: '$getTempRet0',
 
@@ -66,10 +66,17 @@ addToLibrary({
   },
 
 #if SAFE_HEAP
-  // Trivial wrappers around runtime functions that make these symbols available
-  // to native code.
-  segfault: '=segfault',
-  alignfault: '=alignfault',
+  segfault: () => {
+    abort('segmentation fault');
+  },
+
+  alignfault: () => {
+#if SAFE_HEAP == 1
+    abort('alignment fault');
+#else
+    warnOnce('alignment fault');
+#endif
+  },
 #endif
 
   // ==========================================================================
@@ -104,7 +111,7 @@ addToLibrary({
       assert(!implicit);
 #endif
 #if PTHREADS_DEBUG
-      dbg(`Pthread ${ptrToString(_pthread_self())} called exit(${status}), posting exitOnMainThread.`);
+      dbg(`Pthread ${ptrToString(pthread_self())} called exit(${status}), posting exitOnMainThread.`);
 #endif
       // When running in a pthread we propagate the exit back to the main thread
       // where it can decide if the whole process should be shut down or not.
@@ -135,7 +142,7 @@ addToLibrary({
     }
 #endif // ASSERTIONS
 
-    _proc_exit(status);
+    proc_exit(status);
   },
 #endif
 
@@ -255,7 +262,7 @@ addToLibrary({
 
 #if EMSCRIPTEN_TRACING
     // Report old layout one last time
-    _emscripten_trace_report_memory_layout();
+    emscripten_trace_report_memory_layout();
 #endif
 
     // Memory resize rules:
@@ -309,11 +316,11 @@ addToLibrary({
       var newSize = Math.min(maxHeapSize, alignUp(Math.max(requestedSize, overGrownHeapSize), {{{ WASM_PAGE_SIZE }}}));
 
 #if ASSERTIONS == 2
-      var t0 = _emscripten_get_now();
+      var t0 = emscripten_get_now();
 #endif
       var replacement = growMemory(newSize);
 #if ASSERTIONS == 2
-      var t1 = _emscripten_get_now();
+      var t1 = emscripten_get_now();
       dbg(`Heap resize call from ${oldSize} to ${newSize} took ${(t1 - t0)} msecs. Success: ${!!replacement}`);
 #endif
       if (replacement) {
@@ -324,7 +331,7 @@ addToLibrary({
 #if EMSCRIPTEN_TRACING
         traceLogMessage("Emscripten", `Enlarging memory arrays from ${oldSize} to ${newSize}`);
         // And now report the new layout
-        _emscripten_trace_report_memory_layout();
+        emscripten_trace_report_memory_layout();
 #endif
         return true;
       }
@@ -602,8 +609,8 @@ addToLibrary({
   $setStackLimits__deps: ['$setDylinkStackLimits'],
 #endif
   $setStackLimits: () => {
-    var stackLow = _emscripten_stack_get_base();
-    var stackHigh = _emscripten_stack_get_end();
+    var stackLow = emscripten_stack_get_base();
+    var stackHigh = emscripten_stack_get_end();
 #if RUNTIME_DEBUG
     dbg(`setStackLimits: ${ptrToString(stackLow)}, ${ptrToString(stackHigh)}`);
 #endif
@@ -612,7 +619,7 @@ addToLibrary({
     // that each need to have their stack limits set.
     setDylinkStackLimits(stackLow, stackHigh);
 #else
-    ___set_stack_limits(stackLow, stackHigh);
+    __set_stack_limits(stackLow, stackHigh);
 #endif
   },
 #endif
@@ -985,7 +992,7 @@ addToLibrary({
   },
   strftime_l__deps: ['strftime'],
   strftime_l: (s, maxsize, format, tm, loc) => {
-    return _strftime(s, maxsize, format, tm); // no locale support yet
+    return strftime(s, maxsize, format, tm); // no locale support yet
   },
 
   strptime__deps: ['$isLeapYear', '$arraySum', '$addDays', '$MONTH_DAYS_REGULAR', '$MONTH_DAYS_LEAP',
@@ -1248,9 +1255,7 @@ addToLibrary({
     return 0;
   },
   strptime_l__deps: ['strptime'],
-  strptime_l: (buf, format, tm, locale) => {
-    return _strptime(buf, format, tm); // no locale support yet
-  },
+  strptime_l: (buf, format, tm, locale) => strptime(buf, format, tm), // no locale support yet
 
   // ==========================================================================
   // setjmp.h
@@ -1614,7 +1619,7 @@ addToLibrary({
           offset = z-1;
         } else {
           // parse hex to field to 16-bit value and write it in network byte-order
-          parts[w+offset] = _htons(parseInt(words[w],16));
+          parts[w+offset] = htons(parseInt(words[w],16));
         }
       } else {
         // parsed IPv4 words
@@ -1720,7 +1725,7 @@ addToLibrary({
         }
       }
       // converts 16-bit words from big-endian to little-endian before converting to hex string
-      str += Number(_ntohs(parts[word] & 0xffff)).toString(16);
+      str += Number(ntohs(parts[word] & 0xffff)).toString(16);
       str += word < 7 ? ":" : "";
     }
     return str;
@@ -1730,7 +1735,7 @@ addToLibrary({
   $readSockaddr: (sa, salen) => {
     // family / port offsets are common to both sockaddr_in and sockaddr_in6
     var family = {{{ makeGetValue('sa', C_STRUCTS.sockaddr_in.sin_family, 'i16') }}};
-    var port = _ntohs({{{ makeGetValue('sa', C_STRUCTS.sockaddr_in.sin_port, 'u16') }}});
+    var port = ntohs({{{ makeGetValue('sa', C_STRUCTS.sockaddr_in.sin_port, 'u16') }}});
     var addr;
 
     switch (family) {
@@ -1771,7 +1776,7 @@ addToLibrary({
         }
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_family, 'family', 'i16') }}};
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'addr', 'i32') }}};
-        {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_port, '_htons(port)', 'i16') }}};
+        {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_port, 'htons(port)', 'i16') }}};
         break;
       case {{{ cDefs.AF_INET6 }}}:
         addr = inetPton6(addr);
@@ -1784,7 +1789,7 @@ addToLibrary({
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr+4, 'addr[1]', 'i32') }}};
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr+8, 'addr[2]', 'i32') }}};
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr+12, 'addr[3]', 'i32') }}};
-        {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_port, '_htons(port)', 'i16') }}};
+        {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_port, 'htons(port)', 'i16') }}};
         break;
       default:
         return {{{ cDefs.EAFNOSUPPORT }}};
@@ -1875,11 +1880,11 @@ addToLibrary({
       addr = family === {{{ cDefs.AF_INET6 }}} ?
         inetNtop6(addr) :
         inetNtop4(addr);
-      sa = _malloc(salen);
+      sa = malloc(salen);
       errno = writeSockaddr(sa, family, addr, port);
       assert(!errno);
 
-      ai = _malloc({{{ C_STRUCTS.addrinfo.__size__ }}});
+      ai = malloc({{{ C_STRUCTS.addrinfo.__size__ }}});
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_family, 'family', 'i32') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_socktype, 'type', 'i32') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_protocol, 'proto', 'i32') }}};
@@ -1958,7 +1963,7 @@ addToLibrary({
       }
       if ((flags & {{{ cDefs.AI_PASSIVE }}}) === 0) {
         if (family === {{{ cDefs.AF_INET }}}) {
-          addr = _htonl({{{ cDefs.INADDR_LOOPBACK }}});
+          addr = htonl({{{ cDefs.INADDR_LOOPBACK }}});
         } else {
           addr = [0, 0, 0, 1];
         }
@@ -1979,7 +1984,7 @@ addToLibrary({
         family = {{{ cDefs.AF_INET }}};
       }
       else if (family === {{{ cDefs.AF_INET6 }}} && (flags & {{{ cDefs.AI_V4MAPPED }}})) {
-        addr = [0, 0, _htonl(0xffff), addr];
+        addr = [0, 0, htonl(0xffff), addr];
         family = {{{ cDefs.AF_INET6 }}};
       } else {
         return {{{ cDefs.EAI_NONAME }}};
@@ -2013,7 +2018,7 @@ addToLibrary({
     if (family === {{{ cDefs.AF_UNSPEC }}}) {
       family = {{{ cDefs.AF_INET }}};
     } else if (family === {{{ cDefs.AF_INET6 }}}) {
-      addr = [0, 0, _htonl(0xffff), addr];
+      addr = [0, 0, htonl(0xffff), addr];
     }
     ai = allocaddrinfo(family, type, proto, null, addr, port);
     {{{ makeSetValue('out', '0', 'ai', '*') }}};
@@ -2078,24 +2083,24 @@ addToLibrary({
     // Allocate and populate a protoent structure given a name, protocol number and array of aliases
     function allocprotoent(name, proto, aliases) {
       // write name into buffer
-      var nameBuf = _malloc(name.length + 1);
+      var nameBuf = malloc(name.length + 1);
       stringToAscii(name, nameBuf);
 
       // write aliases into buffer
       var j = 0;
       var length = aliases.length;
-      var aliasListBuf = _malloc((length + 1) * 4); // Use length + 1 so we have space for the terminating NULL ptr.
+      var aliasListBuf = malloc((length + 1) * 4); // Use length + 1 so we have space for the terminating NULL ptr.
 
       for (var i = 0; i < length; i++, j += 4) {
         var alias = aliases[i];
-        var aliasBuf = _malloc(alias.length + 1);
+        var aliasBuf = malloc(alias.length + 1);
         stringToAscii(alias, aliasBuf);
         {{{ makeSetValue('aliasListBuf', 'j', 'aliasBuf', POINTER_TYPE) }}};
       }
       {{{ makeSetValue('aliasListBuf', 'j', '0', POINTER_TYPE) }}}; // Terminating NULL pointer.
 
       // generate protoent
-      var pe = _malloc({{{ C_STRUCTS.protoent.__size__ }}});
+      var pe = malloc({{{ C_STRUCTS.protoent.__size__ }}});
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_name, 'nameBuf', POINTER_TYPE) }}};
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_aliases, 'aliasListBuf', POINTER_TYPE) }}};
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_proto, 'proto', 'i32') }}};
@@ -2115,7 +2120,7 @@ addToLibrary({
         map['udp'] = map['17'] = entry;
     }
 
-    _setprotoent.index = 0;
+    setprotoent.index = 0;
   },
 
   endprotoent: () => {
@@ -2127,10 +2132,10 @@ addToLibrary({
   getprotoent: (number) => {
     // struct protoent *getprotoent(void);
     // reads the  next  entry  from  the  protocols 'database' or return NULL if 'eof'
-    if (_setprotoent.index === Protocols.list.length) {
+    if (setprotoent.index === Protocols.list.length) {
       return 0;
     }
-    var result = Protocols.list[_setprotoent.index++];
+    var result = Protocols.list[setprotoent.index++];
     return result;
   },
 
@@ -2138,7 +2143,7 @@ addToLibrary({
   getprotobyname: (name) => {
     // struct protoent *getprotobyname(const char *);
     name = UTF8ToString(name);
-    _setprotoent(true);
+    setprotoent(true);
     var result = Protocols.map[name];
     return result;
   },
@@ -2146,7 +2151,7 @@ addToLibrary({
   getprotobynumber__deps: ['setprotoent', '$Protocols'],
   getprotobynumber: (number) => {
     // struct protoent *getprotobynumber(int proto);
-    _setprotoent(true);
+    setprotoent(true);
     var result = Protocols.map[number];
     return result;
   },
@@ -2269,7 +2274,7 @@ addToLibrary({
 #if RUNTIME_DEBUG
       dbg(`itimer fired: ${which}`);
 #endif
-      callUserCallback(() => __emscripten_timeout(which, _emscripten_get_now()));
+      callUserCallback(() => _emscripten_timeout(which, emscripten_get_now()));
     }, timeout_ms);
     timers[which] = { id, timeout_ms };
     return 0;
@@ -2302,12 +2307,12 @@ addToLibrary({
       return 0;
     }
     s += '';
-    var me = _emscripten_run_script_string;
+    var me = emscripten_run_script_string;
     var len = lengthBytesUTF8(s);
     if (!me.bufferSize || me.bufferSize < len+1) {
-      if (me.bufferSize) _free(me.buffer);
+      if (me.bufferSize) free(me.buffer);
       me.bufferSize = len+1;
-      me.buffer = _malloc(me.bufferSize);
+      me.buffer = malloc(me.bufferSize);
     }
     stringToUTF8(s, me.buffer, me.bufferSize);
     return me.buffer;
@@ -2327,7 +2332,7 @@ addToLibrary({
     // Pthreads need their clocks synchronized to the execution of the main
     // thread, so, when using them, make sure to adjust all timings to the
     // respective time origins.
-    _emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
+    emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
 #else
 #if MIN_FIREFOX_VERSION <= 14 || MIN_CHROME_VERSION <= 23 || MIN_SAFARI_VERSION <= 80400 || AUDIO_WORKLET // https://caniuse.com/#feat=high-resolution-time
     // AudioWorkletGlobalScope does not have performance.now()
@@ -2336,18 +2341,18 @@ addToLibrary({
     // Audio Worklets enabled, do a dynamic check for its presence.
     if (typeof performance != 'undefined' && {{{ getPerformanceNow() }}}) {
 #if PTHREADS
-      _emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
+      emscripten_get_now = () => performance.timeOrigin + {{{ getPerformanceNow() }}}();
 #else
-      _emscripten_get_now = () => {{{ getPerformanceNow() }}}();
+      emscripten_get_now = () => {{{ getPerformanceNow() }}}();
 #endif
     } else {
-      _emscripten_get_now = Date.now;
+      emscripten_get_now = Date.now;
     }
 #else
     // Modern environment where performance.now() is supported:
-    // N.B. a shorter form "_emscripten_get_now = performance.now;" is
+    // N.B. a shorter form "emscripten_get_now = performance.now;" is
     // unfortunately not allowed even in current browsers (e.g. FF Nightly 75).
-    _emscripten_get_now = () => {{{ getPerformanceNow() }}}();
+    emscripten_get_now = () => {{{ getPerformanceNow() }}}();
 #endif
 #endif
 `,
@@ -2445,8 +2450,8 @@ addToLibrary({
     var ret = getCompilerSetting(name);
     if (typeof ret == 'number' || typeof ret == 'boolean') return ret;
 
-    if (!_emscripten_get_compiler_setting.cache) _emscripten_get_compiler_setting.cache = {};
-    var cache = _emscripten_get_compiler_setting.cache;
+    if (!emscripten_get_compiler_setting.cache) emscripten_get_compiler_setting.cache = {};
+    var cache = emscripten_get_compiler_setting.cache;
     var fullret = cache[name];
     if (fullret) return fullret;
     return cache[name] = stringToNewUTF8(ret);
@@ -2473,18 +2478,18 @@ addToLibrary({
                             ],
   $withBuiltinMalloc__docs: '/** @suppress{checkTypes} */',
   $withBuiltinMalloc: (func) => {
-    var prev_malloc = typeof _malloc != 'undefined' ? _malloc : undefined;
-    var prev_memalign = typeof _memalign != 'undefined' ? _memalign : undefined;
-    var prev_free = typeof _free != 'undefined' ? _free : undefined;
-    _malloc = _emscripten_builtin_malloc;
-    _memalign = _emscripten_builtin_memalign;
-    _free = _emscripten_builtin_free;
+    var prev_malloc = typeof malloc != 'undefined' ? malloc : undefined;
+    var prev_memalign = typeof memalign != 'undefined' ? memalign : undefined;
+    var prev_free = typeof free != 'undefined' ? free : undefined;
+    malloc = emscripten_builtin_malloc;
+    memalign = emscripten_builtin_memalign;
+    free = emscripten_builtin_free;
     try {
       return func();
     } finally {
-      _malloc = prev_malloc;
-      _memalign = prev_memalign;
-      _free = prev_free;
+      malloc = prev_malloc;
+      memalign = prev_memalign;
+      free = prev_free;
     }
   },
 
@@ -2617,7 +2622,9 @@ addToLibrary({
 #if !DECLARE_ASM_MODULE_EXPORTS
   // When DECLARE_ASM_MODULE_EXPORTS is not set we export native symbols
   // at runtime rather than statically in JS code.
+#if MANGLED_SYMBOLS
   $exportWasmSymbols__deps: ['$asmjsMangle'],
+#endif
   $exportWasmSymbols: (wasmExports) => {
 #if ENVIRONMENT_MAY_BE_NODE && ENVIRONMENT_MAY_BE_WEB
     var global_object = (typeof process != "undefined" ? global : this);
@@ -2627,12 +2634,20 @@ addToLibrary({
     var global_object = this;
 #endif
 
-    for (var __exportedFunc in wasmExports) {
-      var jsname = asmjsMangle(__exportedFunc);
+    for (var sym in wasmExports) {
+      var name = sym == '__main_argc_argv' ? 'main' : sym;
 #if MINIMAL_RUNTIME
-      global_object[jsname] = wasmExports[__exportedFunc];
+      global_object[name] = wasmExports[sym];
 #else
-      global_object[jsname] = Module[jsname] = wasmExports[__exportedFunc];
+      global_object[name] = Module[sym] = wasmExports[sym];
+#endif
+#if MANGLED_SYMBOLS
+      var mangled = asmjsMangle(name);
+#if MINIMAL_RUNTIME
+      global_object[mangled] = wasmExports[sym];
+#else
+      global_object[mangled] = Module[mangled] = wasmExports[sym];
+#endif
 #endif
     }
 
@@ -2671,7 +2686,7 @@ addToLibrary({
   _Unwind_RaiseException__deps: ['__cxa_throw'],
   _Unwind_RaiseException: (ex) => {
     err('Warning: _Unwind_RaiseException is not correctly implemented');
-    return ___cxa_throw(ex, 0, 0);
+    return __cxa_throw(ex, 0, 0);
   },
 
   _Unwind_DeleteException: (ex) => {
@@ -2685,8 +2700,8 @@ addToLibrary({
   // Used by wasm-emscripten-finalize to implement STACK_OVERFLOW_CHECK
   __handle_stack_overflow__deps: ['emscripten_stack_get_base', 'emscripten_stack_get_end', '$ptrToString'],
   __handle_stack_overflow: (requested) => {
-    var base = _emscripten_stack_get_base();
-    var end = _emscripten_stack_get_end();
+    var base = emscripten_stack_get_base();
+    var end = emscripten_stack_get_end();
     abort(`stack overflow (Attempt to set SP to ${ptrToString(requested)}` +
           `, with stack limits [${ptrToString(end)} - ${ptrToString(base)}` +
           ']). If you require more stack space build with -sSTACK_SIZE=<bytes>');
@@ -2927,8 +2942,8 @@ addToLibrary({
 #if !EXIT_RUNTIME && ASSERTIONS
     warnOnce('emscripten_force_exit cannot actually shut down the runtime, as the build does not have EXIT_RUNTIME set');
 #endif
-    __emscripten_runtime_keepalive_clear();
-    _exit(status);
+    _emscripten_runtime_keepalive_clear();
+    exit(status);
   },
 
   emscripten_out: (str) => out(UTF8ToString(str)),
@@ -3000,7 +3015,7 @@ addToLibrary({
 #if STACK_OVERFLOW_CHECK
     checkStackCookie();
     if (e instanceof WebAssembly.RuntimeError) {
-      if (_emscripten_stack_get_current() <= 0) {
+      if (emscripten_stack_get_current() <= 0) {
         err('Stack overflow detected.  You can try increasing -sSTACK_SIZE (currently set to {{{ STACK_SIZE }}})');
       }
     }
@@ -3094,10 +3109,10 @@ addToLibrary({
 #endif
       try {
 #if PTHREADS
-        if (ENVIRONMENT_IS_PTHREAD) __emscripten_thread_exit(EXITSTATUS);
+        if (ENVIRONMENT_IS_PTHREAD) _emscripten_thread_exit(EXITSTATUS);
         else
 #endif
-        _exit(EXITSTATUS);
+        exit(EXITSTATUS);
       } catch (e) {
         handleException(e);
       }
@@ -3110,9 +3125,6 @@ addToLibrary({
 #endif // MINIMAL_RUNTIME
 
   $asmjsMangle: (x) => {
-    if (x == '__main_argc_argv') {
-      x = 'main';
-    }
     return x.startsWith('dynCall_') ? x : '_' + x;
   },
 
@@ -3151,7 +3163,7 @@ addToLibrary({
   $mmapAlloc: (size) => {
 #if hasExportedSymbol('emscripten_builtin_memalign')
     size = alignMemory(size, {{{ WASM_PAGE_SIZE }}});
-    var ptr = _emscripten_builtin_memalign({{{ WASM_PAGE_SIZE }}}, size);
+    var ptr = emscripten_builtin_memalign({{{ WASM_PAGE_SIZE }}}, size);
     if (!ptr) return 0;
     return zeroMemory(ptr, size);
 #elif ASSERTIONS
@@ -3363,7 +3375,7 @@ function wrapSyscallFunction(x, library, isWasi) {
   // In PURE_WASI mode we can't assume the wasm binary was built by emscripten
   // and politely notify us on memory growth.  Instead we have to check for
   // possible memory growth on each syscall.
-  var pre = '\nif (!HEAPU8.byteLength) _emscripten_notify_memory_growth(0);\n'
+  var pre = '\nif (!HEAPU8.byteLength) emscripten_notify_memory_growth(0);\n'
   library[x + '__deps'].push('emscripten_notify_memory_growth');
 #else
   var pre = '';

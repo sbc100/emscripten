@@ -1077,6 +1077,12 @@ var NODE_CODE_CACHING = false;
 // [link]
 var EXPORTED_FUNCTIONS = [];
 
+// Unverals specifier for module exports.  This settings replaces, and is
+// mutuallry exclusive with both EXPORTED_FUNCTIONS and
+// EXPORTED_RUNTIME_METHODS.  It can also be used to export JS library symbols
+// without also needing to specify DEFAULT_LIBRARY_FUNCS_TO_INCLUDE.
+var EXPORTS = [];
+
 // If true, we export all the symbols that are present in JS onto the Module
 // object. This does not affect which symbols will be present - it does not
 // prevent DCE or cause anything to be included in linking. It only does
@@ -2164,6 +2170,10 @@ var LEGACY_RUNTIME = false;
 // Example use -sSIGNATURE_CONVERSIONS=someFunction:_p,anotherFunction:p
 // [link]
 var SIGNATURE_CONVERSIONS = [];
+
+// Define native symbols with a leading underscore, in addition unmanged
+// symbols.  This is mostly for compability with legacy codebases.
+var MANGLED_SYMBOLS = false;
 
 //===========================================
 // Internal, used for testing only, from here

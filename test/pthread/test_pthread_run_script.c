@@ -16,9 +16,9 @@ EMSCRIPTEN_KEEPALIVE void FinishTest(int result) {
 void TestAsyncRunScript() {
   // 5. Test emscripten_async_run_script() runs in a pthread.
 #if __EMSCRIPTEN_PTHREADS__
-  emscripten_async_run_script("Module['_FinishTest'](ENVIRONMENT_IS_PTHREAD && (typeof ENVIRONMENT_IS_WORKER !== 'undefined' && ENVIRONMENT_IS_WORKER));", 1);
+  emscripten_async_run_script("Module['FinishTest'](ENVIRONMENT_IS_PTHREAD && (typeof ENVIRONMENT_IS_WORKER !== 'undefined' && ENVIRONMENT_IS_WORKER));", 1);
 #else
-  emscripten_async_run_script("Module['_FinishTest'](!(typeof ENVIRONMENT_IS_WORKER !== 'undefined' && ENVIRONMENT_IS_WORKER));", 1);
+  emscripten_async_run_script("Module['FinishTest'](!(typeof ENVIRONMENT_IS_WORKER !== 'undefined' && ENVIRONMENT_IS_WORKER));", 1);
 #endif
 }
 
