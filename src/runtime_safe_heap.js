@@ -42,9 +42,9 @@ function SAFE_HEAP_STORE(dest, value, bytes, isFloat) {
 #else
   if (runtimeInitialized) {
 #endif
-    var brk = _sbrk(0);
+    var brk = sbrk(0);
     if (dest + bytes > brk) abort(`segmentation fault, exceeded the top of the available dynamic heap when storing ${bytes} bytes to address ${dest}. DYNAMICTOP=${brk}`);
-    if (brk < _emscripten_stack_get_base()) abort(`brk >= _emscripten_stack_get_base() (brk=${brk}, _emscripten_stack_get_base()=${_emscripten_stack_get_base()})`); // sbrk-managed memory must be above the stack
+    if (brk < emscripten_stack_get_base()) abort(`brk >= emscripten_stack_get_base() (brk=${brk}, emscripten_stack_get_base()=${emscripten_stack_get_base()})`); // sbrk-managed memory must be above the stack
     if (brk > wasmMemory.buffer.byteLength) abort(`brk <= wasmMemory.buffer.byteLength (brk=${brk}, wasmMemory.buffer.byteLength=${wasmMemory.buffer.byteLength})`);
   }
   setValue_safe(dest, value, getSafeHeapType(bytes, isFloat));
@@ -70,9 +70,9 @@ function SAFE_HEAP_LOAD(dest, bytes, unsigned, isFloat) {
 #else
   if (runtimeInitialized) {
 #endif
-    var brk = _sbrk(0);
+    var brk = sbrk(0);
     if (dest + bytes > brk) abort(`segmentation fault, exceeded the top of the available dynamic heap when loading ${bytes} bytes from address ${dest}. DYNAMICTOP=${brk}`);
-    if (brk < _emscripten_stack_get_base()) abort(`brk >= _emscripten_stack_get_base() (brk=${brk}, _emscripten_stack_get_base()=${_emscripten_stack_get_base()})`); // sbrk-managed memory must be above the stack
+    if (brk < emscripten_stack_get_base()) abort(`brk >= emscripten_stack_get_base() (brk=${brk}, emscripten_stack_get_base()=${emscripten_stack_get_base()})`); // sbrk-managed memory must be above the stack
     if (brk > wasmMemory.buffer.byteLength) abort(`brk <= wasmMemory.buffer.byteLength (brk=${brk}, wasmMemory.buffer.byteLength=${wasmMemory.buffer.byteLength})`);
   }
   var type = getSafeHeapType(bytes, isFloat);
