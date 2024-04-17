@@ -914,7 +914,7 @@ function hasExportedSymbol(sym) {
 // wasmTable are set. In this case we maybe need to re-export them on the
 // Module object.
 function receivedSymbol(sym) {
-  if (EXPORTED_RUNTIME_METHODS.has(sym)) {
+  if (EXPORTS.has(sym)) {
     return `Module['${sym}'] = ${sym};`;
   }
   return '';
@@ -1035,7 +1035,7 @@ function getEntryFunction() {
   if (MAIN_MODULE) {
     return `resolveGlobalSymbol('${entryFunction}').sym;`;
   }
-  return `_${entryFunction}`;
+  return entryFunction;
 }
 
 function formattedMinNodeVersion() {
