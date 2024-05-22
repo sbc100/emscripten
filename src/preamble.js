@@ -937,6 +937,10 @@ function createWasm() {
     wasmExports = relocateExports(wasmExports, {{{ GLOBAL_BASE }}});
 #endif
 
+#if MEMORY64 || CAN_ADDRESS_2GB
+    wasmExports = applySignatureConversions(wasmExports);
+#endif
+
 #if ASYNCIFY
     wasmExports = Asyncify.instrumentWasmExports(wasmExports);
 #endif
@@ -944,6 +948,8 @@ function createWasm() {
 #if ABORT_ON_WASM_EXCEPTIONS
     wasmExports = instrumentWasmExportsWithAbort(wasmExports);
 #endif
+
+    {{{ receivedSymbol('wasmExports') }}}
 
 #if MAIN_MODULE
     var metadata = getDylinkMetadata(module);
@@ -960,12 +966,6 @@ function createWasm() {
 #elif RELOCATABLE
     reportUndefinedSymbols();
 #endif
-
-#if MEMORY64 || CAN_ADDRESS_2GB
-    wasmExports = applySignatureConversions(wasmExports);
-#endif
-
-    {{{ receivedSymbol('wasmExports') }}}
 
 #if PTHREADS
 #if MAIN_MODULE

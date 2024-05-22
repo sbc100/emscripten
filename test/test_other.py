@@ -184,6 +184,17 @@ def requires_scons(func):
   return decorated
 
 
+def requires_jspi(func):
+  assert callable(func)
+
+  @wraps(func)
+  def decorated(self, *args, **kwargs):
+    self.require_jspi()
+    return func(self, *args, **kwargs)
+
+  return decorated
+
+
 def requires_pkg_config(func):
   assert callable(func)
 
@@ -4478,6 +4489,26 @@ addToLibrary({
 ''')
     err = self.expect_fail([EMCC, 'src.c', '--js-library', 'lib.js', '--js-library', 'lib2.js'])
     self.assertContained('lib2.js: signature redefinition for: jslibfunc__sig. (old=ii vs new=pp)', err)
+
+  @requires_wasm64
+  @requires_jspi
+  def test_js_lib_asyncify_wasm64(self):
+    create_file('lib.js', '''
+      addToLibrary({
+        someFunc: (arg) => {
+          err('arg:' + arg);
+        },
+        someFunc__sig: 'vp',
+      });
+    ''')
+    create_file('test.c', '''
+    void someFunc(void* p);
+    int main() {
+      someFunc((void*)42);
+    }
+    ''')
+    self.emcc_args += ['--js-library', 'lib.js', '-sASYNCIFY=2', '-sMEMORY64', '-Wno-experimental']
+    self.do_runf('test.c', 'arg:42\n')
 
   def test_js_lib_invalid_deps(self):
     create_file('lib.js', r'''
@@ -14820,21 +14851,26 @@ addToLibrary({
     err = self.run_process([EMCC, test_file('hello_world.c'), '-o', 'foo.wasm', '-sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=emscripten_get_heap_max'], stderr=PIPE).stderr
     self.assertContained('emcc: warning: DEFAULT_LIBRARY_FUNCS_TO_INCLUDE is only valid when generating JavaScript output', err)
 
-  def test_uuid(self):
+  @parameterized({
+    '': ([],),
+    'closure': (['-O2', '--closure=1'],),
+  })
+  def test_uuid(self, args):
     # We run this test in Node/SPIDERMONKEY and browser environments because we
     # try to make use of high quality crypto random number generators such as
     # crypto.getRandomValues or randomBytes (if available).
 
     # Use closure compiler so we can check that require('crypto').randomBytes and
     # window.crypto.getRandomValues doesn't get minified out.
-    self.do_runf('test_uuid.c', emcc_args=['-O2', '--closure=1', '-luuid'])
+    self.do_runf('test_uuid.c', emcc_args=['-luuid', '-sMAXIMUM_MEMORY=4GB', '-sALLOW_MEMORY_GROWTH'] + args)
 
     js_out = read_file('test_uuid.js')
 
     # Check that test.js compiled with --closure 1 contains ").randomBytes" and
     # "window.crypto.getRandomValues"
-    self.assertContained(").randomBytes", js_out)
-    self.assertContained("window.crypto.getRandomValues", js_out)
+    if args:
+      self.assertContained(').randomBytes', js_out)
+    self.assertContained('window.crypto.getRandomValues', js_out)
 
   def test_wasm64_no_asan(self):
     err = self.expect_fail([EMCC, test_file('hello_world.c'), '-sMEMORY64', '-fsanitize=address'])

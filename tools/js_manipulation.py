@@ -182,7 +182,15 @@ def make_wasm64_wrapper(sig):
   # are certain places we need to avoid strict mode still.
   # e.g. emscripten_get_callstack (getCallstack) which uses the `arguments`
   # global.
-  return f'  var makeWrapper_{sig} = (f) => ({args_in}) => {result};\n'
+  if settings.ASYNCIFY:
+    return f'''  var makeWrapper_{sig} = (f) => {{
+    var rtn = ({args_in}) => {result};
+    rtn.type = () => f.type();
+    return rtn
+  }};\n'''
+
+  else:
+    return f'  var makeWrapper_{sig} = (f) => ({args_in}) => {result};\n'
 
 
 def make_unsign_pointer_wrapper(sig):
