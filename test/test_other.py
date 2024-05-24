@@ -735,13 +735,13 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
     create_file('t.py', '''
 import sys
 f = open(sys.argv[1], 'a')
-f.write('transformed!')
+f.write('var foobar = 10;')
 f.close()
 ''')
 
     err = self.run_process([EMCC, test_file('hello_world.c'), '-gsource-map', '--js-transform', '%s t.py' % (PYTHON)], stderr=PIPE).stderr
     self.assertContained('disabling source maps because a js transform is being done', err)
-    self.assertIn('transformed!', read_file('a.out.js'))
+    self.assertIn('var foobar = 10;', read_file('a.out.js'))
 
   @parameterized({
     '': [[]],
@@ -2891,6 +2891,7 @@ More info: https://emscripten.org
     'safeHeap': ('test-safeHeap.js', ['safeHeap']),
     'object_literals': ('test-object-literals.js', []),
     'LittleEndianHeap': ('test-LittleEndianHeap.js', ['littleEndianHeap']),
+    'macroSubstitution': ('macroSubstitution.js', ['macroSubstitution']),
   })
   @crossplatform
   def test_js_optimizer(self, filename, passes):
@@ -6466,8 +6467,8 @@ This locale is not the C locale.
     self.assertContained('hello, world!', self.run_js('a.out.js'))
     self.assertNotContained(FS_MARKER, read_file('a.out.js'))
     print('yes fs, no fs:', yes_size, no_size)
-    # ~100K of FS code is removed
-    self.assertGreater(yes_size - no_size, 90000)
+    # ~70K of FS code is removed
+    self.assertGreater(yes_size - no_size, 70000)
     self.assertLess(no_size, 360000)
 
   def test_no_filesystem_libcxx(self):

@@ -286,8 +286,8 @@ function addToLibrary(obj, options = null) {
   mergeInto(LibraryManager.library, obj, options);
 }
 
-let structs = {};
-let defines = {};
+export let structs = {};
+export let defines = {};
 
 /**
  * Read JSON file containing struct and macro/define information
