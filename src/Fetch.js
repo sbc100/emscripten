@@ -82,7 +82,7 @@ function fetchDeleteCachedData(db, fetch, onsuccess, onerror) {
     return;
   }
 
-  var fetch_attr = fetch + {{{ C_STRUCTS.emscripten_fetch_t.__attributes }}};
+  var fetch_attr = fetch + cStructs.emscripten_fetch_t.__attributes;
   var path = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.destinationPath, '*') }}};
   path ||= {{{ makeGetValue('fetch', C_STRUCTS.emscripten_fetch_t.url, '*') }}};
 
@@ -98,14 +98,14 @@ function fetchDeleteCachedData(db, fetch, onsuccess, onerror) {
       dbg(`fetch: Deleted file ${pathStr} from IndexedDB`);
 #endif
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.data, 0, '*') }}};
-      writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.numBytes }}}, 0);
-      writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.dataOffset }}}, 0);
-      writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.totalBytes }}}, 0);
+      writeI53ToI64(fetch + cStructs.emscripten_fetch_t.numBytes, 0);
+      writeI53ToI64(fetch + cStructs.emscripten_fetch_t.dataOffset, 0);
+      writeI53ToI64(fetch + cStructs.emscripten_fetch_t.totalBytes, 0);
       // Mimic XHR readyState 4 === 'DONE: The operation is complete'
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}};
       // Mimic XHR HTTP status code 200 "OK"
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 200, 'i16') }}};
-      stringToUTF8("OK", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+      stringToUTF8("OK", fetch + cStructs.emscripten_fetch_t.statusText, 64);
       onsuccess(fetch, 0, value);
     };
     request.onerror = (error) => {
@@ -114,7 +114,7 @@ function fetchDeleteCachedData(db, fetch, onsuccess, onerror) {
 #endif
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 404, 'i16') }}} // Mimic XHR HTTP status code 404 "Not Found"
-      stringToUTF8("Not Found", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+      stringToUTF8("Not Found", fetch + cStructs.emscripten_fetch_t.statusText, 64);
       onerror(fetch, 0, error);
     };
   } catch(e) {
@@ -134,7 +134,7 @@ function fetchLoadCachedData(db, fetch, onsuccess, onerror) {
     return;
   }
 
-  var fetch_attr = fetch + {{{ C_STRUCTS.emscripten_fetch_t.__attributes }}};
+  var fetch_attr = fetch + cStructs.emscripten_fetch_t.__attributes;
   var path = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.destinationPath, '*') }}};
   path ||= {{{ makeGetValue('fetch', C_STRUCTS.emscripten_fetch_t.url, '*') }}};
   var pathStr = UTF8ToString(path);
@@ -155,12 +155,12 @@ function fetchLoadCachedData(db, fetch, onsuccess, onerror) {
         var ptr = _malloc(len);
         HEAPU8.set(new Uint8Array(value), ptr);
         {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.data, 'ptr', '*') }}};
-        writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.numBytes }}}, len);
-        writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.dataOffset }}}, 0);
-        writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.totalBytes }}}, len);
+        writeI53ToI64(fetch + cStructs.emscripten_fetch_t.numBytes, len);
+        writeI53ToI64(fetch + cStructs.emscripten_fetch_t.dataOffset, 0);
+        writeI53ToI64(fetch + cStructs.emscripten_fetch_t.totalBytes, len);
         {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
         {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 200, 'i16') }}} // Mimic XHR HTTP status code 200 "OK"
-        stringToUTF8("OK", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+        stringToUTF8("OK", fetch + cStructs.emscripten_fetch_t.statusText, 64);
         onsuccess(fetch, 0, value);
       } else {
         // Succeeded to load, but the load came back with the value of undefined, treat that as an error since we never store undefined in db.
@@ -169,7 +169,7 @@ function fetchLoadCachedData(db, fetch, onsuccess, onerror) {
 #endif
         {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
         {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 404, 'i16') }}} // Mimic XHR HTTP status code 404 "Not Found"
-        stringToUTF8("Not Found", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+        stringToUTF8("Not Found", fetch + cStructs.emscripten_fetch_t.statusText, 64);
         onerror(fetch, 0, 'no data');
       }
     };
@@ -179,7 +179,7 @@ function fetchLoadCachedData(db, fetch, onsuccess, onerror) {
 #endif
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 404, 'i16') }}} // Mimic XHR HTTP status code 404 "Not Found"
-      stringToUTF8("Not Found", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+      stringToUTF8("Not Found", fetch + cStructs.emscripten_fetch_t.statusText, 64);
       onerror(fetch, 0, error);
     };
   } catch(e) {
@@ -199,7 +199,7 @@ function fetchCacheData(/** @type {IDBDatabase} */ db, fetch, data, onsuccess, o
     return;
   }
 
-  var fetch_attr = fetch + {{{ C_STRUCTS.emscripten_fetch_t.__attributes }}};
+  var fetch_attr = fetch + cStructs.emscripten_fetch_t.__attributes;
   var destinationPath = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.destinationPath, '*') }}};
   destinationPath ||= {{{ makeGetValue('fetch', C_STRUCTS.emscripten_fetch_t.url, '*') }}};
   var destinationPathStr = UTF8ToString(destinationPath);
@@ -214,7 +214,7 @@ function fetchCacheData(/** @type {IDBDatabase} */ db, fetch, data, onsuccess, o
 #endif
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 200, 'i16') }}} // Mimic XHR HTTP status code 200 "OK"
-      stringToUTF8("OK", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+      stringToUTF8("OK", fetch + cStructs.emscripten_fetch_t.statusText, 64);
       onsuccess(fetch, 0, destinationPathStr);
     };
     putRequest.onerror = (error) => {
@@ -226,7 +226,7 @@ function fetchCacheData(/** @type {IDBDatabase} */ db, fetch, data, onsuccess, o
       // to more HTTP status codes for more information?
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 4, 'i16') }}} // Mimic XHR readyState 4 === 'DONE: The operation is complete'
       {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 413, 'i16') }}} // Mimic XHR HTTP status code 413 "Payload Too Large"
-      stringToUTF8("Payload Too Large", fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+      stringToUTF8("Payload Too Large", fetch + cStructs.emscripten_fetch_t.statusText, 64);
       onerror(fetch, 0, error);
     };
   } catch(e) {
@@ -249,8 +249,8 @@ function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
   }
   var url_ = UTF8ToString(url);
 
-  var fetch_attr = fetch + {{{ C_STRUCTS.emscripten_fetch_t.__attributes }}};
-  var requestMethod = UTF8ToString(fetch_attr + {{{ C_STRUCTS.emscripten_fetch_attr_t.requestMethod }}});
+  var fetch_attr = fetch + cStructs.emscripten_fetch_t.__attributes;
+  var requestMethod = UTF8ToString(fetch_attr + cStructs.emscripten_fetch_attr_t.requestMethod);
   requestMethod ||= 'GET';
   var timeoutMsecs = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.timeoutMSecs, 'u32') }}};
   var userName = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.userName, '*') }}};
@@ -261,9 +261,9 @@ function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
   var dataLength = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.requestDataSize, '*') }}};
 
   var fetchAttributes = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.attributes, 'u32') }}};
-  var fetchAttrLoadToMemory = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_LOAD_TO_MEMORY }}});
-  var fetchAttrStreamData = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_STREAM_DATA }}});
-  var fetchAttrSynchronous = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_SYNCHRONOUS }}});
+  var fetchAttrLoadToMemory = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_LOAD_TO_MEMORY);
+  var fetchAttrStreamData = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_STREAM_DATA);
+  var fetchAttrSynchronous = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_SYNCHRONOUS);
 
   var userNameStr = userName ? UTF8ToString(userName) : undefined;
   var passwordStr = password ? UTF8ToString(password) : undefined;
@@ -333,18 +333,18 @@ function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
       HEAPU8.set(new Uint8Array(/** @type{Array<number>} */(xhr.response)), ptr);
     }
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.data, 'ptr', '*') }}}
-    writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.numBytes }}}, ptrLen);
-    writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.dataOffset }}}, 0);
+    writeI53ToI64(fetch + cStructs.emscripten_fetch_t.numBytes, ptrLen);
+    writeI53ToI64(fetch + cStructs.emscripten_fetch_t.dataOffset, 0);
     var len = xhr.response ? xhr.response.byteLength : 0;
     if (len) {
       // If the final XHR.onload handler receives the bytedata to compute total length, report that,
       // otherwise don't write anything out here, which will retain the latest byte size reported in
       // the most recent XHR.onprogress handler.
-      writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.totalBytes }}}, len);
+      writeI53ToI64(fetch + cStructs.emscripten_fetch_t.totalBytes, len);
     }
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 'xhr.readyState', 'i16') }}}
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 'xhr.status', 'i16') }}}
-    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + cStructs.emscripten_fetch_t.statusText, 64);
   }
 
   xhr.onload = (e) => {
@@ -405,14 +405,14 @@ function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
       HEAPU8.set(new Uint8Array(/** @type{Array<number>} */(xhr.response)), ptr);
     }
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.data, 'ptr', '*') }}}
-    writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.numBytes }}}, ptrLen);
-    writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.dataOffset }}}, e.loaded - ptrLen);
-    writeI53ToI64(fetch + {{{ C_STRUCTS.emscripten_fetch_t.totalBytes }}}, e.total);
+    writeI53ToI64(fetch + cStructs.emscripten_fetch_t.numBytes, ptrLen);
+    writeI53ToI64(fetch + cStructs.emscripten_fetch_t.dataOffset, e.loaded - ptrLen);
+    writeI53ToI64(fetch + cStructs.emscripten_fetch_t.totalBytes, e.total);
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.readyState, 'xhr.readyState', 'i16') }}}
     // If loading files from a source that does not give HTTP status code, assume success if we get data bytes
     if (xhr.readyState >= 3 && xhr.status === 0 && e.loaded > 0) xhr.status = 200;
     {{{ makeSetValue('fetch', C_STRUCTS.emscripten_fetch_t.status, 'xhr.status', 'i16') }}}
-    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + {{{ C_STRUCTS.emscripten_fetch_t.statusText }}}, 64);
+    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + cStructs.emscripten_fetch_t.statusText, 64);
     onprogress?.(fetch, xhr, e);
     if (ptr) {
       _free(ptr);
@@ -448,13 +448,13 @@ function startFetch(fetch, successcb, errorcb, progresscb, readystatechangecb) {
   // response.
   {{{ runtimeKeepalivePush() }}}
 
-  var fetch_attr = fetch + {{{ C_STRUCTS.emscripten_fetch_t.__attributes }}};
+  var fetch_attr = fetch + cStructs.emscripten_fetch_t.__attributes;
   var onsuccess = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.onsuccess, '*') }}};
   var onerror = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.onerror, '*') }}};
   var onprogress = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.onprogress, '*') }}};
   var onreadystatechange = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.onreadystatechange, '*') }}};
   var fetchAttributes = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.attributes, '*') }}};
-  var fetchAttrSynchronous = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_SYNCHRONOUS }}});
+  var fetchAttrSynchronous = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_SYNCHRONOUS);
 
   function doCallback(f) {
     if (fetchAttrSynchronous) {
@@ -545,10 +545,10 @@ function startFetch(fetch, successcb, errorcb, progresscb, readystatechangecb) {
     fetchXHR(fetch, cacheResultAndReportSuccess, reportError, reportProgress, reportReadyStateChange);
   };
 
-  var requestMethod = UTF8ToString(fetch_attr + {{{ C_STRUCTS.emscripten_fetch_attr_t.requestMethod }}});
-  var fetchAttrReplace = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_REPLACE }}});
-  var fetchAttrPersistFile = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_PERSIST_FILE }}});
-  var fetchAttrNoDownload = !!(fetchAttributes & {{{ cDefs.EMSCRIPTEN_FETCH_NO_DOWNLOAD }}});
+  var requestMethod = UTF8ToString(fetch_attr + cStructs.emscripten_fetch_attr_t.requestMethod);
+  var fetchAttrReplace = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_REPLACE);
+  var fetchAttrPersistFile = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_PERSIST_FILE);
+  var fetchAttrNoDownload = !!(fetchAttributes & cDefs.EMSCRIPTEN_FETCH_NO_DOWNLOAD);
   if (requestMethod === 'EM_IDB_STORE') {
     // TODO(?): Here we perform a clone of the data, because storing shared typed arrays to IndexedDB does not seem to be allowed.
     var ptr = {{{ makeGetValue('fetch_attr', C_STRUCTS.emscripten_fetch_attr_t.requestData, '*') }}};

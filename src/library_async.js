@@ -240,8 +240,8 @@ addToLibrary({
       // The Asyncify ABI only interprets the first two fields, the rest is for the runtime.
       // We also embed a stack in the same memory region here, right next to the structure.
       // This struct is also defined as asyncify_data_t in emscripten/fiber.h
-      var ptr = _malloc({{{ C_STRUCTS.asyncify_data_s.__size__ }}} + Asyncify.StackSize);
-      Asyncify.setDataHeader(ptr, ptr + {{{ C_STRUCTS.asyncify_data_s.__size__ }}}, Asyncify.StackSize);
+      var ptr = _malloc(cStructs.asyncify_data_s.__size__ + Asyncify.StackSize);
+      Asyncify.setDataHeader(ptr, ptr + cStructs.asyncify_data_s.__size__, Asyncify.StackSize);
       Asyncify.setDataRewindFunc(ptr);
       return ptr;
     },
@@ -494,7 +494,7 @@ addToLibrary({
       // how using a timeout here avoids unbounded call stack growth, which
       // could happen if we tried to scan the stack immediately after unwinding.
       safeSetTimeout(() => {
-        var stackBegin = Asyncify.currData + {{{ C_STRUCTS.asyncify_data_s.__size__ }}};
+        var stackBegin = Asyncify.currData + cStructs.asyncify_data_s.__size__;
         var stackEnd = {{{ makeGetValue('Asyncify.currData', 0, '*') }}};
         {{{ makeDynCall('vpp', 'func') }}}(stackBegin, stackEnd);
         wakeUp();
@@ -571,7 +571,7 @@ addToLibrary({
         var userData = {{{ makeGetValue('newFiber', C_STRUCTS.emscripten_fiber_s.user_data, '*') }}};
         {{{ makeDynCall('vp', 'entryPoint') }}}(userData);
       } else {
-        var asyncifyData = newFiber + {{{ C_STRUCTS.emscripten_fiber_s.asyncify_data }}};
+        var asyncifyData = newFiber + cStructs.emscripten_fiber_s.asyncify_data;
         Asyncify.currData = asyncifyData;
 
 #if ASYNCIFY_DEBUG
@@ -594,7 +594,7 @@ addToLibrary({
     if (Asyncify.state === Asyncify.State.Normal) {
       Asyncify.state = Asyncify.State.Unwinding;
 
-      var asyncifyData = oldFiber + {{{ C_STRUCTS.emscripten_fiber_s.asyncify_data }}};
+      var asyncifyData = oldFiber + cStructs.emscripten_fiber_s.asyncify_data;
       Asyncify.setDataRewindFunc(asyncifyData);
       Asyncify.currData = asyncifyData;
 

@@ -55,17 +55,17 @@ addToLibrary({
 #endif
     var info = promiseMap.get(id);
     switch (result) {
-      case {{{ cDefs.EM_PROMISE_FULFILL }}}:
+      case cDefs.EM_PROMISE_FULFILL:
         info.resolve(value);
         return;
-      case {{{ cDefs.EM_PROMISE_MATCH }}}:
+      case cDefs.EM_PROMISE_MATCH:
         info.resolve(getPromise(value));
         return;
-      case {{{ cDefs.EM_PROMISE_MATCH_RELEASE }}}:
+      case cDefs.EM_PROMISE_MATCH_RELEASE:
         info.resolve(getPromise(value));
         _emscripten_promise_destroy(value);
         return;
-      case {{{ cDefs.EM_PROMISE_REJECT }}}:
+      case cDefs.EM_PROMISE_REJECT:
         info.reject(value);
         return;
     }
@@ -116,15 +116,15 @@ addToLibrary({
         stackRestore(stack);
       }
       switch (result) {
-        case {{{ cDefs.EM_PROMISE_FULFILL }}}:
+        case cDefs.EM_PROMISE_FULFILL:
           return resultVal;
-        case {{{ cDefs.EM_PROMISE_MATCH }}}:
+        case cDefs.EM_PROMISE_MATCH:
           return getPromise(resultVal);
-        case {{{ cDefs.EM_PROMISE_MATCH_RELEASE }}}:
+        case cDefs.EM_PROMISE_MATCH_RELEASE:
           var ret = getPromise(resultVal);
           _emscripten_promise_destroy(resultVal);
           return ret;
-        case {{{ cDefs.EM_PROMISE_REJECT }}}:
+        case cDefs.EM_PROMISE_REJECT:
           throw resultVal;
       }
 #if ASSERTIONS
@@ -180,7 +180,7 @@ addToLibrary({
 #if ASSERTIONS
     assert(typeof value == 'undefined' || typeof value === 'number', `native promises can only handle numeric results (${value} ${typeof value})`);
 #endif
-    var result = fulfill ? {{{ cDefs.EM_PROMISE_FULFILL }}} : {{{ cDefs.EM_PROMISE_REJECT }}}
+    var result = fulfill ? cDefs.EM_PROMISE_FULFILL : cDefs.EM_PROMISE_REJECT
     {{{ makeSetValue('ptr', C_STRUCTS.em_settled_result_t.result, 'result', 'i32') }}};
     {{{ makeSetValue('ptr', C_STRUCTS.em_settled_result_t.value, 'value', '*') }}};
   },
@@ -195,7 +195,7 @@ addToLibrary({
       promise: Promise.allSettled(promises).then((results) => {
         if (resultBuf) {
           var offset = resultBuf;
-          for (var i = 0; i < size; i++, offset += {{{ C_STRUCTS.em_settled_result_t.__size__ }}}) {
+          for (var i = 0; i < size; i++, offset += cStructs.em_settled_result_t.__size__) {
             if (results[i].status === 'fulfilled') {
               setPromiseResult(offset, true, results[i].value);
             } else {

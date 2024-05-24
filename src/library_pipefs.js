@@ -12,7 +12,7 @@ addToLibrary({
     mount(mount) {
       // Do not pollute the real root directory or its child nodes with pipes
       // Looks like it is OK to create another pseudo-root node not linked to the FS.root hierarchy this way
-      return FS.createNode(null, '/', {{{ cDefs.S_IFDIR }}} | 511 /* 0777 */, 0);
+      return FS.createNode(null, '/', cDefs.S_IFDIR | 511 /* 0777 */, 0);
     },
     createPipe() {
       var pipe = {
@@ -30,8 +30,8 @@ addToLibrary({
 
       var rName = PIPEFS.nextname();
       var wName = PIPEFS.nextname();
-      var rNode = FS.createNode(PIPEFS.root, rName, {{{ cDefs.S_IFIFO }}}, 0);
-      var wNode = FS.createNode(PIPEFS.root, wName, {{{ cDefs.S_IFIFO }}}, 0);
+      var rNode = FS.createNode(PIPEFS.root, rName, cDefs.S_IFIFO, 0);
+      var wNode = FS.createNode(PIPEFS.root, wName, cDefs.S_IFIFO, 0);
 
       rNode.pipe = pipe;
       wNode.pipe = pipe;
@@ -39,7 +39,7 @@ addToLibrary({
       var readableStream = FS.createStream({
         path: rName,
         node: rNode,
-        flags: {{{ cDefs.O_RDONLY }}},
+        flags: cDefs.O_RDONLY,
         seekable: false,
         stream_ops: PIPEFS.stream_ops
       });
@@ -48,7 +48,7 @@ addToLibrary({
       var writableStream = FS.createStream({
         path: wName,
         node: wNode,
-        flags: {{{ cDefs.O_WRONLY }}},
+        flags: cDefs.O_WRONLY,
         seekable: false,
         stream_ops: PIPEFS.stream_ops
       });
@@ -63,14 +63,14 @@ addToLibrary({
       poll(stream) {
         var pipe = stream.node.pipe;
 
-        if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_WRONLY }}}) {
-          return ({{{ cDefs.POLLWRNORM }}} | {{{ cDefs.POLLOUT }}});
+        if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_WRONLY) {
+          return (cDefs.POLLWRNORM | cDefs.POLLOUT);
         }
         if (pipe.buckets.length > 0) {
           for (var i = 0; i < pipe.buckets.length; i++) {
             var bucket = pipe.buckets[i];
             if (bucket.offset - bucket.roffset > 0) {
-              return ({{{ cDefs.POLLRDNORM }}} | {{{ cDefs.POLLIN }}});
+              return (cDefs.POLLRDNORM | cDefs.POLLIN);
             }
           }
         }
@@ -78,10 +78,10 @@ addToLibrary({
         return 0;
       },
       ioctl(stream, request, varargs) {
-        return {{{ cDefs.EINVAL }}};
+        return cDefs.EINVAL;
       },
       fsync(stream) {
-        return {{{ cDefs.EINVAL }}};
+        return cDefs.EINVAL;
       },
       read(stream, buffer, offset, length, position /* ignored */) {
         var pipe = stream.node.pipe;
@@ -106,7 +106,7 @@ addToLibrary({
         }
         if (currentLength == 0) {
           // Behave as if the read end is always non-blocking
-          throw new FS.ErrnoError({{{ cDefs.EAGAIN }}});
+          throw new FS.ErrnoError(cDefs.EAGAIN);
         }
         var toRead = Math.min(currentLength, length);
 

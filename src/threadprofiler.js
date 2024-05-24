@@ -85,8 +85,8 @@ var emscriptenThreadProfiler = {
 
       var threadTimesInStatus = [];
       var totalTime = 0;
-      var offset = profilerBlock + {{{ C_STRUCTS.thread_profiler_block.timeSpentInStatus }}};
-      for (var j = 0; j < {{{ cDefs.EM_THREAD_STATUS_NUMFIELDS }}}; ++j, offset += 8) {
+      var offset = profilerBlock + cStructs.thread_profiler_block.timeSpentInStatus;
+      for (var j = 0; j < cDefs.EM_THREAD_STATUS_NUMFIELDS; ++j, offset += 8) {
         threadTimesInStatus.push({{{ makeGetValue('offset', 0, 'double') }}});
         totalTime += threadTimesInStatus[j];
         {{{ makeSetValue('offset', 0, 0, 'double') }}};
