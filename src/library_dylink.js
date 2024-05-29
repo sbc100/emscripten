@@ -602,7 +602,7 @@ var LibraryDylink = {
     '$updateTableMap',
     '$wasmTable',
   ],
-  $loadWebAssemblyModule: (binary, flags, libName, localScope, handle) => {
+  $loadWebAssemblyModule: function(binary, flags, libName, localScope = {}, handle) {
 #if DYLINK_DEBUG
     dbg(`loadWebAssemblyModule: ${libName}`);
 #endif
@@ -662,7 +662,7 @@ var LibraryDylink = {
 
       function resolveSymbol(sym) {
         var resolved = resolveGlobalSymbol(sym).sym;
-        if (!resolved && localScope) {
+        if (!resolved) {
           resolved = localScope[sym];
         }
         if (!resolved) {
@@ -941,10 +941,10 @@ var LibraryDylink = {
   ],
   $loadDynamicLibrary__docs: `
     /**
-     * @param {number=} handle
      * @param {Object=} localScope
+     * @param {number=} handle
      */`,
-  $loadDynamicLibrary: function(libName, flags = {global: true, nodelete: true}, localScope, handle) {
+  $loadDynamicLibrary: function(libName, flags = {global: true, nodelete: true}, localScope = {}, handle) {
 #if DYLINK_DEBUG
     dbg(`loadDynamicLibrary: ${libName} handle: ${handle}`);
     dbg(`existing: ${Object.keys(LDSO.loadedLibsByName)}`);
@@ -959,9 +959,7 @@ var LibraryDylink = {
       assert(dso.exports !== 'loading', `Attempt to load '${libName}' twice before the first load completed`);
 #endif
       if (!flags.global) {
-        if (localScope) {
-          Object.assign(localScope, dso.exports);
-        }
+        Object.assign(localScope, dso.exports);
       } else if (!dso.global) {
         // The library was previously loaded only locally but not
         // we have a request with global=true.
@@ -1045,7 +1043,7 @@ var LibraryDylink = {
     function moduleLoaded(exports) {
       if (dso.global) {
         mergeLibSymbols(exports, libName);
-      } else if (localScope) {
+      } else {
         Object.assign(localScope, exports);
       }
       dso.exports = exports;
@@ -1112,22 +1110,19 @@ var LibraryDylink = {
     filename = PATH.normalize(filename);
     var searchpaths = [];
 
-    var global = Boolean(flags & {{{ cDefs.RTLD_GLOBAL }}});
-    var localScope = global ? null : {};
-
     // We don't care about RTLD_NOW and RTLD_LAZY.
     var combinedFlags = {
-      global,
+      global: Boolean(flags & {{{ cDefs.RTLD_GLOBAL }}}),
       nodelete:  Boolean(flags & {{{ cDefs.RTLD_NODELETE }}}),
       loadAsync: jsflags.loadAsync,
     }
 
     if (jsflags.loadAsync) {
-      return loadDynamicLibrary(filename, combinedFlags, localScope, handle);
+      return loadDynamicLibrary(filename, combinedFlags, {}, handle);
     }
 
     try {
-      return loadDynamicLibrary(filename, combinedFlags, localScope, handle)
+      return loadDynamicLibrary(filename, combinedFlags, {}, handle)
     } catch (e) {
 #if ASSERTIONS
       err(`Error in loading dynamic library ${filename}: ${e}`);
