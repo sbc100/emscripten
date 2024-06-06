@@ -1472,7 +1472,7 @@ var LibraryGLEmulation = {
                 ")",
               ";",
             ].join("");
-            return [].concat(colorLines, alphaLines, [line]);
+            return [...colorLines, ...alphaLines, line];
           }
         }
 
@@ -1597,7 +1597,7 @@ var LibraryGLEmulation = {
             var passOutputVar = prefix + "result";
 
             var newLines = s_texUnits[i].genPassLines(passOutputVar, lastPassVar, i);
-            lines = lines.concat(newLines, [""]);
+            lines.push(...newLines, "");
 
             lastPassVar = passOutputVar;
           }
