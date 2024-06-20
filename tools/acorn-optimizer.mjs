@@ -1946,7 +1946,7 @@ function macroSubstitution(ast) {
   fullWalk(ast, (node) => {
     if (node.type == 'MemberExpression') {
       if (node.object.name == 'cDefs') {
-        // Handle cDefs.FOO
+        // Handle "cDefs.FOO"
         const name = node.property.name;
         const value = structInfo.defines[name];
         if (typeof value == 'undefined') {
@@ -1956,7 +1956,7 @@ function macroSubstitution(ast) {
         trace('with:', value);
         replaceWithConstant(node, value);
       } else if (node.object.type == 'MemberExpression') {
-        // Handle cStructs.foo.bar
+        // Handle "cStructs.foo.bar"
         const inner = node.object.object;
         const outer = node.object;
         if (inner.name == 'cStructs') {
@@ -1967,7 +1967,6 @@ function macroSubstitution(ast) {
           }
           const fieldName = node.property.name;
           const value = info[fieldName];
-          console.error(info);
           if (typeof value == 'undefined') {
             error(`unknown C struct field in JS code: cStructs.${structName}.${fieldName}`);
           }

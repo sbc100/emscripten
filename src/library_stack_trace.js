@@ -24,10 +24,10 @@ var LibraryStackTrace = {
 
     // If user requested to see the original source stack, but no source map
     // information is available, just fall back to showing the JS stack.
-    if (flags & {{{ cDefs.EM_LOG_C_STACK }}} && typeof emscripten_source_map == 'undefined') {
+    if (flags & cDefs.EM_LOG_C_STACK && typeof emscripten_source_map == 'undefined') {
       warnOnce('Source map information is not available, emscripten_log with EM_LOG_C_STACK will be ignored. Build with "--pre-js $EMSCRIPTEN/src/emscripten-source-map.min.js" linker flag to add source map loading to code.');
-      flags ^= {{{ cDefs.EM_LOG_C_STACK }}};
-      flags |= {{{ cDefs.EM_LOG_JS_STACK }}};
+      flags ^= cDefs.EM_LOG_C_STACK;
+      flags |= cDefs.EM_LOG_JS_STACK;
     }
 
     // Process all lines:
@@ -77,18 +77,18 @@ var LibraryStackTrace = {
 
       var haveSourceMap = false;
 
-      if (flags & {{{ cDefs.EM_LOG_C_STACK }}}) {
+      if (flags & cDefs.EM_LOG_C_STACK) {
         var orig = emscripten_source_map.originalPositionFor({line: lineno, column: column});
         haveSourceMap = orig?.source;
         if (haveSourceMap) {
-          if (flags & {{{ cDefs.EM_LOG_NO_PATHS }}}) {
+          if (flags & cDefs.EM_LOG_NO_PATHS) {
             orig.source = orig.source.substring(orig.source.replace(/\\/g, "/").lastIndexOf('/')+1);
           }
           callstack += `    at ${symbolName} (${orig.source}:${orig.line}:${orig.column})\n`;
         }
       }
-      if ((flags & {{{ cDefs.EM_LOG_JS_STACK }}}) || !haveSourceMap) {
-        if (flags & {{{ cDefs.EM_LOG_NO_PATHS }}}) {
+      if ((flags & cDefs.EM_LOG_JS_STACK) || !haveSourceMap) {
+        if (flags & cDefs.EM_LOG_NO_PATHS) {
           file = file.substring(file.replace(/\\/g, "/").lastIndexOf('/')+1);
         }
         callstack += (haveSourceMap ? (`     = ${symbolName}`) : (`    at ${symbolName}`)) + ` (${file}:${lineno}:${column})\n`;

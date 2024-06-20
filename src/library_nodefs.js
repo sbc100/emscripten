@@ -55,7 +55,7 @@ addToLibrary({
         if (!e.code) throw e;
         // node under windows can return code 'UNKNOWN' here:
         // https://github.com/emscripten-core/emscripten/issues/15468
-        if (e.code === 'UNKNOWN') throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        if (e.code === 'UNKNOWN') throw new FS.ErrnoError(cDefs.EINVAL);
         throw new FS.ErrnoError(NODEFS.convertNodeCode(e));
       }
     },
@@ -67,7 +67,7 @@ addToLibrary({
     },
     createNode(parent, name, mode, dev) {
       if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var node = FS.createNode(parent, name, mode);
       node.node_ops = NODEFS.node_ops;
@@ -81,7 +81,7 @@ addToLibrary({
         if (NODEFS.isWindows) {
           // Node.js on Windows never represents permission bit 'x', so
           // propagate read bits to execute bits
-          stat.mode |= (stat.mode & {{{ cDefs.S_IRUSR | cDefs.S_IRGRP | cDefs.S_IROTH }}}) >> 2;
+          stat.mode |= (stat.mode & (cDefs.S_IRUSR | cDefs.S_IRGRP | cDefs.S_IROTH)) >> 2;
         }
         return stat.mode;
       });
@@ -99,11 +99,11 @@ addToLibrary({
     // This maps the integer permission modes from http://linux.die.net/man/3/open
     // to node.js-specific file open permission strings at http://nodejs.org/api/fs.html#fs_fs_open_path_flags_mode_callback
     flagsForNode(flags) {
-      flags &= ~{{{ cDefs.O_PATH }}}; // Ignore this flag from musl, otherwise node.js fails to open the file.
-      flags &= ~{{{ cDefs.O_NONBLOCK }}}; // Ignore this flag from musl, otherwise node.js fails to open the file.
-      flags &= ~{{{ cDefs.O_LARGEFILE }}}; // Ignore this flag from musl, otherwise node.js fails to open the file.
-      flags &= ~{{{ cDefs.O_CLOEXEC }}}; // Some applications may pass it; it makes no sense for a single process.
-      flags &= ~{{{ cDefs.O_DIRECTORY }}}; // Node.js doesn't need this passed in, it errors.
+      flags &= ~cDefs.O_PATH; // Ignore this flag from musl, otherwise node.js fails to open the file.
+      flags &= ~cDefs.O_NONBLOCK; // Ignore this flag from musl, otherwise node.js fails to open the file.
+      flags &= ~cDefs.O_LARGEFILE; // Ignore this flag from musl, otherwise node.js fails to open the file.
+      flags &= ~cDefs.O_CLOEXEC; // Some applications may pass it; it makes no sense for a single process.
+      flags &= ~cDefs.O_DIRECTORY; // Node.js doesn't need this passed in, it errors.
       var newFlags = 0;
       for (var k in NODEFS.flagsForNodeMap) {
         if (flags & k) {
@@ -112,7 +112,7 @@ addToLibrary({
         }
       }
       if (flags) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       return newFlags;
     },
@@ -134,7 +134,7 @@ addToLibrary({
           }
           // Node.js on Windows never represents permission bit 'x', so
           // propagate read bits to execute bits.
-          stat.mode |= (stat.mode & {{{ cDefs.S_IRUSR | cDefs.S_IRGRP | cDefs.S_IROTH }}}) >> 2;
+          stat.mode |= (stat.mode & (cDefs.S_IRUSR | cDefs.S_IRGRP | cDefs.S_IROTH)) >> 2;
         }
         return {
           dev: stat.dev,
@@ -248,9 +248,9 @@ addToLibrary({
       },
       llseek(stream, offset, whence) {
         var position = offset;
-        if (whence === {{{ cDefs.SEEK_CUR }}}) {
+        if (whence === cDefs.SEEK_CUR) {
           position += stream.position;
-        } else if (whence === {{{ cDefs.SEEK_END }}}) {
+        } else if (whence === cDefs.SEEK_END) {
           if (FS.isFile(stream.node.mode)) {
             NODEFS.tryFSOperation(() => {
               var stat = fs.fstatSync(stream.nfd);
@@ -260,14 +260,14 @@ addToLibrary({
         }
 
         if (position < 0) {
-          throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+          throw new FS.ErrnoError(cDefs.EINVAL);
         }
 
         return position;
       },
       mmap(stream, length, position, prot, flags) {
         if (!FS.isFile(stream.node.mode)) {
-          throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+          throw new FS.ErrnoError(cDefs.ENODEV);
         }
 
         var ptr = mmapAlloc(length);

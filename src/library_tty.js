@@ -47,7 +47,7 @@ addToLibrary({
       open(stream) {
         var tty = TTY.ttys[stream.node.rdev];
         if (!tty) {
-          throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+          throw new FS.ErrnoError(cDefs.ENODEV);
         }
         stream.tty = tty;
         stream.seekable = false;
@@ -61,7 +61,7 @@ addToLibrary({
       },
       read(stream, buffer, offset, length, pos /* ignored */) {
         if (!stream.tty || !stream.tty.ops.get_char) {
-          throw new FS.ErrnoError({{{ cDefs.ENXIO }}});
+          throw new FS.ErrnoError(cDefs.ENXIO);
         }
         var bytesRead = 0;
         for (var i = 0; i < length; i++) {
@@ -69,10 +69,10 @@ addToLibrary({
           try {
             result = stream.tty.ops.get_char(stream.tty);
           } catch (e) {
-            throw new FS.ErrnoError({{{ cDefs.EIO }}});
+            throw new FS.ErrnoError(cDefs.EIO);
           }
           if (result === undefined && bytesRead === 0) {
-            throw new FS.ErrnoError({{{ cDefs.EAGAIN }}});
+            throw new FS.ErrnoError(cDefs.EAGAIN);
           }
           if (result === null || result === undefined) break;
           bytesRead++;
@@ -85,14 +85,14 @@ addToLibrary({
       },
       write(stream, buffer, offset, length, pos) {
         if (!stream.tty || !stream.tty.ops.put_char) {
-          throw new FS.ErrnoError({{{ cDefs.ENXIO }}});
+          throw new FS.ErrnoError(cDefs.ENXIO);
         }
         try {
           for (var i = 0; i < length; i++) {
             stream.tty.ops.put_char(stream.tty, buffer[offset+i]);
           }
         } catch (e) {
-          throw new FS.ErrnoError({{{ cDefs.EIO }}});
+          throw new FS.ErrnoError(cDefs.EIO);
         }
         if (length) {
           stream.node.timestamp = Date.now();
@@ -121,10 +121,10 @@ addToLibrary({
       ioctl_tcgets(tty) {
         // typical setting
         return {
-          c_iflag: {{{ cDefs.ICRNL | cDefs.IXON | cDefs.IMAXBEL | cDefs.IUTF8 }}},
-          c_oflag: {{{ cDefs.OPOST | cDefs.ONLCR }}},
-          c_cflag: {{{ cDefs.B38400 | cDefs.CSIZE | cDefs.CREAD }}},
-          c_lflag: {{{ cDefs.ISIG | cDefs.ICANON | cDefs.ECHO | cDefs.ECHOE | cDefs.ECHOK | cDefs.ECHOCTL | cDefs.ECHOKE | cDefs.IEXTEN }}},
+          c_iflag: cDefs.ICRNL | cDefs.IXON | cDefs.IMAXBEL | cDefs.IUTF8,
+          c_oflag: cDefs.OPOST | cDefs.ONLCR,
+          c_cflag: cDefs.B38400 | cDefs.CSIZE | cDefs.CREAD,
+          c_lflag: cDefs.ISIG | cDefs.ICANON | cDefs.ECHO | cDefs.ECHOE | cDefs.ECHOK | cDefs.ECHOCTL | cDefs.ECHOKE | cDefs.IEXTEN,
           c_cc: [
             0x03, 0x1c, 0x7f, 0x15, 0x04, 0x00, 0x01, 0x00, 0x11, 0x13, 0x1a, 0x00,
             0x12, 0x0f, 0x17, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

@@ -338,7 +338,7 @@ var LibraryDylink = {
       // as been created.
       assert(wasmImports);
 #endif
-      newDSO('__main__', {{{ cDefs.RTLD_DEFAULT }}}, wasmImports);
+      newDSO('__main__', cDefs.RTLD_DEFAULT, wasmImports);
     },
   },
 
@@ -1104,7 +1104,7 @@ var LibraryDylink = {
   $dlopenInternal: (handle, jsflags) => {
     // void *dlopen(const char *file, int mode);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/dlopen.html
-    var filename = UTF8ToString(handle + {{{ C_STRUCTS.dso.name }}});
+    var filename = UTF8ToString(handle + cStructs.dso.name);
     var flags = {{{ makeGetValue('handle', C_STRUCTS.dso.flags, 'i32') }}};
 #if DYLINK_DEBUG
     dbg(`dlopenInternal: ${filename}`);
@@ -1112,13 +1112,13 @@ var LibraryDylink = {
     filename = PATH.normalize(filename);
     var searchpaths = [];
 
-    var global = Boolean(flags & {{{ cDefs.RTLD_GLOBAL }}});
+    var global = Boolean(flags & cDefs.RTLD_GLOBAL);
     var localScope = global ? null : {};
 
     // We don't care about RTLD_NOW and RTLD_LAZY.
     var combinedFlags = {
       global,
-      nodelete:  Boolean(flags & {{{ cDefs.RTLD_NODELETE }}}),
+      nodelete:  Boolean(flags & cDefs.RTLD_NODELETE),
       loadAsync: jsflags.loadAsync,
     }
 
@@ -1158,7 +1158,7 @@ var LibraryDylink = {
   _emscripten_dlopen_js: (handle, onsuccess, onerror, user_data) => {
     /** @param {Object=} e */
     function errorCallback(e) {
-      var filename = UTF8ToString(handle + {{{ C_STRUCTS.dso.name }}});
+      var filename = UTF8ToString(handle + cStructs.dso.name);
       dlSetError(`'Could not load dynamic lib: ${filename}\n${e}`);
       {{{ runtimeKeepalivePop() }}}
       callUserCallback(() => {{{ makeDynCall('vpp', 'onerror') }}}(handle, user_data));

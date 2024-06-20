@@ -17,7 +17,7 @@ var SyscallsLibrary = {
   $SYSCALLS: {
 #if SYSCALLS_REQUIRE_FILESYSTEM
     // global constants
-    DEFAULT_POLLMASK: {{{ cDefs.POLLIN }}} | {{{ cDefs.POLLOUT }}},
+    DEFAULT_POLLMASK: cDefs.POLLIN | cDefs.POLLOUT,
 
     // shared utilities
     calculateAt(dirfd, path, allowEmpty) {
@@ -26,7 +26,7 @@ var SyscallsLibrary = {
       }
       // relative path
       var dir;
-      if (dirfd === {{{ cDefs.AT_FDCWD }}}) {
+      if (dirfd === cDefs.AT_FDCWD) {
         dir = FS.cwd();
       } else {
         var dirstream = SYSCALLS.getStreamFromFD(dirfd);
@@ -34,7 +34,7 @@ var SyscallsLibrary = {
       }
       if (path.length == 0) {
         if (!allowEmpty) {
-          throw new FS.ErrnoError({{{ cDefs.ENOENT }}});;
+          throw new FS.ErrnoError(cDefs.ENOENT);;
         }
         return dir;
       }
@@ -66,9 +66,9 @@ var SyscallsLibrary = {
     },
     doMsync(addr, stream, len, flags, offset) {
       if (!FS.isFile(stream.node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+        throw new FS.ErrnoError(cDefs.ENODEV);
       }
-      if (flags & {{{ cDefs.MAP_PRIVATE }}}) {
+      if (flags & cDefs.MAP_PRIVATE) {
         // MAP_PRIVATE calls need not to be synced back to underlying fs
         return 0;
       }
@@ -142,7 +142,7 @@ var SyscallsLibrary = {
   ],
   _mmap_js: (len, prot, flags, fd, offset, allocated, addr) => {
 #if FILESYSTEM && SYSCALLS_REQUIRE_FILESYSTEM
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     var stream = SYSCALLS.getStreamFromFD(fd);
     var res = FS.mmap(stream, len, offset, prot, flags);
     var ptr = res.ptr;
@@ -150,7 +150,7 @@ var SyscallsLibrary = {
     {{{ makeSetValue('addr', 0, 'ptr', '*') }}};
     return 0;
 #else // no filesystem support; report lack of support
-    return -{{{ cDefs.ENOSYS }}};
+    return -cDefs.ENOSYS;
 #endif
   },
 
@@ -158,7 +158,7 @@ var SyscallsLibrary = {
   _munmap_js: (addr, len, prot, flags, fd, offset) => {
 #if FILESYSTEM && SYSCALLS_REQUIRE_FILESYSTEM
     var stream = SYSCALLS.getStreamFromFD(fd);
-    if (prot & {{{ cDefs.PROT_WRITE }}}) {
+    if (prot & cDefs.PROT_WRITE) {
       SYSCALLS.doMsync(addr, stream, len, flags, offset);
     }
 #endif
@@ -186,7 +186,7 @@ var SyscallsLibrary = {
   __syscall_pipe__deps: ['$PIPEFS'],
   __syscall_pipe: (fdPtr) => {
     if (fdPtr == 0) {
-      throw new FS.ErrnoError({{{ cDefs.EFAULT }}});
+      throw new FS.ErrnoError(cDefs.EFAULT);
     }
 
     var res = PIPEFS.createPipe();
@@ -209,15 +209,15 @@ var SyscallsLibrary = {
 #else
     var stream = SYSCALLS.getStreamFromFD(fd);
     switch (op) {
-      case {{{ cDefs.TCGETA }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TCGETA: {
+        if (!stream.tty) return -cDefs.ENOTTY;
 #if SYSCALL_DEBUG
         dbg('warning: not filling tio struct');
 #endif
         return 0;
       }
-      case {{{ cDefs.TCGETS }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TCGETS: {
+        if (!stream.tty) return -cDefs.ENOTTY;
         if (stream.tty.ops.ioctl_tcgets) {
           var termios = stream.tty.ops.ioctl_tcgets(stream);
           var argp = syscallGetVarargP();
@@ -225,7 +225,7 @@ var SyscallsLibrary = {
           {{{ makeSetValue('argp', C_STRUCTS.termios.c_oflag, 'termios.c_oflag || 0', 'i32') }}};
           {{{ makeSetValue('argp', C_STRUCTS.termios.c_cflag, 'termios.c_cflag || 0', 'i32') }}};
           {{{ makeSetValue('argp', C_STRUCTS.termios.c_lflag, 'termios.c_lflag || 0', 'i32') }}};
-          for (var i = 0; i < {{{ cDefs.NCCS }}}; i++) {
+          for (var i = 0; i < cDefs.NCCS; i++) {
             {{{ makeSetValue('argp + i', C_STRUCTS.termios.c_cc, 'termios.c_cc[i] || 0', 'i8') }}};
           }
           return 0;
@@ -235,16 +235,16 @@ var SyscallsLibrary = {
 #endif
         return 0;
       }
-      case {{{ cDefs.TCSETA }}}:
-      case {{{ cDefs.TCSETAW }}}:
-      case {{{ cDefs.TCSETAF }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TCSETA:
+      case cDefs.TCSETAW:
+      case cDefs.TCSETAF: {
+        if (!stream.tty) return -cDefs.ENOTTY;
         return 0; // no-op, not actually adjusting terminal settings
       }
-      case {{{ cDefs.TCSETS }}}:
-      case {{{ cDefs.TCSETSW }}}:
-      case {{{ cDefs.TCSETSF }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TCSETS:
+      case cDefs.TCSETSW:
+      case cDefs.TCSETSF: {
+        if (!stream.tty) return -cDefs.ENOTTY;
         if (stream.tty.ops.ioctl_tcsets) {
           var argp = syscallGetVarargP();
           var c_iflag = {{{ makeGetValue('argp', C_STRUCTS.termios.c_iflag, 'i32') }}};
@@ -252,31 +252,31 @@ var SyscallsLibrary = {
           var c_cflag = {{{ makeGetValue('argp', C_STRUCTS.termios.c_cflag, 'i32') }}};
           var c_lflag = {{{ makeGetValue('argp', C_STRUCTS.termios.c_lflag, 'i32') }}};
           var c_cc = []
-          for (var i = 0; i < {{{ cDefs.NCCS }}}; i++) {
+          for (var i = 0; i < cDefs.NCCS; i++) {
             c_cc.push({{{ makeGetValue('argp + i', C_STRUCTS.termios.c_cc, 'i8') }}});
           }
           return stream.tty.ops.ioctl_tcsets(stream.tty, op, { c_iflag, c_oflag, c_cflag, c_lflag, c_cc });
         }
         return 0; // no-op, not actually adjusting terminal settings
       }
-      case {{{ cDefs.TIOCGPGRP }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TIOCGPGRP: {
+        if (!stream.tty) return -cDefs.ENOTTY;
         var argp = syscallGetVarargP();
         {{{ makeSetValue('argp', 0, 0, 'i32') }}};
         return 0;
       }
-      case {{{ cDefs.TIOCSPGRP }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
-        return -{{{ cDefs.EINVAL }}}; // not supported
+      case cDefs.TIOCSPGRP: {
+        if (!stream.tty) return -cDefs.ENOTTY;
+        return -cDefs.EINVAL; // not supported
       }
-      case {{{ cDefs.FIONREAD }}}: {
+      case cDefs.FIONREAD: {
         var argp = syscallGetVarargP();
         return FS.ioctl(stream, op, argp);
       }
-      case {{{ cDefs.TIOCGWINSZ }}}: {
+      case cDefs.TIOCGWINSZ: {
         // TODO: in theory we should write to the winsize struct that gets
         // passed in, but for now musl doesn't read anything on it
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+        if (!stream.tty) return -cDefs.ENOTTY;
         if (stream.tty.ops.ioctl_tiocgwinsz) {
           var winsize = stream.tty.ops.ioctl_tiocgwinsz(stream.tty);
           var argp = syscallGetVarargP();
@@ -285,18 +285,18 @@ var SyscallsLibrary = {
         }
         return 0;
       }
-      case {{{ cDefs.TIOCSWINSZ }}}: {
+      case cDefs.TIOCSWINSZ: {
         // TODO: technically, this ioctl call should change the window size.
         // but, since emscripten doesn't have any concept of a terminal window
         // yet, we'll just silently throw it away as we do TIOCGWINSZ
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+        if (!stream.tty) return -cDefs.ENOTTY;
         return 0;
       }
-      case {{{ cDefs.TCFLSH }}}: {
-        if (!stream.tty) return -{{{ cDefs.ENOTTY }}};
+      case cDefs.TCFLSH: {
+        if (!stream.tty) return -cDefs.ENOTTY;
         return 0;
       }
-      default: return -{{{ cDefs.EINVAL }}}; // not supported
+      default: return -cDefs.EINVAL; // not supported
     }
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
@@ -318,7 +318,7 @@ var SyscallsLibrary = {
   $getSocketFromFD__deps: ['$SOCKFS', '$FS'],
   $getSocketFromFD: (fd) => {
     var socket = SOCKFS.getSocket(fd);
-    if (!socket) throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+    if (!socket) throw new FS.ErrnoError(cDefs.EBADF);
 #if SYSCALL_DEBUG
     dbg(`    (socket: "${socket.path}")`);
 #endif
@@ -359,7 +359,7 @@ var SyscallsLibrary = {
   __syscall_getpeername: (fd, addr, addrlen, d1, d2, d3) => {
     var sock = getSocketFromFD(fd);
     if (!sock.daddr) {
-      return -{{{ cDefs.ENOTCONN }}}; // The socket is not connected.
+      return -cDefs.ENOTCONN; // The socket is not connected.
     }
     var errno = writeSockaddr(addr, sock.family, DNS.lookup_name(sock.daddr), sock.dport, addrlen);
 #if ASSERTIONS
@@ -377,7 +377,7 @@ var SyscallsLibrary = {
   __syscall_shutdown__deps: ['$getSocketFromFD'],
   __syscall_shutdown: (fd, how) => {
     getSocketFromFD(fd);
-    return -{{{ cDefs.ENOSYS }}}; // unsupported feature
+    return -cDefs.ENOSYS; // unsupported feature
   },
   __syscall_accept4__deps: ['$getSocketFromFD', '$writeSockaddr', '$DNS'],
   __syscall_accept4: (fd, addr, addrlen, flags, d1, d2) => {
@@ -434,15 +434,15 @@ var SyscallsLibrary = {
     var sock = getSocketFromFD(fd);
     // Minimal getsockopt aimed at resolving https://github.com/emscripten-core/emscripten/issues/2211
     // so only supports SOL_SOCKET with SO_ERROR.
-    if (level === {{{ cDefs.SOL_SOCKET }}}) {
-      if (optname === {{{ cDefs.SO_ERROR }}}) {
+    if (level === cDefs.SOL_SOCKET) {
+      if (optname === cDefs.SO_ERROR) {
         {{{ makeSetValue('optval', 0, 'sock.error', 'i32') }}};
         {{{ makeSetValue('optlen', 0, 4, 'i32') }}};
         sock.error = null; // Clear the error (The SO_ERROR option obtains and then clears this field).
         return 0;
       }
     }
-    return -{{{ cDefs.ENOPROTOOPT }}}; // The option is unknown at the level indicated.
+    return -cDefs.ENOPROTOOPT; // The option is unknown at the level indicated.
   },
   __syscall_sendmsg__deps: ['$getSocketFromFD', '$readSockaddr', '$DNS'],
   __syscall_sendmsg: (fd, message, flags, d1, d2, d3) => {
@@ -601,15 +601,15 @@ var SyscallsLibrary = {
         flags = stream.stream_ops.poll(stream, timeoutInMillis);
       }
 
-      if ((flags & {{{ cDefs.POLLIN }}}) && check(fd, srcReadLow, srcReadHigh, mask)) {
+      if ((flags & cDefs.POLLIN) && check(fd, srcReadLow, srcReadHigh, mask)) {
         fd < 32 ? (dstReadLow = dstReadLow | mask) : (dstReadHigh = dstReadHigh | mask);
         total++;
       }
-      if ((flags & {{{ cDefs.POLLOUT }}}) && check(fd, srcWriteLow, srcWriteHigh, mask)) {
+      if ((flags & cDefs.POLLOUT) && check(fd, srcWriteLow, srcWriteHigh, mask)) {
         fd < 32 ? (dstWriteLow = dstWriteLow | mask) : (dstWriteHigh = dstWriteHigh | mask);
         total++;
       }
-      if ((flags & {{{ cDefs.POLLPRI }}}) && check(fd, srcExceptLow, srcExceptHigh, mask)) {
+      if ((flags & cDefs.POLLPRI) && check(fd, srcExceptLow, srcExceptHigh, mask)) {
         fd < 32 ? (dstExceptLow = dstExceptLow | mask) : (dstExceptHigh = dstExceptHigh | mask);
         total++;
       }
@@ -632,7 +632,7 @@ var SyscallsLibrary = {
   },
   _msync_js__i53abi: true,
   _msync_js: (addr, len, prot, flags, fd, offset) => {
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     SYSCALLS.doMsync(addr, SYSCALLS.getStreamFromFD(fd), len, flags, offset);
     return 0;
   },
@@ -643,10 +643,10 @@ var SyscallsLibrary = {
   __syscall_poll: (fds, nfds, timeout) => {
     var nonzero = 0;
     for (var i = 0; i < nfds; i++) {
-      var pollfd = fds + {{{ C_STRUCTS.pollfd.__size__ }}} * i;
+      var pollfd = fds + cStructs.pollfd.__size__ * i;
       var fd = {{{ makeGetValue('pollfd', C_STRUCTS.pollfd.fd, 'i32') }}};
       var events = {{{ makeGetValue('pollfd', C_STRUCTS.pollfd.events, 'i16') }}};
-      var mask = {{{ cDefs.POLLNVAL }}};
+      var mask = cDefs.POLLNVAL;
       var stream = FS.getStream(fd);
       if (stream) {
         mask = SYSCALLS.DEFAULT_POLLMASK;
@@ -654,7 +654,7 @@ var SyscallsLibrary = {
           mask = stream.stream_ops.poll(stream, -1);
         }
       }
-      mask &= events | {{{ cDefs.POLLERR }}} | {{{ cDefs.POLLHUP }}};
+      mask &= events | cDefs.POLLERR | cDefs.POLLHUP;
       if (mask) nonzero++;
       {{{ makeSetValue('pollfd', C_STRUCTS.pollfd.revents, 'mask', 'i16') }}};
     }
@@ -662,23 +662,23 @@ var SyscallsLibrary = {
   },
   __syscall_getcwd__deps: ['$lengthBytesUTF8', '$stringToUTF8'],
   __syscall_getcwd: (buf, size) => {
-    if (size === 0) return -{{{ cDefs.EINVAL }}};
+    if (size === 0) return -cDefs.EINVAL;
     var cwd = FS.cwd();
     var cwdLengthInBytes = lengthBytesUTF8(cwd) + 1;
-    if (size < cwdLengthInBytes) return -{{{ cDefs.ERANGE }}};
+    if (size < cwdLengthInBytes) return -cDefs.ERANGE;
     stringToUTF8(cwd, buf, size);
     return cwdLengthInBytes;
   },
   __syscall_truncate64__i53abi: true,
   __syscall_truncate64: (path, length) => {
-    if (isNaN(length)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(length)) return cDefs.EOVERFLOW;
     path = SYSCALLS.getStr(path);
     FS.truncate(path, length);
     return 0;
   },
   __syscall_ftruncate64__i53abi: true,
   __syscall_ftruncate64: (fd, length) => {
-    if (isNaN(length)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(length)) return cDefs.EOVERFLOW;
     FS.ftruncate(fd, length);
     return 0;
   },
@@ -703,9 +703,9 @@ var SyscallsLibrary = {
     var stream = SYSCALLS.getStreamFromFD(fd)
     stream.getdents ||= FS.readdir(stream.path);
 
-    var struct_size = {{{ C_STRUCTS.dirent.__size__ }}};
+    var struct_size = cStructs.dirent.__size__;
     var pos = 0;
-    var off = FS.llseek(stream, 0, {{{ cDefs.SEEK_CUR }}});
+    var off = FS.llseek(stream, 0, cDefs.SEEK_CUR);
 
     var idx = Math.floor(off / struct_size);
 
@@ -737,11 +737,11 @@ var SyscallsLibrary = {
       {{{ makeSetValue('dirp + pos', C_STRUCTS.dirent.d_off, '(idx + 1) * struct_size', 'i64') }}};
       {{{ makeSetValue('dirp + pos', C_STRUCTS.dirent.d_reclen, C_STRUCTS.dirent.__size__, 'i16') }}};
       {{{ makeSetValue('dirp + pos', C_STRUCTS.dirent.d_type, 'type', 'i8') }}};
-      stringToUTF8(name, dirp + pos + {{{ C_STRUCTS.dirent.d_name }}}, 256);
+      stringToUTF8(name, dirp + pos + cStructs.dirent.d_name, 256);
       pos += struct_size;
       idx += 1;
     }
-    FS.llseek(stream, idx * struct_size, {{{ cDefs.SEEK_SET }}});
+    FS.llseek(stream, idx * struct_size, cDefs.SEEK_SET);
     return pos;
   },
 #if SYSCALLS_REQUIRE_FILESYSTEM
@@ -756,10 +756,10 @@ var SyscallsLibrary = {
 #else
     var stream = SYSCALLS.getStreamFromFD(fd);
     switch (cmd) {
-      case {{{ cDefs.F_DUPFD }}}: {
+      case cDefs.F_DUPFD: {
         var arg = syscallGetVarargI();
         if (arg < 0) {
-          return -{{{ cDefs.EINVAL }}};
+          return -cDefs.EINVAL;
         }
         while (FS.streams[arg]) {
           arg++;
@@ -768,43 +768,43 @@ var SyscallsLibrary = {
         newStream = FS.dupStream(stream, arg);
         return newStream.fd;
       }
-      case {{{ cDefs.F_GETFD }}}:
-      case {{{ cDefs.F_SETFD }}}:
+      case cDefs.F_GETFD:
+      case cDefs.F_SETFD:
         return 0;  // FD_CLOEXEC makes no sense for a single process.
-      case {{{ cDefs.F_GETFL }}}:
+      case cDefs.F_GETFL:
         return stream.flags;
-      case {{{ cDefs.F_SETFL }}}: {
+      case cDefs.F_SETFL: {
         var arg = syscallGetVarargI();
         stream.flags |= arg;
         return 0;
       }
-      case {{{ cDefs.F_GETLK }}}: {
+      case cDefs.F_GETLK: {
         var arg = syscallGetVarargP();
-        var offset = {{{ C_STRUCTS.flock.l_type }}};
+        var offset = cStructs.flock.l_type;
         // We're always unlocked.
         {{{ makeSetValue('arg', 'offset', cDefs.F_UNLCK, 'i16') }}};
         return 0;
       }
-      case {{{ cDefs.F_SETLK }}}:
-      case {{{ cDefs.F_SETLKW }}}:
+      case cDefs.F_SETLK:
+      case cDefs.F_SETLKW:
         return 0; // Pretend that the locking is successful.
 #if SYSCALL_DEBUG
-      case {{{ cDefs.F_GETOWN_EX }}}:
-      case {{{ cDefs.F_SETOWN }}}:
-      case {{{ cDefs.F_GETOWN }}}:
-        return -{{{ cDefs.EINVAL }}};
+      case cDefs.F_GETOWN_EX:
+      case cDefs.F_SETOWN:
+      case cDefs.F_GETOWN:
+        return -cDefs.EINVAL;
       default:
         dbg(`warning: fcntl unrecognized command ${cmd}`);
 #endif
     }
-    return -{{{ cDefs.EINVAL }}};
+    return -cDefs.EINVAL;
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
 
   __syscall_statfs64: (path, size, buf) => {
     path = SYSCALLS.getStr(path);
 #if ASSERTIONS
-    assert(size === {{{ C_STRUCTS.statfs.__size__ }}});
+    assert(size === cStructs.statfs.__size__);
 #endif
     // NOTE: None of the constants here are true. We're just returning safe and
     //       sane values.
@@ -857,14 +857,14 @@ var SyscallsLibrary = {
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
     // we don't want this in the JS API as it uses mknod to create all nodes.
-    switch (mode & {{{ cDefs.S_IFMT }}}) {
-      case {{{ cDefs.S_IFREG }}}:
-      case {{{ cDefs.S_IFCHR }}}:
-      case {{{ cDefs.S_IFBLK }}}:
-      case {{{ cDefs.S_IFIFO }}}:
-      case {{{ cDefs.S_IFSOCK }}}:
+    switch (mode & cDefs.S_IFMT) {
+      case cDefs.S_IFREG:
+      case cDefs.S_IFCHR:
+      case cDefs.S_IFBLK:
+      case cDefs.S_IFIFO:
+      case cDefs.S_IFSOCK:
         break;
-      default: return -{{{ cDefs.EINVAL }}};
+      default: return -cDefs.EINVAL;
     }
     FS.mknod(path, mode, dev);
     return 0;
@@ -874,8 +874,8 @@ var SyscallsLibrary = {
     dbg('warning: untested syscall');
 #endif
     path = SYSCALLS.getStr(path);
-    var nofollow = flags & {{{ cDefs.AT_SYMLINK_NOFOLLOW }}};
-    flags = flags & (~{{{ cDefs.AT_SYMLINK_NOFOLLOW }}});
+    var nofollow = flags & cDefs.AT_SYMLINK_NOFOLLOW;
+    flags = flags & (~cDefs.AT_SYMLINK_NOFOLLOW);
 #if ASSERTIONS
     assert(flags === 0);
 #endif
@@ -885,9 +885,9 @@ var SyscallsLibrary = {
   },
   __syscall_newfstatat: (dirfd, path, buf, flags) => {
     path = SYSCALLS.getStr(path);
-    var nofollow = flags & {{{ cDefs.AT_SYMLINK_NOFOLLOW }}};
-    var allowEmpty = flags & {{{ cDefs.AT_EMPTY_PATH }}};
-    flags = flags & (~{{{ cDefs.AT_SYMLINK_NOFOLLOW | cDefs.AT_EMPTY_PATH | cDefs.AT_NO_AUTOMOUNT }}});
+    var nofollow = flags & cDefs.AT_SYMLINK_NOFOLLOW;
+    var allowEmpty = flags & cDefs.AT_EMPTY_PATH;
+    flags = flags & ~(cDefs.AT_SYMLINK_NOFOLLOW | cDefs.AT_EMPTY_PATH | cDefs.AT_NO_AUTOMOUNT);
 #if ASSERTIONS
     assert(!flags, `unknown flags in __syscall_newfstatat: ${flags}`);
 #endif
@@ -899,7 +899,7 @@ var SyscallsLibrary = {
     path = SYSCALLS.calculateAt(dirfd, path);
     if (flags === 0) {
       FS.unlink(path);
-    } else if (flags === {{{ cDefs.AT_REMOVEDIR }}}) {
+    } else if (flags === cDefs.AT_REMOVEDIR) {
       FS.rmdir(path);
     } else {
       abort('Invalid flags passed to unlinkat');
@@ -926,7 +926,7 @@ var SyscallsLibrary = {
   __syscall_readlinkat: (dirfd, path, buf, bufsize) => {
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
-    if (bufsize <= 0) return -{{{ cDefs.EINVAL }}};
+    if (bufsize <= 0) return -cDefs.EINVAL;
     var ret = FS.readlink(path);
 
     var len = Math.min(bufsize, lengthBytesUTF8(ret));
@@ -938,7 +938,7 @@ var SyscallsLibrary = {
     return len;
   },
   __syscall_fchmodat2: (dirfd, path, mode, flags) => {
-    var nofollow = flags & {{{ cDefs.AT_SYMLINK_NOFOLLOW }}};
+    var nofollow = flags & cDefs.AT_SYMLINK_NOFOLLOW;
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
     FS.chmod(path, mode, nofollow);
@@ -953,21 +953,21 @@ var SyscallsLibrary = {
     assert(flags === 0);
 #endif
     path = SYSCALLS.calculateAt(dirfd, path);
-    if (amode & ~{{{ cDefs.S_IRWXO }}}) {
+    if (amode & ~cDefs.S_IRWXO) {
       // need a valid mode
-      return -{{{ cDefs.EINVAL }}};
+      return -cDefs.EINVAL;
     }
     var lookup = FS.lookupPath(path, { follow: true });
     var node = lookup.node;
     if (!node) {
-      return -{{{ cDefs.ENOENT }}};
+      return -cDefs.ENOENT;
     }
     var perms = '';
-    if (amode & {{{ cDefs.R_OK }}}) perms += 'r';
-    if (amode & {{{ cDefs.W_OK }}}) perms += 'w';
-    if (amode & {{{ cDefs.X_OK }}}) perms += 'x';
+    if (amode & cDefs.R_OK) perms += 'r';
+    if (amode & cDefs.W_OK) perms += 'w';
+    if (amode & cDefs.X_OK) perms += 'x';
     if (perms /* otherwise, they've just passed F_OK */ && FS.nodePermissions(node, perms)) {
-      return -{{{ cDefs.EACCES }}};
+      return -cDefs.EACCES;
     }
     return 0;
   },
@@ -985,7 +985,7 @@ var SyscallsLibrary = {
       var seconds = {{{ makeGetValue('times', C_STRUCTS.timespec.tv_sec, 'i53') }}};
       var nanoseconds = {{{ makeGetValue('times', C_STRUCTS.timespec.tv_nsec, 'i32') }}};
       atime = (seconds*1000) + (nanoseconds/(1000*1000));
-      times += {{{ C_STRUCTS.timespec.__size__ }}};
+      times += cStructs.timespec.__size__;
       seconds = {{{ makeGetValue('times', C_STRUCTS.timespec.tv_sec, 'i53') }}};
       nanoseconds = {{{ makeGetValue('times', C_STRUCTS.timespec.tv_nsec, 'i32') }}};
       mtime = (seconds*1000) + (nanoseconds/(1000*1000));
@@ -995,7 +995,7 @@ var SyscallsLibrary = {
   },
   __syscall_fallocate__i53abi: true,
   __syscall_fallocate: (fd, mode, offset, len) => {
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     var stream = SYSCALLS.getStreamFromFD(fd)
 #if ASSERTIONS
     assert(mode === 0);
@@ -1008,9 +1008,9 @@ var SyscallsLibrary = {
 #if ASSERTIONS
     assert(!flags);
 #endif
-    if (old.fd === newfd) return -{{{ cDefs.EINVAL }}};
+    if (old.fd === newfd) return -cDefs.EINVAL;
     // Check newfd is within range of valid open file descriptors.
-    if (newfd < 0 || newfd >= FS.MAX_OPEN_FDS) return -{{{ cDefs.EBADF }}};
+    if (newfd < 0 || newfd >= FS.MAX_OPEN_FDS) return -cDefs.EBADF;
     var existing = FS.getStream(newfd);
     if (existing) FS.close(existing);
     return FS.dupStream(old, newfd).fd;

@@ -390,7 +390,7 @@ addToLibrary({
     // http://pubs.opengroup.org/onlinepubs/000095399/functions/system.html
     // Can't call external programs.
     if (!command) return 0; // no shell available
-    return -{{{ cDefs.ENOSYS }}};
+    return -cDefs.ENOSYS;
   },
 
   // ==========================================================================
@@ -663,16 +663,16 @@ addToLibrary({
 #if ASSERTIONS
     assert(winterName);
     assert(summerName);
-    assert(lengthBytesUTF8(winterName) <= {{{ cDefs.TZNAME_MAX }}}, `timezone name truncated to fit in TZNAME_MAX (${winterName})`);
-    assert(lengthBytesUTF8(summerName) <= {{{ cDefs.TZNAME_MAX }}}, `timezone name truncated to fit in TZNAME_MAX (${summerName})`);
+    assert(lengthBytesUTF8(winterName) <= cDefs.TZNAME_MAX, `timezone name truncated to fit in TZNAME_MAX (${winterName})`);
+    assert(lengthBytesUTF8(summerName) <= cDefs.TZNAME_MAX, `timezone name truncated to fit in TZNAME_MAX (${summerName})`);
 #endif
     if (summerOffset < winterOffset) {
       // Northern hemisphere
-      stringToUTF8(winterName, std_name, {{{ cDefs.TZNAME_MAX + 1 }}});
-      stringToUTF8(summerName, dst_name, {{{ cDefs.TZNAME_MAX + 1 }}});
+      stringToUTF8(winterName, std_name, cDefs.TZNAME_MAX + 1);
+      stringToUTF8(summerName, dst_name, cDefs.TZNAME_MAX + 1);
     } else {
-      stringToUTF8(winterName, dst_name, {{{ cDefs.TZNAME_MAX + 1 }}});
-      stringToUTF8(summerName, std_name, {{{ cDefs.TZNAME_MAX + 1 }}});
+      stringToUTF8(winterName, dst_name, cDefs.TZNAME_MAX + 1);
+      stringToUTF8(summerName, std_name, cDefs.TZNAME_MAX + 1);
     }
   },
 
@@ -1049,127 +1049,127 @@ addToLibrary({
   // We use a string literal here to avoid the string quotes on the object
   // keys being removed when processed by jsifier.
   $ERRNO_CODES: `{
-    'EPERM': {{{ cDefs.EPERM }}},
-    'ENOENT': {{{ cDefs.ENOENT }}},
-    'ESRCH': {{{ cDefs.ESRCH }}},
-    'EINTR': {{{ cDefs.EINTR }}},
-    'EIO': {{{ cDefs.EIO }}},
-    'ENXIO': {{{ cDefs.ENXIO }}},
-    'E2BIG': {{{ cDefs.E2BIG }}},
-    'ENOEXEC': {{{ cDefs.ENOEXEC }}},
-    'EBADF': {{{ cDefs.EBADF }}},
-    'ECHILD': {{{ cDefs.ECHILD }}},
-    'EAGAIN': {{{ cDefs.EAGAIN }}},
-    'EWOULDBLOCK': {{{ cDefs.EWOULDBLOCK }}},
-    'ENOMEM': {{{ cDefs.ENOMEM }}},
-    'EACCES': {{{ cDefs.EACCES }}},
-    'EFAULT': {{{ cDefs.EFAULT }}},
-    'ENOTBLK': {{{ cDefs.ENOTBLK }}},
-    'EBUSY': {{{ cDefs.EBUSY }}},
-    'EEXIST': {{{ cDefs.EEXIST }}},
-    'EXDEV': {{{ cDefs.EXDEV }}},
-    'ENODEV': {{{ cDefs.ENODEV }}},
-    'ENOTDIR': {{{ cDefs.ENOTDIR }}},
-    'EISDIR': {{{ cDefs.EISDIR }}},
-    'EINVAL': {{{ cDefs.EINVAL }}},
-    'ENFILE': {{{ cDefs.ENFILE }}},
-    'EMFILE': {{{ cDefs.EMFILE }}},
-    'ENOTTY': {{{ cDefs.ENOTTY }}},
-    'ETXTBSY': {{{ cDefs.ETXTBSY }}},
-    'EFBIG': {{{ cDefs.EFBIG }}},
-    'ENOSPC': {{{ cDefs.ENOSPC }}},
-    'ESPIPE': {{{ cDefs.ESPIPE }}},
-    'EROFS': {{{ cDefs.EROFS }}},
-    'EMLINK': {{{ cDefs.EMLINK }}},
-    'EPIPE': {{{ cDefs.EPIPE }}},
-    'EDOM': {{{ cDefs.EDOM }}},
-    'ERANGE': {{{ cDefs.ERANGE }}},
-    'ENOMSG': {{{ cDefs.ENOMSG }}},
-    'EIDRM': {{{ cDefs.EIDRM }}},
-    'ECHRNG': {{{ cDefs.ECHRNG }}},
-    'EL2NSYNC': {{{ cDefs.EL2NSYNC }}},
-    'EL3HLT': {{{ cDefs.EL3HLT }}},
-    'EL3RST': {{{ cDefs.EL3RST }}},
-    'ELNRNG': {{{ cDefs.ELNRNG }}},
-    'EUNATCH': {{{ cDefs.EUNATCH }}},
-    'ENOCSI': {{{ cDefs.ENOCSI }}},
-    'EL2HLT': {{{ cDefs.EL2HLT }}},
-    'EDEADLK': {{{ cDefs.EDEADLK }}},
-    'ENOLCK': {{{ cDefs.ENOLCK }}},
-    'EBADE': {{{ cDefs.EBADE }}},
-    'EBADR': {{{ cDefs.EBADR }}},
-    'EXFULL': {{{ cDefs.EXFULL }}},
-    'ENOANO': {{{ cDefs.ENOANO }}},
-    'EBADRQC': {{{ cDefs.EBADRQC }}},
-    'EBADSLT': {{{ cDefs.EBADSLT }}},
-    'EDEADLOCK': {{{ cDefs.EDEADLOCK }}},
-    'EBFONT': {{{ cDefs.EBFONT }}},
-    'ENOSTR': {{{ cDefs.ENOSTR }}},
-    'ENODATA': {{{ cDefs.ENODATA }}},
-    'ETIME': {{{ cDefs.ETIME }}},
-    'ENOSR': {{{ cDefs.ENOSR }}},
-    'ENONET': {{{ cDefs.ENONET }}},
-    'ENOPKG': {{{ cDefs.ENOPKG }}},
-    'EREMOTE': {{{ cDefs.EREMOTE }}},
-    'ENOLINK': {{{ cDefs.ENOLINK }}},
-    'EADV': {{{ cDefs.EADV }}},
-    'ESRMNT': {{{ cDefs.ESRMNT }}},
-    'ECOMM': {{{ cDefs.ECOMM }}},
-    'EPROTO': {{{ cDefs.EPROTO }}},
-    'EMULTIHOP': {{{ cDefs.EMULTIHOP }}},
-    'EDOTDOT': {{{ cDefs.EDOTDOT }}},
-    'EBADMSG': {{{ cDefs.EBADMSG }}},
-    'ENOTUNIQ': {{{ cDefs.ENOTUNIQ }}},
-    'EBADFD': {{{ cDefs.EBADFD }}},
-    'EREMCHG': {{{ cDefs.EREMCHG }}},
-    'ELIBACC': {{{ cDefs.ELIBACC }}},
-    'ELIBBAD': {{{ cDefs.ELIBBAD }}},
-    'ELIBSCN': {{{ cDefs.ELIBSCN }}},
-    'ELIBMAX': {{{ cDefs.ELIBMAX }}},
-    'ELIBEXEC': {{{ cDefs.ELIBEXEC }}},
-    'ENOSYS': {{{ cDefs.ENOSYS }}},
-    'ENOTEMPTY': {{{ cDefs.ENOTEMPTY }}},
-    'ENAMETOOLONG': {{{ cDefs.ENAMETOOLONG }}},
-    'ELOOP': {{{ cDefs.ELOOP }}},
-    'EOPNOTSUPP': {{{ cDefs.EOPNOTSUPP }}},
-    'EPFNOSUPPORT': {{{ cDefs.EPFNOSUPPORT }}},
-    'ECONNRESET': {{{ cDefs.ECONNRESET }}},
-    'ENOBUFS': {{{ cDefs.ENOBUFS }}},
-    'EAFNOSUPPORT': {{{ cDefs.EAFNOSUPPORT }}},
-    'EPROTOTYPE': {{{ cDefs.EPROTOTYPE }}},
-    'ENOTSOCK': {{{ cDefs.ENOTSOCK }}},
-    'ENOPROTOOPT': {{{ cDefs.ENOPROTOOPT }}},
-    'ESHUTDOWN': {{{ cDefs.ESHUTDOWN }}},
-    'ECONNREFUSED': {{{ cDefs.ECONNREFUSED }}},
-    'EADDRINUSE': {{{ cDefs.EADDRINUSE }}},
-    'ECONNABORTED': {{{ cDefs.ECONNABORTED }}},
-    'ENETUNREACH': {{{ cDefs.ENETUNREACH }}},
-    'ENETDOWN': {{{ cDefs.ENETDOWN }}},
-    'ETIMEDOUT': {{{ cDefs.ETIMEDOUT }}},
-    'EHOSTDOWN': {{{ cDefs.EHOSTDOWN }}},
-    'EHOSTUNREACH': {{{ cDefs.EHOSTUNREACH }}},
-    'EINPROGRESS': {{{ cDefs.EINPROGRESS }}},
-    'EALREADY': {{{ cDefs.EALREADY }}},
-    'EDESTADDRREQ': {{{ cDefs.EDESTADDRREQ }}},
-    'EMSGSIZE': {{{ cDefs.EMSGSIZE }}},
-    'EPROTONOSUPPORT': {{{ cDefs.EPROTONOSUPPORT }}},
-    'ESOCKTNOSUPPORT': {{{ cDefs.ESOCKTNOSUPPORT }}},
-    'EADDRNOTAVAIL': {{{ cDefs.EADDRNOTAVAIL }}},
-    'ENETRESET': {{{ cDefs.ENETRESET }}},
-    'EISCONN': {{{ cDefs.EISCONN }}},
-    'ENOTCONN': {{{ cDefs.ENOTCONN }}},
-    'ETOOMANYREFS': {{{ cDefs.ETOOMANYREFS }}},
-    'EUSERS': {{{ cDefs.EUSERS }}},
-    'EDQUOT': {{{ cDefs.EDQUOT }}},
-    'ESTALE': {{{ cDefs.ESTALE }}},
-    'ENOTSUP': {{{ cDefs.ENOTSUP }}},
-    'ENOMEDIUM': {{{ cDefs.ENOMEDIUM }}},
-    'EILSEQ': {{{ cDefs.EILSEQ }}},
-    'EOVERFLOW': {{{ cDefs.EOVERFLOW }}},
-    'ECANCELED': {{{ cDefs.ECANCELED }}},
-    'ENOTRECOVERABLE': {{{ cDefs.ENOTRECOVERABLE }}},
-    'EOWNERDEAD': {{{ cDefs.EOWNERDEAD }}},
-    'ESTRPIPE': {{{ cDefs.ESTRPIPE }}},
+    'EPERM': cDefs.EPERM,
+    'ENOENT': cDefs.ENOENT,
+    'ESRCH': cDefs.ESRCH,
+    'EINTR': cDefs.EINTR,
+    'EIO': cDefs.EIO,
+    'ENXIO': cDefs.ENXIO,
+    'E2BIG': cDefs.E2BIG,
+    'ENOEXEC': cDefs.ENOEXEC,
+    'EBADF': cDefs.EBADF,
+    'ECHILD': cDefs.ECHILD,
+    'EAGAIN': cDefs.EAGAIN,
+    'EWOULDBLOCK': cDefs.EWOULDBLOCK,
+    'ENOMEM': cDefs.ENOMEM,
+    'EACCES': cDefs.EACCES,
+    'EFAULT': cDefs.EFAULT,
+    'ENOTBLK': cDefs.ENOTBLK,
+    'EBUSY': cDefs.EBUSY,
+    'EEXIST': cDefs.EEXIST,
+    'EXDEV': cDefs.EXDEV,
+    'ENODEV': cDefs.ENODEV,
+    'ENOTDIR': cDefs.ENOTDIR,
+    'EISDIR': cDefs.EISDIR,
+    'EINVAL': cDefs.EINVAL,
+    'ENFILE': cDefs.ENFILE,
+    'EMFILE': cDefs.EMFILE,
+    'ENOTTY': cDefs.ENOTTY,
+    'ETXTBSY': cDefs.ETXTBSY,
+    'EFBIG': cDefs.EFBIG,
+    'ENOSPC': cDefs.ENOSPC,
+    'ESPIPE': cDefs.ESPIPE,
+    'EROFS': cDefs.EROFS,
+    'EMLINK': cDefs.EMLINK,
+    'EPIPE': cDefs.EPIPE,
+    'EDOM': cDefs.EDOM,
+    'ERANGE': cDefs.ERANGE,
+    'ENOMSG': cDefs.ENOMSG,
+    'EIDRM': cDefs.EIDRM,
+    'ECHRNG': cDefs.ECHRNG,
+    'EL2NSYNC': cDefs.EL2NSYNC,
+    'EL3HLT': cDefs.EL3HLT,
+    'EL3RST': cDefs.EL3RST,
+    'ELNRNG': cDefs.ELNRNG,
+    'EUNATCH': cDefs.EUNATCH,
+    'ENOCSI': cDefs.ENOCSI,
+    'EL2HLT': cDefs.EL2HLT,
+    'EDEADLK': cDefs.EDEADLK,
+    'ENOLCK': cDefs.ENOLCK,
+    'EBADE': cDefs.EBADE,
+    'EBADR': cDefs.EBADR,
+    'EXFULL': cDefs.EXFULL,
+    'ENOANO': cDefs.ENOANO,
+    'EBADRQC': cDefs.EBADRQC,
+    'EBADSLT': cDefs.EBADSLT,
+    'EDEADLOCK': cDefs.EDEADLOCK,
+    'EBFONT': cDefs.EBFONT,
+    'ENOSTR': cDefs.ENOSTR,
+    'ENODATA': cDefs.ENODATA,
+    'ETIME': cDefs.ETIME,
+    'ENOSR': cDefs.ENOSR,
+    'ENONET': cDefs.ENONET,
+    'ENOPKG': cDefs.ENOPKG,
+    'EREMOTE': cDefs.EREMOTE,
+    'ENOLINK': cDefs.ENOLINK,
+    'EADV': cDefs.EADV,
+    'ESRMNT': cDefs.ESRMNT,
+    'ECOMM': cDefs.ECOMM,
+    'EPROTO': cDefs.EPROTO,
+    'EMULTIHOP': cDefs.EMULTIHOP,
+    'EDOTDOT': cDefs.EDOTDOT,
+    'EBADMSG': cDefs.EBADMSG,
+    'ENOTUNIQ': cDefs.ENOTUNIQ,
+    'EBADFD': cDefs.EBADFD,
+    'EREMCHG': cDefs.EREMCHG,
+    'ELIBACC': cDefs.ELIBACC,
+    'ELIBBAD': cDefs.ELIBBAD,
+    'ELIBSCN': cDefs.ELIBSCN,
+    'ELIBMAX': cDefs.ELIBMAX,
+    'ELIBEXEC': cDefs.ELIBEXEC,
+    'ENOSYS': cDefs.ENOSYS,
+    'ENOTEMPTY': cDefs.ENOTEMPTY,
+    'ENAMETOOLONG': cDefs.ENAMETOOLONG,
+    'ELOOP': cDefs.ELOOP,
+    'EOPNOTSUPP': cDefs.EOPNOTSUPP,
+    'EPFNOSUPPORT': cDefs.EPFNOSUPPORT,
+    'ECONNRESET': cDefs.ECONNRESET,
+    'ENOBUFS': cDefs.ENOBUFS,
+    'EAFNOSUPPORT': cDefs.EAFNOSUPPORT,
+    'EPROTOTYPE': cDefs.EPROTOTYPE,
+    'ENOTSOCK': cDefs.ENOTSOCK,
+    'ENOPROTOOPT': cDefs.ENOPROTOOPT,
+    'ESHUTDOWN': cDefs.ESHUTDOWN,
+    'ECONNREFUSED': cDefs.ECONNREFUSED,
+    'EADDRINUSE': cDefs.EADDRINUSE,
+    'ECONNABORTED': cDefs.ECONNABORTED,
+    'ENETUNREACH': cDefs.ENETUNREACH,
+    'ENETDOWN': cDefs.ENETDOWN,
+    'ETIMEDOUT': cDefs.ETIMEDOUT,
+    'EHOSTDOWN': cDefs.EHOSTDOWN,
+    'EHOSTUNREACH': cDefs.EHOSTUNREACH,
+    'EINPROGRESS': cDefs.EINPROGRESS,
+    'EALREADY': cDefs.EALREADY,
+    'EDESTADDRREQ': cDefs.EDESTADDRREQ,
+    'EMSGSIZE': cDefs.EMSGSIZE,
+    'EPROTONOSUPPORT': cDefs.EPROTONOSUPPORT,
+    'ESOCKTNOSUPPORT': cDefs.ESOCKTNOSUPPORT,
+    'EADDRNOTAVAIL': cDefs.EADDRNOTAVAIL,
+    'ENETRESET': cDefs.ENETRESET,
+    'EISCONN': cDefs.EISCONN,
+    'ENOTCONN': cDefs.ENOTCONN,
+    'ETOOMANYREFS': cDefs.ETOOMANYREFS,
+    'EUSERS': cDefs.EUSERS,
+    'EDQUOT': cDefs.EDQUOT,
+    'ESTALE': cDefs.ESTALE,
+    'ENOTSUP': cDefs.ENOTSUP,
+    'ENOMEDIUM': cDefs.ENOMEDIUM,
+    'EILSEQ': cDefs.EILSEQ,
+    'EOVERFLOW': cDefs.EOVERFLOW,
+    'ECANCELED': cDefs.ECANCELED,
+    'ENOTRECOVERABLE': cDefs.ENOTRECOVERABLE,
+    'EOWNERDEAD': cDefs.EOWNERDEAD,
+    'ESTRPIPE': cDefs.ESTRPIPE,
   }`,
 
 #if PURE_WASI
@@ -1360,16 +1360,16 @@ addToLibrary({
     var addr;
 
     switch (family) {
-      case {{{ cDefs.AF_INET }}}:
-        if (salen !== {{{ C_STRUCTS.sockaddr_in.__size__ }}}) {
-          return { errno: {{{ cDefs.EINVAL }}} };
+      case cDefs.AF_INET:
+        if (salen !== cStructs.sockaddr_in.__size__) {
+          return { errno: cDefs.EINVAL };
         }
         addr = {{{ makeGetValue('sa', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'i32') }}};
         addr = inetNtop4(addr);
         break;
-      case {{{ cDefs.AF_INET6 }}}:
-        if (salen !== {{{ C_STRUCTS.sockaddr_in6.__size__ }}}) {
-          return { errno: {{{ cDefs.EINVAL }}} };
+      case cDefs.AF_INET6:
+        if (salen !== cStructs.sockaddr_in6.__size__) {
+          return { errno: cDefs.EINVAL };
         }
         addr = [
           {{{ makeGetValue('sa', C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr+0, 'i32') }}},
@@ -1380,7 +1380,7 @@ addToLibrary({
         addr = inetNtop6(addr);
         break;
       default:
-        return { errno: {{{ cDefs.EAFNOSUPPORT }}} };
+        return { errno: cDefs.EAFNOSUPPORT };
     }
 
     return { family: family, addr: addr, port: port };
@@ -1389,9 +1389,9 @@ addToLibrary({
   $writeSockaddr__deps: ['$Sockets', '$inetPton4', '$inetPton6', '$zeroMemory', 'htons'],
   $writeSockaddr: (sa, family, addr, port, addrlen) => {
     switch (family) {
-      case {{{ cDefs.AF_INET }}}:
+      case cDefs.AF_INET:
         addr = inetPton4(addr);
-        zeroMemory(sa, {{{ C_STRUCTS.sockaddr_in.__size__ }}});
+        zeroMemory(sa, cStructs.sockaddr_in.__size__);
         if (addrlen) {
           {{{ makeSetValue('addrlen', 0, C_STRUCTS.sockaddr_in.__size__, 'i32') }}};
         }
@@ -1399,9 +1399,9 @@ addToLibrary({
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'addr', 'i32') }}};
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in.sin_port, '_htons(port)', 'i16') }}};
         break;
-      case {{{ cDefs.AF_INET6 }}}:
+      case cDefs.AF_INET6:
         addr = inetPton6(addr);
-        zeroMemory(sa, {{{ C_STRUCTS.sockaddr_in6.__size__ }}});
+        zeroMemory(sa, cStructs.sockaddr_in6.__size__);
         if (addrlen) {
           {{{ makeSetValue('addrlen', 0, C_STRUCTS.sockaddr_in6.__size__, 'i32') }}};
         }
@@ -1413,7 +1413,7 @@ addToLibrary({
         {{{ makeSetValue('sa', C_STRUCTS.sockaddr_in6.sin6_port, '_htons(port)', 'i16') }}};
         break;
       default:
-        return {{{ cDefs.EAFNOSUPPORT }}};
+        return cDefs.EAFNOSUPPORT;
     }
     return 0;
   },
@@ -1486,7 +1486,7 @@ addToLibrary({
     var addr = 0;
     var port = 0;
     var flags = 0;
-    var family = {{{ cDefs.AF_UNSPEC }}};
+    var family = cDefs.AF_UNSPEC;
     var type = 0;
     var proto = 0;
     var ai, last;
@@ -1495,23 +1495,23 @@ addToLibrary({
       var sa, salen, ai;
       var errno;
 
-      salen = family === {{{ cDefs.AF_INET6 }}} ?
-        {{{ C_STRUCTS.sockaddr_in6.__size__ }}} :
-        {{{ C_STRUCTS.sockaddr_in.__size__ }}};
-      addr = family === {{{ cDefs.AF_INET6 }}} ?
+      salen = family === cDefs.AF_INET6 ?
+        cStructs.sockaddr_in6.__size__ :
+        cStructs.sockaddr_in.__size__;
+      addr = family === cDefs.AF_INET6 ?
         inetNtop6(addr) :
         inetNtop4(addr);
       sa = _malloc(salen);
       errno = writeSockaddr(sa, family, addr, port);
       assert(!errno);
 
-      ai = _malloc({{{ C_STRUCTS.addrinfo.__size__ }}});
+      ai = _malloc(cStructs.addrinfo.__size__);
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_family, 'family', 'i32') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_socktype, 'type', 'i32') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_protocol, 'proto', 'i32') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_canonname, 'canon', '*') }}};
       {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_addr, 'sa', '*') }}};
-      if (family === {{{ cDefs.AF_INET6 }}}) {
+      if (family === cDefs.AF_INET6) {
         {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_addrlen, C_STRUCTS.sockaddr_in6.__size__, 'i32') }}};
       } else {
         {{{ makeSetValue('ai', C_STRUCTS.addrinfo.ai_addrlen, C_STRUCTS.sockaddr_in.__size__, 'i32') }}};
@@ -1528,40 +1528,40 @@ addToLibrary({
       proto = {{{ makeGetValue('hint', C_STRUCTS.addrinfo.ai_protocol, 'i32') }}};
     }
     if (type && !proto) {
-      proto = type === {{{ cDefs.SOCK_DGRAM }}} ? {{{ cDefs.IPPROTO_UDP }}} : {{{ cDefs.IPPROTO_TCP }}};
+      proto = type === cDefs.SOCK_DGRAM ? cDefs.IPPROTO_UDP : cDefs.IPPROTO_TCP;
     }
     if (!type && proto) {
-      type = proto === {{{ cDefs.IPPROTO_UDP }}} ? {{{ cDefs.SOCK_DGRAM }}} : {{{ cDefs.SOCK_STREAM }}};
+      type = proto === cDefs.IPPROTO_UDP ? cDefs.SOCK_DGRAM : cDefs.SOCK_STREAM;
     }
 
     // If type or proto are set to zero in hints we should really be returning multiple addrinfo values, but for
     // now default to a TCP STREAM socket so we can at least return a sensible addrinfo given NULL hints.
     if (proto === 0) {
-      proto = {{{ cDefs.IPPROTO_TCP }}};
+      proto = cDefs.IPPROTO_TCP;
     }
     if (type === 0) {
-      type = {{{ cDefs.SOCK_STREAM }}};
+      type = cDefs.SOCK_STREAM;
     }
 
     if (!node && !service) {
-      return {{{ cDefs.EAI_NONAME }}};
+      return cDefs.EAI_NONAME;
     }
-    if (flags & ~({{{ cDefs.AI_PASSIVE }}}|{{{ cDefs.AI_CANONNAME }}}|{{{ cDefs.AI_NUMERICHOST }}}|
-        {{{ cDefs.AI_NUMERICSERV }}}|{{{ cDefs.AI_V4MAPPED }}}|{{{ cDefs.AI_ALL }}}|{{{ cDefs.AI_ADDRCONFIG }}})) {
-      return {{{ cDefs.EAI_BADFLAGS }}};
+    if (flags & ~(cDefs.AI_PASSIVE|cDefs.AI_CANONNAME|cDefs.AI_NUMERICHOST|
+        cDefs.AI_NUMERICSERV|cDefs.AI_V4MAPPED|cDefs.AI_ALL|cDefs.AI_ADDRCONFIG)) {
+      return cDefs.EAI_BADFLAGS;
     }
-    if (hint !== 0 && ({{{ makeGetValue('hint', C_STRUCTS.addrinfo.ai_flags, 'i32') }}} & {{{ cDefs.AI_CANONNAME }}}) && !node) {
-      return {{{ cDefs.EAI_BADFLAGS }}};
+    if (hint !== 0 && ({{{ makeGetValue('hint', C_STRUCTS.addrinfo.ai_flags, 'i32') }}} & cDefs.AI_CANONNAME) && !node) {
+      return cDefs.EAI_BADFLAGS;
     }
-    if (flags & {{{ cDefs.AI_ADDRCONFIG }}}) {
+    if (flags & cDefs.AI_ADDRCONFIG) {
       // TODO
-      return {{{ cDefs.EAI_NONAME }}};
+      return cDefs.EAI_NONAME;
     }
-    if (type !== 0 && type !== {{{ cDefs.SOCK_STREAM }}} && type !== {{{ cDefs.SOCK_DGRAM }}}) {
-      return {{{ cDefs.EAI_SOCKTYPE }}};
+    if (type !== 0 && type !== cDefs.SOCK_STREAM && type !== cDefs.SOCK_DGRAM) {
+      return cDefs.EAI_SOCKTYPE;
     }
-    if (family !== {{{ cDefs.AF_UNSPEC }}} && family !== {{{ cDefs.AF_INET }}} && family !== {{{ cDefs.AF_INET6 }}}) {
-      return {{{ cDefs.EAI_FAMILY }}};
+    if (family !== cDefs.AF_UNSPEC && family !== cDefs.AF_INET && family !== cDefs.AF_INET6) {
+      return cDefs.EAI_FAMILY;
     }
 
     if (service) {
@@ -1569,22 +1569,22 @@ addToLibrary({
       port = parseInt(service, 10);
 
       if (isNaN(port)) {
-        if (flags & {{{ cDefs.AI_NUMERICSERV }}}) {
-          return {{{ cDefs.EAI_NONAME }}};
+        if (flags & cDefs.AI_NUMERICSERV) {
+          return cDefs.EAI_NONAME;
         }
         // TODO support resolving well-known service names from:
         // http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
-        return {{{ cDefs.EAI_SERVICE }}};
+        return cDefs.EAI_SERVICE;
       }
     }
 
     if (!node) {
-      if (family === {{{ cDefs.AF_UNSPEC }}}) {
-        family = {{{ cDefs.AF_INET }}};
+      if (family === cDefs.AF_UNSPEC) {
+        family = cDefs.AF_INET;
       }
-      if ((flags & {{{ cDefs.AI_PASSIVE }}}) === 0) {
-        if (family === {{{ cDefs.AF_INET }}}) {
-          addr = _htonl({{{ cDefs.INADDR_LOOPBACK }}});
+      if ((flags & cDefs.AI_PASSIVE) === 0) {
+        if (family === cDefs.AF_INET) {
+          addr = _htonl(cDefs.INADDR_LOOPBACK);
         } else {
           addr = [0, 0, 0, 1];
         }
@@ -1601,23 +1601,23 @@ addToLibrary({
     addr = inetPton4(node);
     if (addr !== null) {
       // incoming node is a valid ipv4 address
-      if (family === {{{ cDefs.AF_UNSPEC }}} || family === {{{ cDefs.AF_INET }}}) {
-        family = {{{ cDefs.AF_INET }}};
+      if (family === cDefs.AF_UNSPEC || family === cDefs.AF_INET) {
+        family = cDefs.AF_INET;
       }
-      else if (family === {{{ cDefs.AF_INET6 }}} && (flags & {{{ cDefs.AI_V4MAPPED }}})) {
+      else if (family === cDefs.AF_INET6 && (flags & cDefs.AI_V4MAPPED)) {
         addr = [0, 0, _htonl(0xffff), addr];
-        family = {{{ cDefs.AF_INET6 }}};
+        family = cDefs.AF_INET6;
       } else {
-        return {{{ cDefs.EAI_NONAME }}};
+        return cDefs.EAI_NONAME;
       }
     } else {
       addr = inetPton6(node);
       if (addr !== null) {
         // incoming node is a valid ipv6 address
-        if (family === {{{ cDefs.AF_UNSPEC }}} || family === {{{ cDefs.AF_INET6 }}}) {
-          family = {{{ cDefs.AF_INET6 }}};
+        if (family === cDefs.AF_UNSPEC || family === cDefs.AF_INET6) {
+          family = cDefs.AF_INET6;
         } else {
-          return {{{ cDefs.EAI_NONAME }}};
+          return cDefs.EAI_NONAME;
         }
       }
     }
@@ -1626,8 +1626,8 @@ addToLibrary({
       {{{ makeSetValue('out', '0', 'ai', '*') }}};
       return 0;
     }
-    if (flags & {{{ cDefs.AI_NUMERICHOST }}}) {
-      return {{{ cDefs.EAI_NONAME }}};
+    if (flags & cDefs.AI_NUMERICHOST) {
+      return cDefs.EAI_NONAME;
     }
 
     //
@@ -1636,9 +1636,9 @@ addToLibrary({
     // resolve the hostname to a temporary fake address
     node = DNS.lookup_name(node);
     addr = inetPton4(node);
-    if (family === {{{ cDefs.AF_UNSPEC }}}) {
-      family = {{{ cDefs.AF_INET }}};
-    } else if (family === {{{ cDefs.AF_INET6 }}}) {
+    if (family === cDefs.AF_UNSPEC) {
+      family = cDefs.AF_INET;
+    } else if (family === cDefs.AF_INET6) {
       addr = [0, 0, _htonl(0xffff), addr];
     }
     ai = allocaddrinfo(family, type, proto, null, addr, port);
@@ -1650,7 +1650,7 @@ addToLibrary({
   getnameinfo: (sa, salen, node, nodelen, serv, servlen, flags) => {
     var info = readSockaddr(sa, salen);
     if (info.errno) {
-      return {{{ cDefs.EAI_FAMILY }}};
+      return cDefs.EAI_FAMILY;
     }
     var port = info.port;
     var addr = info.addr;
@@ -1659,9 +1659,9 @@ addToLibrary({
 
     if (node && nodelen) {
       var lookup;
-      if ((flags & {{{ cDefs.NI_NUMERICHOST }}}) || !(lookup = DNS.lookup_addr(addr))) {
-        if (flags & {{{ cDefs.NI_NAMEREQD }}}) {
-          return {{{ cDefs.EAI_NONAME }}};
+      if ((flags & cDefs.NI_NUMERICHOST) || !(lookup = DNS.lookup_addr(addr))) {
+        if (flags & cDefs.NI_NAMEREQD) {
+          return cDefs.EAI_NONAME;
         }
       } else {
         addr = lookup;
@@ -1684,7 +1684,7 @@ addToLibrary({
 
     if (overflowed) {
       // Note: even when we overflow, getnameinfo() is specced to write out the truncated results.
-      return {{{ cDefs.EAI_OVERFLOW }}};
+      return cDefs.EAI_OVERFLOW;
     }
 
     return 0;
@@ -1721,7 +1721,7 @@ addToLibrary({
       {{{ makeSetValue('aliasListBuf', 'j', '0', POINTER_TYPE) }}}; // Terminating NULL pointer.
 
       // generate protoent
-      var pe = _malloc({{{ C_STRUCTS.protoent.__size__ }}});
+      var pe = _malloc(cStructs.protoent.__size__);
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_name, 'nameBuf', POINTER_TYPE) }}};
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_aliases, 'aliasListBuf', POINTER_TYPE) }}};
       {{{ makeSetValue('pe', C_STRUCTS.protoent.p_proto, 'proto', 'i32') }}};
@@ -2027,24 +2027,24 @@ addToLibrary({
 
   $emscriptenLog__deps: ['$getCallstack'],
   $emscriptenLog: (flags, str) => {
-    if (flags & {{{ cDefs.EM_LOG_C_STACK | cDefs.EM_LOG_JS_STACK }}}) {
+    if (flags & (cDefs.EM_LOG_C_STACK | cDefs.EM_LOG_JS_STACK)) {
       str = str.replace(/\s+$/, ''); // Ensure the message and the callstack are joined cleanly with exactly one newline.
       str += (str.length > 0 ? '\n' : '') + getCallstack(flags);
     }
 
-    if (flags & {{{ cDefs.EM_LOG_CONSOLE }}}) {
-      if (flags & {{{ cDefs.EM_LOG_ERROR }}}) {
+    if (flags & cDefs.EM_LOG_CONSOLE) {
+      if (flags & cDefs.EM_LOG_ERROR) {
         console.error(str);
-      } else if (flags & {{{ cDefs.EM_LOG_WARN }}}) {
+      } else if (flags & cDefs.EM_LOG_WARN) {
         console.warn(str);
-      } else if (flags & {{{ cDefs.EM_LOG_INFO }}}) {
+      } else if (flags & cDefs.EM_LOG_INFO) {
         console.info(str);
-      } else if (flags & {{{ cDefs.EM_LOG_DEBUG }}}) {
+      } else if (flags & cDefs.EM_LOG_DEBUG) {
         console.debug(str);
       } else {
         console.log(str);
       }
-    } else if (flags & {{{ cDefs.EM_LOG_ERROR | cDefs.EM_LOG_WARN }}}) {
+    } else if (flags & (cDefs.EM_LOG_ERROR | cDefs.EM_LOG_WARN)) {
       err(str);
     } else {
       out(str);

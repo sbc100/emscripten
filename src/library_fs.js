@@ -115,13 +115,13 @@ FS.staticInit();` +
         this.node = val;
       }
       get isRead() {
-        return (this.flags & {{{ cDefs.O_ACCMODE }}}) !== {{{ cDefs.O_WRONLY }}};
+        return (this.flags & cDefs.O_ACCMODE) !== cDefs.O_WRONLY;
       }
       get isWrite() {
-        return (this.flags & {{{ cDefs.O_ACCMODE }}}) !== {{{ cDefs.O_RDONLY }}};
+        return (this.flags & cDefs.O_ACCMODE) !== cDefs.O_RDONLY;
       }
       get isAppend() {
-        return (this.flags & {{{ cDefs.O_APPEND }}});
+        return (this.flags & cDefs.O_APPEND);
       }
       get flags() {
         return this.shared.flags;
@@ -150,8 +150,8 @@ FS.staticInit();` +
         this.node_ops = {};
         this.stream_ops = {};
         this.rdev = rdev;
-        this.readMode = 292/*{{{ cDefs.S_IRUGO }}}*/ | 73/*{{{ cDefs.S_IXUGO }}}*/;
-        this.writeMode = 146/*{{{ cDefs.S_IWUGO }}}*/;
+        this.readMode = 292/*cDefs.S_IRUGO*/ | 73/*cDefs.S_IXUGO*/;
+        this.writeMode = 146/*cDefs.S_IWUGO*/;
       }
       get read() {
         return (this.mode & this.readMode) === this.readMode;
@@ -188,7 +188,7 @@ FS.staticInit();` +
       opts = Object.assign(defaults, opts)
 
       if (opts.recurse_count > 8) {  // max recursive lookup of 8
-        throw new FS.ErrnoError({{{ cDefs.ELOOP }}});
+        throw new FS.ErrnoError(cDefs.ELOOP);
       }
 
       // split the absolute path
@@ -227,7 +227,7 @@ FS.staticInit();` +
             current = lookup.node;
 
             if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
-              throw new FS.ErrnoError({{{ cDefs.ELOOP }}});
+              throw new FS.ErrnoError(cDefs.ELOOP);
             }
           }
         }
@@ -324,25 +324,25 @@ FS.staticInit();` +
       return !!node.mounted;
     },
     isFile(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFREG }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFREG;
     },
     isDir(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFDIR }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFDIR;
     },
     isLink(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFLNK }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFLNK;
     },
     isChrdev(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFCHR }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFCHR;
     },
     isBlkdev(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFBLK }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFBLK;
     },
     isFIFO(mode) {
-      return (mode & {{{ cDefs.S_IFMT }}}) === {{{ cDefs.S_IFIFO }}};
+      return (mode & cDefs.S_IFMT) === cDefs.S_IFIFO;
     },
     isSocket(mode) {
-      return (mode & {{{ cDefs.S_IFSOCK }}}) === {{{ cDefs.S_IFSOCK }}};
+      return (mode & cDefs.S_IFSOCK) === cDefs.S_IFSOCK;
     },
 
     //
@@ -351,7 +351,7 @@ FS.staticInit();` +
     // convert O_* bitmask to a string for nodePermissions
     flagsToPermissionString(flag) {
       var perms = ['r', 'w', 'rw'][flag & 3];
-      if ((flag & {{{ cDefs.O_TRUNC }}})) {
+      if ((flag & cDefs.O_TRUNC)) {
         perms += 'w';
       }
       return perms;
@@ -361,26 +361,26 @@ FS.staticInit();` +
         return 0;
       }
       // return 0 if any user, group or owner bits are set.
-      if (perms.includes('r') && !(node.mode & {{{ cDefs.S_IRUGO }}})) {
-        return {{{ cDefs.EACCES }}};
-      } else if (perms.includes('w') && !(node.mode & {{{ cDefs.S_IWUGO }}})) {
-        return {{{ cDefs.EACCES }}};
-      } else if (perms.includes('x') && !(node.mode & {{{ cDefs.S_IXUGO }}})) {
-        return {{{ cDefs.EACCES }}};
+      if (perms.includes('r') && !(node.mode & cDefs.S_IRUGO)) {
+        return cDefs.EACCES;
+      } else if (perms.includes('w') && !(node.mode & cDefs.S_IWUGO)) {
+        return cDefs.EACCES;
+      } else if (perms.includes('x') && !(node.mode & cDefs.S_IXUGO)) {
+        return cDefs.EACCES;
       }
       return 0;
     },
     mayLookup(dir) {
-      if (!FS.isDir(dir.mode)) return {{{ cDefs.ENOTDIR }}};
+      if (!FS.isDir(dir.mode)) return cDefs.ENOTDIR;
       var errCode = FS.nodePermissions(dir, 'x');
       if (errCode) return errCode;
-      if (!dir.node_ops.lookup) return {{{ cDefs.EACCES }}};
+      if (!dir.node_ops.lookup) return cDefs.EACCES;
       return 0;
     },
     mayCreate(dir, name) {
       try {
         var node = FS.lookupNode(dir, name);
-        return {{{ cDefs.EEXIST }}};
+        return cDefs.EEXIST;
       } catch (e) {
       }
       return FS.nodePermissions(dir, 'wx');
@@ -398,28 +398,28 @@ FS.staticInit();` +
       }
       if (isdir) {
         if (!FS.isDir(node.mode)) {
-          return {{{ cDefs.ENOTDIR }}};
+          return cDefs.ENOTDIR;
         }
         if (FS.isRoot(node) || FS.getPath(node) === FS.cwd()) {
-          return {{{ cDefs.EBUSY }}};
+          return cDefs.EBUSY;
         }
       } else {
         if (FS.isDir(node.mode)) {
-          return {{{ cDefs.EISDIR }}};
+          return cDefs.EISDIR;
         }
       }
       return 0;
     },
     mayOpen(node, flags) {
       if (!node) {
-        return {{{ cDefs.ENOENT }}};
+        return cDefs.ENOENT;
       }
       if (FS.isLink(node.mode)) {
-        return {{{ cDefs.ELOOP }}};
+        return cDefs.ELOOP;
       } else if (FS.isDir(node.mode)) {
         if (FS.flagsToPermissionString(flags) !== 'r' || // opening for write
-            (flags & {{{ cDefs.O_TRUNC }}})) { // TODO: check for O_SEARCH? (== search for dir only)
-          return {{{ cDefs.EISDIR }}};
+            (flags & cDefs.O_TRUNC)) { // TODO: check for O_SEARCH? (== search for dir only)
+          return cDefs.EISDIR;
         }
       }
       return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
@@ -435,12 +435,12 @@ FS.staticInit();` +
           return fd;
         }
       }
-      throw new FS.ErrnoError({{{ cDefs.EMFILE }}});
+      throw new FS.ErrnoError(cDefs.EMFILE);
     },
     getStreamChecked(fd) {
       var stream = FS.getStream(fd);
       if (!stream) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       return stream;
     },
@@ -489,7 +489,7 @@ FS.staticInit();` +
         stream.stream_ops.open?.(stream);
       },
       llseek() {
-        throw new FS.ErrnoError({{{ cDefs.ESPIPE }}});
+        throw new FS.ErrnoError(cDefs.ESPIPE);
       }
     },
     major: (dev) => ((dev) >> 8),
@@ -574,7 +574,7 @@ FS.staticInit();` +
       var node;
 
       if (root && FS.root) {
-        throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
+        throw new FS.ErrnoError(cDefs.EBUSY);
       } else if (!root && !pseudo) {
         var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
 
@@ -582,11 +582,11 @@ FS.staticInit();` +
         node = lookup.node;
 
         if (FS.isMountpoint(node)) {
-          throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
+          throw new FS.ErrnoError(cDefs.EBUSY);
         }
 
         if (!FS.isDir(node.mode)) {
-          throw new FS.ErrnoError({{{ cDefs.ENOTDIR }}});
+          throw new FS.ErrnoError(cDefs.ENOTDIR);
         }
       }
 
@@ -620,7 +620,7 @@ FS.staticInit();` +
       var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
 
       if (!FS.isMountpoint(lookup.node)) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
 
       // destroy the nodes for this mount, and all its child mounts
@@ -661,28 +661,28 @@ FS.staticInit();` +
       var parent = lookup.node;
       var name = PATH.basename(path);
       if (!name || name === '.' || name === '..') {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var errCode = FS.mayCreate(parent, name);
       if (errCode) {
         throw new FS.ErrnoError(errCode);
       }
       if (!parent.node_ops.mknod) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       return parent.node_ops.mknod(parent, name, mode, dev);
     },
     // helpers to create specific types of nodes
     create(path, mode) {
       mode = mode !== undefined ? mode : 438 /* 0666 */;
-      mode &= {{{ cDefs.S_IALLUGO }}};
-      mode |= {{{ cDefs.S_IFREG }}};
+      mode &= cDefs.S_IALLUGO;
+      mode |= cDefs.S_IFREG;
       return FS.mknod(path, mode, 0);
     },
     mkdir(path, mode) {
       mode = mode !== undefined ? mode : 511 /* 0777 */;
-      mode &= {{{ cDefs.S_IRWXUGO }}} | {{{ cDefs.S_ISVTX }}};
-      mode |= {{{ cDefs.S_IFDIR }}};
+      mode &= cDefs.S_IRWXUGO | cDefs.S_ISVTX;
+      mode |= cDefs.S_IFDIR;
 #if FS_DEBUG
       if (FS.trackingDelegate['onMakeDirectory']) {
         FS.trackingDelegate['onMakeDirectory'](path, mode);
@@ -700,7 +700,7 @@ FS.staticInit();` +
         try {
           FS.mkdir(d, mode);
         } catch(e) {
-          if (e.errno != {{{ cDefs.EEXIST }}}) throw e;
+          if (e.errno != cDefs.EEXIST) throw e;
         }
       }
     },
@@ -709,17 +709,17 @@ FS.staticInit();` +
         dev = mode;
         mode = 438 /* 0666 */;
       }
-      mode |= {{{ cDefs.S_IFCHR }}};
+      mode |= cDefs.S_IFCHR;
       return FS.mknod(path, mode, dev);
     },
     symlink(oldpath, newpath) {
       if (!PATH_FS.resolve(oldpath)) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       var lookup = FS.lookupPath(newpath, { parent: true });
       var parent = lookup.node;
       if (!parent) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       var newname = PATH.basename(newpath);
       var errCode = FS.mayCreate(parent, newname);
@@ -727,7 +727,7 @@ FS.staticInit();` +
         throw new FS.ErrnoError(errCode);
       }
       if (!parent.node_ops.symlink) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
 #if FS_DEBUG
       if (FS.trackingDelegate['onMakeSymlink']) {
@@ -750,22 +750,22 @@ FS.staticInit();` +
       lookup = FS.lookupPath(new_path, { parent: true });
       new_dir = lookup.node;
 
-      if (!old_dir || !new_dir) throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+      if (!old_dir || !new_dir) throw new FS.ErrnoError(cDefs.ENOENT);
       // need to be part of the same mount
       if (old_dir.mount !== new_dir.mount) {
-        throw new FS.ErrnoError({{{ cDefs.EXDEV }}});
+        throw new FS.ErrnoError(cDefs.EXDEV);
       }
       // source must exist
       var old_node = FS.lookupNode(old_dir, old_name);
       // old path should not be an ancestor of the new path
       var relative = PATH_FS.relative(old_path, new_dirname);
       if (relative.charAt(0) !== '.') {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       // new path should not be an ancestor of the old path
       relative = PATH_FS.relative(new_path, old_dirname);
       if (relative.charAt(0) !== '.') {
-        throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
+        throw new FS.ErrnoError(cDefs.ENOTEMPTY);
       }
       // see if the new path already exists
       var new_node;
@@ -793,10 +793,10 @@ FS.staticInit();` +
         throw new FS.ErrnoError(errCode);
       }
       if (!old_dir.node_ops.rename) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
-        throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
+        throw new FS.ErrnoError(cDefs.EBUSY);
       }
       // if we are going to change the parent, check write permissions
       if (new_dir !== old_dir) {
@@ -841,10 +841,10 @@ FS.staticInit();` +
         throw new FS.ErrnoError(errCode);
       }
       if (!parent.node_ops.rmdir) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       if (FS.isMountpoint(node)) {
-        throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
+        throw new FS.ErrnoError(cDefs.EBUSY);
       }
 #if FS_DEBUG
       if (FS.trackingDelegate['willDeletePath']) {
@@ -863,7 +863,7 @@ FS.staticInit();` +
       var lookup = FS.lookupPath(path, { follow: true });
       var node = lookup.node;
       if (!node.node_ops.readdir) {
-        throw new FS.ErrnoError({{{ cDefs.ENOTDIR }}});
+        throw new FS.ErrnoError(cDefs.ENOTDIR);
       }
       return node.node_ops.readdir(node);
     },
@@ -871,7 +871,7 @@ FS.staticInit();` +
       var lookup = FS.lookupPath(path, { parent: true });
       var parent = lookup.node;
       if (!parent) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       var name = PATH.basename(path);
       var node = FS.lookupNode(parent, name);
@@ -883,10 +883,10 @@ FS.staticInit();` +
         throw new FS.ErrnoError(errCode);
       }
       if (!parent.node_ops.unlink) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       if (FS.isMountpoint(node)) {
-        throw new FS.ErrnoError({{{ cDefs.EBUSY }}});
+        throw new FS.ErrnoError(cDefs.EBUSY);
       }
 #if FS_DEBUG
       if (FS.trackingDelegate['willDeletePath']) {
@@ -905,10 +905,10 @@ FS.staticInit();` +
       var lookup = FS.lookupPath(path);
       var link = lookup.node;
       if (!link) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       if (!link.node_ops.readlink) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       return PATH_FS.resolve(FS.getPath(link.parent), link.node_ops.readlink(link));
     },
@@ -916,10 +916,10 @@ FS.staticInit();` +
       var lookup = FS.lookupPath(path, { follow: !dontFollow });
       var node = lookup.node;
       if (!node) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       if (!node.node_ops.getattr) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       return node.node_ops.getattr(node);
     },
@@ -935,10 +935,10 @@ FS.staticInit();` +
         node = path;
       }
       if (!node.node_ops.setattr) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       node.node_ops.setattr(node, {
-        mode: (mode & {{{ cDefs.S_IALLUGO }}}) | (node.mode & ~{{{ cDefs.S_IALLUGO }}}),
+        mode: (mode & cDefs.S_IALLUGO) | (node.mode & ~cDefs.S_IALLUGO),
         timestamp: Date.now()
       });
     },
@@ -958,7 +958,7 @@ FS.staticInit();` +
         node = path;
       }
       if (!node.node_ops.setattr) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       node.node_ops.setattr(node, {
         timestamp: Date.now()
@@ -974,7 +974,7 @@ FS.staticInit();` +
     },
     truncate(path, len) {
       if (len < 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var node;
       if (typeof path == 'string') {
@@ -984,13 +984,13 @@ FS.staticInit();` +
         node = path;
       }
       if (!node.node_ops.setattr) {
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       if (FS.isDir(node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.EISDIR }}});
+        throw new FS.ErrnoError(cDefs.EISDIR);
       }
       if (!FS.isFile(node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var errCode = FS.nodePermissions(node, 'w');
       if (errCode) {
@@ -1003,8 +1003,8 @@ FS.staticInit();` +
     },
     ftruncate(fd, len) {
       var stream = FS.getStreamChecked(fd);
-      if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_RDONLY}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+      if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_RDONLY) {
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       FS.truncate(stream.node, len);
     },
@@ -1017,12 +1017,12 @@ FS.staticInit();` +
     },
     open(path, flags, mode) {
       if (path === "") {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       flags = typeof flags == 'string' ? FS_modeStringToFlags(flags) : flags;
-      if ((flags & {{{ cDefs.O_CREAT }}})) {
+      if ((flags & cDefs.O_CREAT)) {
         mode = typeof mode == 'undefined' ? 438 /* 0666 */ : mode;
-        mode = (mode & {{{ cDefs.S_IALLUGO }}}) | {{{ cDefs.S_IFREG }}};
+        mode = (mode & cDefs.S_IALLUGO) | cDefs.S_IFREG;
       } else {
         mode = 0;
       }
@@ -1033,7 +1033,7 @@ FS.staticInit();` +
         path = PATH.normalize(path);
         try {
           var lookup = FS.lookupPath(path, {
-            follow: !(flags & {{{ cDefs.O_NOFOLLOW }}})
+            follow: !(flags & cDefs.O_NOFOLLOW)
           });
           node = lookup.node;
         } catch (e) {
@@ -1042,11 +1042,11 @@ FS.staticInit();` +
       }
       // perhaps we need to create the node
       var created = false;
-      if ((flags & {{{ cDefs.O_CREAT }}})) {
+      if ((flags & cDefs.O_CREAT)) {
         if (node) {
           // if O_CREAT and O_EXCL are set, error out if the node already exists
-          if ((flags & {{{ cDefs.O_EXCL }}})) {
-            throw new FS.ErrnoError({{{ cDefs.EEXIST }}});
+          if ((flags & cDefs.O_EXCL)) {
+            throw new FS.ErrnoError(cDefs.EEXIST);
           }
         } else {
           // node doesn't exist, try to create it
@@ -1055,15 +1055,15 @@ FS.staticInit();` +
         }
       }
       if (!node) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       // can't truncate a device
       if (FS.isChrdev(node.mode)) {
-        flags &= ~{{{ cDefs.O_TRUNC }}};
+        flags &= ~cDefs.O_TRUNC;
       }
       // if asked only for a directory, then this must be one
-      if ((flags & {{{ cDefs.O_DIRECTORY }}}) && !FS.isDir(node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.ENOTDIR }}});
+      if ((flags & cDefs.O_DIRECTORY) && !FS.isDir(node.mode)) {
+        throw new FS.ErrnoError(cDefs.ENOTDIR);
       }
       // check permissions, if this is not a file we just created now (it is ok to
       // create and write to a file with read-only permissions; it is read-only
@@ -1075,14 +1075,14 @@ FS.staticInit();` +
         }
       }
       // do truncation if necessary
-      if ((flags & {{{ cDefs.O_TRUNC}}}) && !created) {
+      if ((flags & cDefs.O_TRUNC) && !created) {
         FS.truncate(node, 0);
       }
 #if FS_DEBUG
       var trackingFlags = flags
 #endif
       // we've already handled these, don't pass down to the underlying vfs
-      flags &= ~({{{ cDefs.O_EXCL }}} | {{{ cDefs.O_TRUNC }}} | {{{ cDefs.O_NOFOLLOW }}});
+      flags &= ~(cDefs.O_EXCL | cDefs.O_TRUNC | cDefs.O_NOFOLLOW);
 
       // register the stream with the filesystem
       var stream = FS.createStream({
@@ -1100,7 +1100,7 @@ FS.staticInit();` +
       if (stream.stream_ops.open) {
         stream.stream_ops.open(stream);
       }
-      if (Module['logReadFiles'] && !(flags & {{{ cDefs.O_WRONLY}}})) {
+      if (Module['logReadFiles'] && !(flags & cDefs.O_WRONLY)) {
         if (!FS.readFiles) FS.readFiles = {};
         if (!(path in FS.readFiles)) {
           FS.readFiles[path] = 1;
@@ -1118,7 +1118,7 @@ FS.staticInit();` +
     },
     close(stream) {
       if (FS.isClosed(stream)) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (stream.getdents) stream.getdents = null; // free readdir state
       try {
@@ -1142,13 +1142,13 @@ FS.staticInit();` +
     },
     llseek(stream, offset, whence) {
       if (FS.isClosed(stream)) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (!stream.seekable || !stream.stream_ops.llseek) {
-        throw new FS.ErrnoError({{{ cDefs.ESPIPE }}});
+        throw new FS.ErrnoError(cDefs.ESPIPE);
       }
-      if (whence != {{{ cDefs.SEEK_SET }}} && whence != {{{ cDefs.SEEK_CUR }}} && whence != {{{ cDefs.SEEK_END }}}) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+      if (whence != cDefs.SEEK_SET && whence != cDefs.SEEK_CUR && whence != cDefs.SEEK_END) {
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       stream.position = stream.stream_ops.llseek(stream, offset, whence);
       stream.ungotten = [];
@@ -1164,25 +1164,25 @@ FS.staticInit();` +
       assert(offset >= 0);
 #endif
       if (length < 0 || position < 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       if (FS.isClosed(stream)) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
-      if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_WRONLY}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+      if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_WRONLY) {
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (FS.isDir(stream.node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.EISDIR }}});
+        throw new FS.ErrnoError(cDefs.EISDIR);
       }
       if (!stream.stream_ops.read) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var seeking = typeof position != 'undefined';
       if (!seeking) {
         position = stream.position;
       } else if (!stream.seekable) {
-        throw new FS.ErrnoError({{{ cDefs.ESPIPE }}});
+        throw new FS.ErrnoError(cDefs.ESPIPE);
       }
       var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
       if (!seeking) stream.position += bytesRead;
@@ -1198,29 +1198,29 @@ FS.staticInit();` +
       assert(offset >= 0);
 #endif
       if (length < 0 || position < 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       if (FS.isClosed(stream)) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
-      if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_RDONLY}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+      if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_RDONLY) {
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (FS.isDir(stream.node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.EISDIR }}});
+        throw new FS.ErrnoError(cDefs.EISDIR);
       }
       if (!stream.stream_ops.write) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
-      if (stream.seekable && stream.flags & {{{ cDefs.O_APPEND }}}) {
+      if (stream.seekable && stream.flags & cDefs.O_APPEND) {
         // seek to the end before writing in append mode
-        FS.llseek(stream, 0, {{{ cDefs.SEEK_END }}});
+        FS.llseek(stream, 0, cDefs.SEEK_END);
       }
       var seeking = typeof position != 'undefined';
       if (!seeking) {
         position = stream.position;
       } else if (!stream.seekable) {
-        throw new FS.ErrnoError({{{ cDefs.ESPIPE }}});
+        throw new FS.ErrnoError(cDefs.ESPIPE);
       }
       var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
       if (!seeking) stream.position += bytesWritten;
@@ -1233,19 +1233,19 @@ FS.staticInit();` +
     },
     allocate(stream, offset, length) {
       if (FS.isClosed(stream)) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (offset < 0 || length <= 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
-      if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_RDONLY}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EBADF }}});
+      if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_RDONLY) {
+        throw new FS.ErrnoError(cDefs.EBADF);
       }
       if (!FS.isFile(stream.node.mode) && !FS.isDir(stream.node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+        throw new FS.ErrnoError(cDefs.ENODEV);
       }
       if (!stream.stream_ops.allocate) {
-        throw new FS.ErrnoError({{{ cDefs.EOPNOTSUPP }}});
+        throw new FS.ErrnoError(cDefs.EOPNOTSUPP);
       }
       stream.stream_ops.allocate(stream, offset, length);
     },
@@ -1256,16 +1256,16 @@ FS.staticInit();` +
       // to write to file opened in read-only mode with MAP_PRIVATE flag,
       // as all modifications will be visible only in the memory of
       // the current process.
-      if ((prot & {{{ cDefs.PROT_WRITE }}}) !== 0
-          && (flags & {{{ cDefs.MAP_PRIVATE}}}) === 0
-          && (stream.flags & {{{ cDefs.O_ACCMODE }}}) !== {{{ cDefs.O_RDWR}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EACCES }}});
+      if ((prot & cDefs.PROT_WRITE) !== 0
+          && (flags & cDefs.MAP_PRIVATE) === 0
+          && (stream.flags & cDefs.O_ACCMODE) !== cDefs.O_RDWR) {
+        throw new FS.ErrnoError(cDefs.EACCES);
       }
-      if ((stream.flags & {{{ cDefs.O_ACCMODE }}}) === {{{ cDefs.O_WRONLY}}}) {
-        throw new FS.ErrnoError({{{ cDefs.EACCES }}});
+      if ((stream.flags & cDefs.O_ACCMODE) === cDefs.O_WRONLY) {
+        throw new FS.ErrnoError(cDefs.EACCES);
       }
       if (!stream.stream_ops.mmap) {
-        throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+        throw new FS.ErrnoError(cDefs.ENODEV);
       }
       return stream.stream_ops.mmap(stream, length, position, prot, flags);
     },
@@ -1280,12 +1280,12 @@ FS.staticInit();` +
     },
     ioctl(stream, cmd, arg) {
       if (!stream.stream_ops.ioctl) {
-        throw new FS.ErrnoError({{{ cDefs.ENOTTY }}});
+        throw new FS.ErrnoError(cDefs.ENOTTY);
       }
       return stream.stream_ops.ioctl(stream, cmd, arg);
     },
     readFile(path, opts = {}) {
-      opts.flags = opts.flags || {{{ cDefs.O_RDONLY }}};
+      opts.flags = opts.flags || cDefs.O_RDONLY;
       opts.encoding = opts.encoding || 'binary';
       if (opts.encoding !== 'utf8' && opts.encoding !== 'binary') {
         throw new Error(`Invalid encoding type "${opts.encoding}"`);
@@ -1305,7 +1305,7 @@ FS.staticInit();` +
       return ret;
     },
     writeFile(path, data, opts = {}) {
-      opts.flags = opts.flags || {{{ cDefs.O_TRUNC | cDefs.O_CREAT | cDefs.O_WRONLY }}};
+      opts.flags = opts.flags || (cDefs.O_TRUNC | cDefs.O_CREAT | cDefs.O_WRONLY);
       var stream = FS.open(path, opts.flags, opts.mode);
       if (typeof data == 'string') {
         var buf = new Uint8Array(lengthBytesUTF8(data)+1);
@@ -1326,10 +1326,10 @@ FS.staticInit();` +
     chdir(path) {
       var lookup = FS.lookupPath(path, { follow: true });
       if (lookup.node === null) {
-        throw new FS.ErrnoError({{{ cDefs.ENOENT }}});
+        throw new FS.ErrnoError(cDefs.ENOENT);
       }
       if (!FS.isDir(lookup.node.mode)) {
-        throw new FS.ErrnoError({{{ cDefs.ENOTDIR }}});
+        throw new FS.ErrnoError(cDefs.ENOTDIR);
       }
       var errCode = FS.nodePermissions(lookup.node, 'x');
       if (errCode) {
@@ -1382,7 +1382,7 @@ FS.staticInit();` +
       FS.mkdir('/proc/self/fd');
       FS.mount({
         mount() {
-          var node = FS.createNode(proc_self, 'fd', {{{ cDefs.S_IFDIR }}} | 511 /* 0777 */, {{{ cDefs.S_IXUGO }}});
+          var node = FS.createNode(proc_self, 'fd', cDefs.S_IFDIR | 511 /* 0777 */, cDefs.S_IXUGO);
           node.node_ops = {
             lookup(parent, name) {
               var fd = +name;
@@ -1426,9 +1426,9 @@ FS.staticInit();` +
       }
 
       // open default streams for the stdin, stdout and stderr devices
-      var stdin = FS.open('/dev/stdin', {{{ cDefs.O_RDONLY }}});
-      var stdout = FS.open('/dev/stdout', {{{ cDefs.O_WRONLY }}});
-      var stderr = FS.open('/dev/stderr', {{{ cDefs.O_WRONLY }}});
+      var stdin = FS.open('/dev/stdin', cDefs.O_RDONLY);
+      var stdout = FS.open('/dev/stdout', cDefs.O_WRONLY);
+      var stderr = FS.open('/dev/stderr', cDefs.O_WRONLY);
 #if ASSERTIONS
       assert(stdin.fd === 0, `invalid handle for stdin (${stdin.fd})`);
       assert(stdout.fd === 1, `invalid handle for stdout (${stdout.fd})`);
@@ -1437,7 +1437,7 @@ FS.staticInit();` +
     },
     staticInit() {
       // Some errors may happen quite a bit, to avoid overhead we reuse them (and suffer a lack of stack info)
-      [{{{ cDefs.ENOENT }}}].forEach((code) => {
+      [cDefs.ENOENT].forEach((code) => {
         FS.genericErrors[code] = new FS.ErrnoError(code);
         FS.genericErrors[code].stack = '<generic error, no stack>';
       });
@@ -1569,8 +1569,8 @@ FS.staticInit();` +
           data = arr;
         }
         // make sure we can write to the file
-        FS.chmod(node, mode | {{{ cDefs.S_IWUGO }}});
-        var stream = FS.open(node, {{{ cDefs.O_TRUNC | cDefs.O_CREAT | cDefs.O_WRONLY }}});
+        FS.chmod(node, mode | cDefs.S_IWUGO);
+        var stream = FS.open(node, cDefs.O_TRUNC | cDefs.O_CREAT | cDefs.O_WRONLY);
         FS.write(stream, data, 0, data.length, 0, canOwn);
         FS.close(stream);
         FS.chmod(node, mode);
@@ -1600,10 +1600,10 @@ FS.staticInit();` +
             try {
               result = input();
             } catch (e) {
-              throw new FS.ErrnoError({{{ cDefs.EIO }}});
+              throw new FS.ErrnoError(cDefs.EIO);
             }
             if (result === undefined && bytesRead === 0) {
-              throw new FS.ErrnoError({{{ cDefs.EAGAIN }}});
+              throw new FS.ErrnoError(cDefs.EAGAIN);
             }
             if (result === null || result === undefined) break;
             bytesRead++;
@@ -1619,7 +1619,7 @@ FS.staticInit();` +
             try {
               output(buffer[offset+i]);
             } catch (e) {
-              throw new FS.ErrnoError({{{ cDefs.EIO }}});
+              throw new FS.ErrnoError(cDefs.EIO);
             }
           }
           if (length) {
@@ -1644,7 +1644,7 @@ FS.staticInit();` +
           obj.contents = readBinary(obj.url);
           obj.usedBytes = obj.contents.length;
         } catch (e) {
-          throw new FS.ErrnoError({{{ cDefs.EIO }}});
+          throw new FS.ErrnoError(cDefs.EIO);
         }
       }
     },
@@ -1820,7 +1820,7 @@ FS.staticInit();` +
         FS.forceLoadFile(node);
         var ptr = mmapAlloc(length);
         if (!ptr) {
-          throw new FS.ErrnoError({{{ cDefs.ENOMEM }}});
+          throw new FS.ErrnoError(cDefs.ENOMEM);
         }
         writeChunks(stream, HEAP8, ptr, length, position);
         return { ptr, allocated: true };

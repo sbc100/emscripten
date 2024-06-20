@@ -142,10 +142,10 @@ var WasiLibrary = {
 #endif
 
   $checkWasiClock: (clock_id) => {
-    return clock_id == {{{ cDefs.__WASI_CLOCKID_REALTIME }}} ||
-           clock_id == {{{ cDefs.__WASI_CLOCKID_MONOTONIC }}} ||
-           clock_id == {{{ cDefs.__WASI_CLOCKID_PROCESS_CPUTIME_ID }}} ||
-           clock_id == {{{ cDefs.__WASI_CLOCKID_THREAD_CPUTIME_ID }}};
+    return clock_id == cDefs.__WASI_CLOCKID_REALTIME ||
+           clock_id == cDefs.__WASI_CLOCKID_MONOTONIC ||
+           clock_id == cDefs.__WASI_CLOCKID_PROCESS_CPUTIME_ID ||
+           clock_id == cDefs.__WASI_CLOCKID_THREAD_CPUTIME_ID;
   },
 
   // TODO: the i64 in the API here must be legalized for this JS code to run,
@@ -157,16 +157,16 @@ var WasiLibrary = {
   clock_time_get__deps: ['emscripten_get_now', '$nowIsMonotonic', '$checkWasiClock'],
   clock_time_get: (clk_id, ignored_precision, ptime) => {
     if (!checkWasiClock(clk_id)) {
-      return {{{ cDefs.EINVAL }}};
+      return cDefs.EINVAL;
     }
     var now;
     // all wasi clocks but realtime are monotonic
-    if (clk_id === {{{ cDefs.__WASI_CLOCKID_REALTIME }}}) {
+    if (clk_id === cDefs.__WASI_CLOCKID_REALTIME) {
       now = Date.now();
     } else if (nowIsMonotonic) {
       now = _emscripten_get_now();
     } else {
-      return {{{ cDefs.ENOSYS }}};
+      return cDefs.ENOSYS;
     }
     // "now" is in ms, and wasi times are in ns.
     var nsec = Math.round(now * 1000 * 1000);
@@ -179,16 +179,16 @@ var WasiLibrary = {
   clock_res_get__deps: ['emscripten_get_now', 'emscripten_get_now_res', '$nowIsMonotonic', '$checkWasiClock'],
   clock_res_get: (clk_id, pres) => {
     if (!checkWasiClock(clk_id)) {
-      return {{{ cDefs.EINVAL }}};
+      return cDefs.EINVAL;
     }
     var nsec;
     // all wasi clocks but realtime are monotonic
-    if (clk_id === {{{ cDefs.CLOCK_REALTIME }}}) {
+    if (clk_id === cDefs.CLOCK_REALTIME) {
       nsec = 1000 * 1000; // educated guess that it's milliseconds
     } else if (nowIsMonotonic) {
       nsec = _emscripten_get_now_res();
     } else {
-      return {{{ cDefs.ENOSYS }}};
+      return cDefs.ENOSYS;
     }
     {{{ makeSetValue('pres', 0, 'nsec >>> 0', 'i32') }}};
     {{{ makeSetValue('pres', 4, '(nsec / Math.pow(2, 32)) >>> 0', 'i32') }}};
@@ -202,7 +202,7 @@ var WasiLibrary = {
     for (var i = 0; i < iovcnt; i++) {
       var ptr = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_base, '*') }}};
       var len = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_len, '*') }}};
-      iov += {{{ C_STRUCTS.iovec.__size__ }}};
+      iov += cStructs.iovec.__size__;
       var curr = FS.read(stream, HEAP8, ptr, len, offset);
       if (curr < 0) return -1;
       ret += curr;
@@ -219,7 +219,7 @@ var WasiLibrary = {
     for (var i = 0; i < iovcnt; i++) {
       var ptr = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_base, '*') }}};
       var len = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_len, '*') }}};
-      iov += {{{ C_STRUCTS.iovec.__size__ }}};
+      iov += cStructs.iovec.__size__;
       var curr = FS.write(stream, HEAP8, ptr, len, offset);
       if (curr < 0) return -1;
       ret += curr;
@@ -276,7 +276,7 @@ var WasiLibrary = {
     for (var i = 0; i < iovcnt; i++) {
       var ptr = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_base, '*') }}};
       var len = {{{ makeGetValue('iov', C_STRUCTS.iovec.iov_len, '*') }}};
-      iov += {{{ C_STRUCTS.iovec.__size__ }}};
+      iov += cStructs.iovec.__size__;
       for (var j = 0; j < len; j++) {
         printChar(fd, HEAPU8[ptr+j]);
       }
@@ -293,7 +293,7 @@ var WasiLibrary = {
   fd_pwrite__i53abi: true,
   fd_pwrite: (fd, iov, iovcnt, offset, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     var stream = SYSCALLS.getStreamFromFD(fd)
     var num = doWritev(stream, iov, iovcnt, offset);
     {{{ makeSetValue('pnum', 0, 'num', SIZE_TYPE) }}};
@@ -301,7 +301,7 @@ var WasiLibrary = {
 #elif ASSERTIONS
     abort('fd_pwrite called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
-    return {{{ cDefs.ENOSYS }}};
+    return cDefs.ENOSYS;
 #endif
   },
 
@@ -320,7 +320,7 @@ var WasiLibrary = {
 #elif ASSERTIONS
     abort('fd_close called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
-    return {{{ cDefs.ENOSYS }}};
+    return cDefs.ENOSYS;
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
 
@@ -336,7 +336,7 @@ var WasiLibrary = {
 #elif ASSERTIONS
     abort('fd_read called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
-    return {{{ cDefs.ENOSYS }}};
+    return cDefs.ENOSYS;
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
 
@@ -346,7 +346,7 @@ var WasiLibrary = {
   fd_pread__i53abi: true,
   fd_pread: (fd, iov, iovcnt, offset, pnum) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     var stream = SYSCALLS.getStreamFromFD(fd)
     var num = doReadv(stream, iov, iovcnt, offset);
     {{{ makeSetValue('pnum', 0, 'num', SIZE_TYPE) }}};
@@ -354,21 +354,21 @@ var WasiLibrary = {
 #elif ASSERTIONS
     abort('fd_pread called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
-    return {{{ cDefs.ENOSYS }}};
+    return cDefs.ENOSYS;
 #endif
   },
 
   fd_seek__i53abi: true,
   fd_seek: (fd, offset, whence, newOffset) => {
 #if SYSCALLS_REQUIRE_FILESYSTEM
-    if (isNaN(offset)) return {{{ cDefs.EOVERFLOW }}};
+    if (isNaN(offset)) return cDefs.EOVERFLOW;
     var stream = SYSCALLS.getStreamFromFD(fd);
     FS.llseek(stream, offset, whence);
     {{{ makeSetValue('newOffset', '0', 'stream.position', 'i64') }}};
-    if (stream.getdents && offset === 0 && whence === {{{ cDefs.SEEK_SET }}}) stream.getdents = null; // reset readdir state
+    if (stream.getdents && offset === 0 && whence === cDefs.SEEK_SET) stream.getdents = null; // reset readdir state
     return 0;
 #else
-    return {{{ cDefs.ESPIPE }}};
+    return cDefs.ESPIPE;
 #endif
   },
 
@@ -376,31 +376,31 @@ var WasiLibrary = {
 #if SYSCALL_DEBUG
     dbg(`wasiRightsToMuslOFlags: ${rights}`);
 #endif
-    if ((rights & {{{ cDefs.__WASI_RIGHTS_FD_READ }}}) && (rights & {{{ cDefs.__WASI_RIGHTS_FD_WRITE }}})) {
-      return {{{ cDefs.O_RDWR }}};
+    if ((rights & cDefs.__WASI_RIGHTS_FD_READ) && (rights & cDefs.__WASI_RIGHTS_FD_WRITE)) {
+      return cDefs.O_RDWR;
     }
-    if (rights & {{{ cDefs.__WASI_RIGHTS_FD_READ }}}) {
-      return {{{ cDefs.O_RDONLY }}};
+    if (rights & cDefs.__WASI_RIGHTS_FD_READ) {
+      return cDefs.O_RDONLY;
     }
-    if (rights & {{{ cDefs.__WASI_RIGHTS_FD_WRITE }}}) {
-      return {{{ cDefs.O_WRONLY }}};
+    if (rights & cDefs.__WASI_RIGHTS_FD_WRITE) {
+      return cDefs.O_WRONLY;
     }
-    throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+    throw new FS.ErrnoError(cDefs.EINVAL);
   },
 
   $wasiOFlagsToMuslOFlags: (oflags) => {
     var musl_oflags = 0;
-    if (oflags & {{{ cDefs.__WASI_OFLAGS_CREAT }}}) {
-      musl_oflags |= {{{ cDefs.O_CREAT }}};
+    if (oflags & cDefs.__WASI_OFLAGS_CREAT) {
+      musl_oflags |= cDefs.O_CREAT;
     }
-    if (oflags & {{{ cDefs.__WASI_OFLAGS_TRUNC }}}) {
-      musl_oflags |= {{{ cDefs.O_TRUNC }}};
+    if (oflags & cDefs.__WASI_OFLAGS_TRUNC) {
+      musl_oflags |= cDefs.O_TRUNC;
     }
-    if (oflags & {{{ cDefs.__WASI_OFLAGS_DIRECTORY }}}) {
-      musl_oflags |= {{{ cDefs.O_DIRECTORY }}};
+    if (oflags & cDefs.__WASI_OFLAGS_DIRECTORY) {
+      musl_oflags |= cDefs.O_DIRECTORY;
     }
-    if (oflags & {{{ cDefs.__WASI_OFLAGS_EXCL }}}) {
-      musl_oflags |= {{{ cDefs.O_EXCL }}};
+    if (oflags & cDefs.__WASI_OFLAGS_EXCL) {
+      musl_oflags |= cDefs.O_EXCL;
     }
     return musl_oflags;
   },
@@ -417,7 +417,7 @@ var WasiLibrary = {
               fs_rights_base, fs_rights_inherting,
               fdflags, opened_fd) => {
     if (!(fd in preopens)) {
-      return {{{ cDefs.EBADF }}};
+      return cDefs.EBADF;
     }
     var pathname = UTF8ToString(path, path_len);
     var musl_oflags = wasiRightsToMuslOFlags(Number(fs_rights_base));
@@ -438,7 +438,7 @@ var WasiLibrary = {
   fd_prestat_dir_name__nothrow: true,
   fd_prestat_dir_name: (fd, path, path_len) => {
     if (!(fd in preopens)) {
-      return {{{ cDefs.EBADF }}};
+      return cDefs.EBADF;
     }
     var preopen_path = preopens[fd];
     stringToUTF8Array(preopen_path, HEAP8, path, path_len)
@@ -453,7 +453,7 @@ var WasiLibrary = {
   fd_prestat_get__nothrow: true,
   fd_prestat_get: (fd, stat_buf) => {
     if (!(fd in preopens)) {
-      return {{{ cDefs.EBADF }}};
+      return cDefs.EBADF;
     }
     var preopen = preopens[fd];
     {{{ makeSetValue('stat_buf', C_STRUCTS.__wasi_prestat_t.pr_type, cDefs.__WASI_PREOPENTYPE_DIR, 'i8') }}};
@@ -493,11 +493,9 @@ var WasiLibrary = {
     var flags = 0;
 #if PURE_WASI
     if (fd in preopens) {
-      var type = {{{ cDefs.__WASI_FILETYPE_DIRECTORY }}};
-      rightsBase =  {{{ cDefs.__WASI_RIGHTS_PATH_CREATE_FILE |
-                             cDefs.__WASI_RIGHTS_PATH_OPEN }}};
-      rightsInheriting =  {{{ cDefs.__WASI_RIGHTS_FD_READ |
-                                   cDefs.__WASI_RIGHTS_FD_WRITE }}}
+      var type = cDefs.__WASI_FILETYPE_DIRECTORY;
+      rightsBase = cDefs.__WASI_RIGHTS_PATH_CREATE_FILE | cDefs.__WASI_RIGHTS_PATH_OPEN;
+      rightsInheriting = cDefs.__WASI_RIGHTS_FD_READ | cDefs.__WASI_RIGHTS_FD_WRITE;
     } else
 #endif
     {
@@ -505,23 +503,23 @@ var WasiLibrary = {
       var stream = SYSCALLS.getStreamFromFD(fd);
       // All character devices are terminals (other things a Linux system would
       // assume is a character device, like the mouse, we have special APIs for).
-      var type = stream.tty ? {{{ cDefs.__WASI_FILETYPE_CHARACTER_DEVICE }}} :
-                 FS.isDir(stream.mode) ? {{{ cDefs.__WASI_FILETYPE_DIRECTORY }}} :
-                 FS.isLink(stream.mode) ? {{{ cDefs.__WASI_FILETYPE_SYMBOLIC_LINK }}} :
-                 {{{ cDefs.__WASI_FILETYPE_REGULAR_FILE }}};
+      var type = stream.tty ? cDefs.__WASI_FILETYPE_CHARACTER_DEVICE :
+                 FS.isDir(stream.mode) ? cDefs.__WASI_FILETYPE_DIRECTORY :
+                 FS.isLink(stream.mode) ? cDefs.__WASI_FILETYPE_SYMBOLIC_LINK :
+                 cDefs.__WASI_FILETYPE_REGULAR_FILE;
 #else
       // Hack to support printf in SYSCALLS_REQUIRE_FILESYSTEM=0. We support at
       // least stdin, stdout, stderr in a simple way.
 #if ASSERTIONS
       assert(fd == 0 || fd == 1 || fd == 2);
 #endif
-      var type = {{{ cDefs.__WASI_FILETYPE_CHARACTER_DEVICE }}};
+      var type = cDefs.__WASI_FILETYPE_CHARACTER_DEVICE;
       if (fd == 0) {
-        rightsBase = {{{ cDefs.__WASI_RIGHTS_FD_READ }}};
+        rightsBase = cDefs.__WASI_RIGHTS_FD_READ;
       } else if (fd == 1 || fd == 2) {
-        rightsBase = {{{ cDefs.__WASI_RIGHTS_FD_WRITE }}};
+        rightsBase = cDefs.__WASI_RIGHTS_FD_WRITE;
       }
-      flags = {{{ cDefs.__WASI_FDFLAGS_APPEND }}};
+      flags = cDefs.__WASI_FDFLAGS_APPEND;
 #endif
     }
     {{{ makeSetValue('pbuf', C_STRUCTS.__wasi_fdstat_t.fs_filetype, 'type', 'i8') }}};
@@ -544,7 +542,7 @@ var WasiLibrary = {
       }
       mount.type.syncfs(mount, false, (err) => {
         if (err) {
-          wakeUp({{{ cDefs.EIO }}});
+          wakeUp(cDefs.EIO);
           return;
         }
         wakeUp(0);
@@ -559,7 +557,7 @@ var WasiLibrary = {
 #elif ASSERTIONS
     abort('fd_sync called without SYSCALLS_REQUIRE_FILESYSTEM');
 #else
-    return {{{ cDefs.ENOSYS }}};
+    return cDefs.ENOSYS;
 #endif // SYSCALLS_REQUIRE_FILESYSTEM
   },
   fd_sync__async: true,

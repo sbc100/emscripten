@@ -83,7 +83,7 @@ addToLibrary({
     ftruncate(fd, len) {
       // See https://github.com/nodejs/node/issues/35632
       if (len < 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       var stream = FS.getStreamChecked(fd);
       fs.ftruncateSync(stream.nfd, len);
@@ -96,7 +96,7 @@ addToLibrary({
       var pathTruncated = path.split('/').map(function(s) { return s.substr(0, 255); }).join('/');
       var nfd = fs.openSync(pathTruncated, NODEFS.flagsForNode(flags), mode);
       var st = fs.fstatSync(nfd);
-      if (flags & {{{ cDefs.O_DIRECTORY }}} && !st.isDirectory()) {
+      if (flags & cDefs.O_DIRECTORY && !st.isDirectory()) {
         fs.closeSync(nfd);
         throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
       }
@@ -128,16 +128,16 @@ addToLibrary({
         return VFS.llseek(stream, offset, whence);
       }
       var position = offset;
-      if (whence === {{{ cDefs.SEEK_CUR }}}) {
+      if (whence === cDefs.SEEK_CUR) {
         position += stream.position;
-      } else if (whence === {{{ cDefs.SEEK_END }}}) {
+      } else if (whence === cDefs.SEEK_END) {
         position += fs.fstatSync(stream.nfd).size;
-      } else if (whence !== {{{ cDefs.SEEK_SET }}}) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+      } else if (whence !== cDefs.SEEK_SET) {
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
 
       if (position < 0) {
-        throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+        throw new FS.ErrnoError(cDefs.EINVAL);
       }
       stream.position = position;
       return position;
@@ -159,9 +159,9 @@ addToLibrary({
         // this stream is created by in-memory filesystem
         return VFS.write(stream, buffer, offset, length, position);
       }
-      if (stream.flags & {{{ cDefs.O_APPEND }}}) {
+      if (stream.flags & cDefs.O_APPEND) {
         // seek to the end before writing in append mode
-        FS.llseek(stream, 0, {{{ cDefs.SEEK_END }}});
+        FS.llseek(stream, 0, cDefs.SEEK_END);
       }
       var seeking = typeof position != 'undefined';
       if (!seeking && stream.seekable) position = stream.position;
@@ -171,7 +171,7 @@ addToLibrary({
       return bytesWritten;
     },
     allocate() {
-      throw new FS.ErrnoError({{{ cDefs.EOPNOTSUPP }}});
+      throw new FS.ErrnoError(cDefs.EOPNOTSUPP);
     },
     mmap(stream, length, position, prot, flags) {
       if (stream.stream_ops) {
@@ -194,7 +194,7 @@ addToLibrary({
       return 0;
     },
     ioctl() {
-      throw new FS.ErrnoError({{{ cDefs.ENOTTY }}});
+      throw new FS.ErrnoError(cDefs.ENOTTY);
     }
   }
 });

@@ -9,12 +9,12 @@ addToLibrary({
   $MEMFS: {
     ops_table: null,
     mount(mount) {
-      return MEMFS.createNode(null, '/', {{{ cDefs.S_IFDIR }}} | 511 /* 0777 */, 0);
+      return MEMFS.createNode(null, '/', cDefs.S_IFDIR | 511 /* 0777 */, 0);
     },
     createNode(parent, name, mode, dev) {
       if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
         // no supported
-        throw new FS.ErrnoError({{{ cDefs.EPERM }}});
+        throw new FS.ErrnoError(cDefs.EPERM);
       }
       MEMFS.ops_table ||= {
         dir: {
@@ -173,7 +173,7 @@ addToLibrary({
         }
       },
       lookup(parent, name) {
-        throw FS.genericErrors[{{{ cDefs.ENOENT }}}];
+        throw FS.genericErrors[cDefs.ENOENT];
       },
       mknod(parent, name, mode, dev) {
         return MEMFS.createNode(parent, name, mode, dev);
@@ -188,7 +188,7 @@ addToLibrary({
           }
           if (new_node) {
             for (var i in new_node.contents) {
-              throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
+              throw new FS.ErrnoError(cDefs.ENOTEMPTY);
             }
           }
         }
@@ -206,7 +206,7 @@ addToLibrary({
       rmdir(parent, name) {
         var node = FS.lookupNode(parent, name);
         for (var i in node.contents) {
-          throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
+          throw new FS.ErrnoError(cDefs.ENOTEMPTY);
         }
         delete parent.contents[name];
         parent.timestamp = Date.now();
@@ -219,13 +219,13 @@ addToLibrary({
         return entries;
       },
       symlink(parent, newname, oldpath) {
-        var node = MEMFS.createNode(parent, newname, 511 /* 0777 */ | {{{ cDefs.S_IFLNK }}}, 0);
+        var node = MEMFS.createNode(parent, newname, 511 /* 0777 */ | cDefs.S_IFLNK, 0);
         node.link = oldpath;
         return node;
       },
       readlink(node) {
         if (!FS.isLink(node.mode)) {
-          throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+          throw new FS.ErrnoError(cDefs.EINVAL);
         }
         return node.link;
       },
@@ -305,15 +305,15 @@ addToLibrary({
 
       llseek(stream, offset, whence) {
         var position = offset;
-        if (whence === {{{ cDefs.SEEK_CUR }}}) {
+        if (whence === cDefs.SEEK_CUR) {
           position += stream.position;
-        } else if (whence === {{{ cDefs.SEEK_END }}}) {
+        } else if (whence === cDefs.SEEK_END) {
           if (FS.isFile(stream.node.mode)) {
             position += stream.node.usedBytes;
           }
         }
         if (position < 0) {
-          throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
+          throw new FS.ErrnoError(cDefs.EINVAL);
         }
         return position;
       },
@@ -323,13 +323,13 @@ addToLibrary({
       },
       mmap(stream, length, position, prot, flags) {
         if (!FS.isFile(stream.node.mode)) {
-          throw new FS.ErrnoError({{{ cDefs.ENODEV }}});
+          throw new FS.ErrnoError(cDefs.ENODEV);
         }
         var ptr;
         var allocated;
         var contents = stream.node.contents;
         // Only make a new copy when MAP_PRIVATE is specified.
-        if (!(flags & {{{ cDefs.MAP_PRIVATE }}}) && contents.buffer === HEAP8.buffer) {
+        if (!(flags & cDefs.MAP_PRIVATE) && contents.buffer === HEAP8.buffer) {
           // We can't emulate MAP_SHARED when the file is not backed by the
           // buffer we're mapping to (e.g. the HEAP buffer).
           allocated = false;
@@ -346,7 +346,7 @@ addToLibrary({
           allocated = true;
           ptr = mmapAlloc(length);
           if (!ptr) {
-            throw new FS.ErrnoError({{{ cDefs.ENOMEM }}});
+            throw new FS.ErrnoError(cDefs.ENOMEM);
           }
           HEAP8.set(contents, ptr);
         }

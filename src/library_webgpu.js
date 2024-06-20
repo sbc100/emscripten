@@ -291,7 +291,7 @@ var LibraryWebGPU = {
         "texture": WebGPU.mgrTexture.get(
           {{{ makeGetValue('ptr', C_STRUCTS.WGPUImageCopyTexture.texture, '*') }}}),
         "mipLevel": {{{ gpu.makeGetU32('ptr', C_STRUCTS.WGPUImageCopyTexture.mipLevel) }}},
-        "origin": WebGPU.makeOrigin3D(ptr + {{{ C_STRUCTS.WGPUImageCopyTexture.origin }}}),
+        "origin": WebGPU.makeOrigin3D(ptr + cStructs.WGPUImageCopyTexture.origin),
         "aspect": WebGPU.TextureAspect[{{{ gpu.makeGetU32('ptr', C_STRUCTS.WGPUImageCopyTexture.aspect) }}}],
       };
     },
@@ -309,7 +309,7 @@ var LibraryWebGPU = {
 
     makeImageCopyBuffer: (ptr) => {
       {{{ gpu.makeCheckDescriptor('ptr') }}}
-      var layoutPtr = ptr + {{{ C_STRUCTS.WGPUImageCopyBuffer.layout }}};
+      var layoutPtr = ptr + cStructs.WGPUImageCopyBuffer.layout;
       var bufferCopyView = WebGPU.makeTextureDataLayout(layoutPtr);
       bufferCopyView["buffer"] = WebGPU.mgrBuffer.get(
         {{{ makeGetValue('ptr', C_STRUCTS.WGPUImageCopyBuffer.buffer, '*') }}});
@@ -320,7 +320,7 @@ var LibraryWebGPU = {
       if (!constantCount) return;
       var constants = {};
       for (var i = 0; i < constantCount; ++i) {
-        var entryPtr = constantsPtr + {{{ C_STRUCTS.WGPUConstantEntry.__size__ }}} * i;
+        var entryPtr = constantsPtr + cStructs.WGPUConstantEntry.__size__ * i;
         var key = UTF8ToString({{{ makeGetValue('entryPtr', C_STRUCTS.WGPUConstantEntry.key, '*') }}});
         constants[key] = {{{ makeGetValue('entryPtr', C_STRUCTS.WGPUConstantEntry.value, 'double') }}};
       }
@@ -348,7 +348,7 @@ var LibraryWebGPU = {
     },
 
     fillLimitStruct: (limits, supportedLimitsOutPtr) => {
-      var limitsOutPtr = supportedLimitsOutPtr + {{{ C_STRUCTS.WGPUSupportedLimits.limits }}};
+      var limitsOutPtr = supportedLimitsOutPtr + cStructs.WGPUSupportedLimits.limits;
 
       function setLimitValueU32(name, limitOffset) {
         var limitValue = limits[name];
@@ -359,40 +359,40 @@ var LibraryWebGPU = {
         {{{ makeSetValue('limitsOutPtr', 'limitOffset', 'limitValue', 'i64') }}};
       }
   
-      setLimitValueU32('maxTextureDimension1D', {{{ C_STRUCTS.WGPULimits.maxTextureDimension1D }}});
-      setLimitValueU32('maxTextureDimension2D', {{{ C_STRUCTS.WGPULimits.maxTextureDimension2D }}});
-      setLimitValueU32('maxTextureDimension3D', {{{ C_STRUCTS.WGPULimits.maxTextureDimension3D }}});
-      setLimitValueU32('maxTextureArrayLayers', {{{ C_STRUCTS.WGPULimits.maxTextureArrayLayers }}});
-      setLimitValueU32('maxBindGroups', {{{ C_STRUCTS.WGPULimits.maxBindGroups }}});
-      setLimitValueU32('maxBindGroupsPlusVertexBuffers', {{{ C_STRUCTS.WGPULimits.maxBindGroupsPlusVertexBuffers }}});
-      setLimitValueU32('maxBindingsPerBindGroup', {{{ C_STRUCTS.WGPULimits.maxBindingsPerBindGroup }}});
-      setLimitValueU32('maxDynamicUniformBuffersPerPipelineLayout', {{{ C_STRUCTS.WGPULimits.maxDynamicUniformBuffersPerPipelineLayout }}});
-      setLimitValueU32('maxDynamicStorageBuffersPerPipelineLayout', {{{ C_STRUCTS.WGPULimits.maxDynamicStorageBuffersPerPipelineLayout }}});
-      setLimitValueU32('maxSampledTexturesPerShaderStage', {{{ C_STRUCTS.WGPULimits.maxSampledTexturesPerShaderStage }}});
-      setLimitValueU32('maxSamplersPerShaderStage', {{{ C_STRUCTS.WGPULimits.maxSamplersPerShaderStage }}});
-      setLimitValueU32('maxStorageBuffersPerShaderStage', {{{ C_STRUCTS.WGPULimits.maxStorageBuffersPerShaderStage }}});
-      setLimitValueU32('maxStorageTexturesPerShaderStage', {{{ C_STRUCTS.WGPULimits.maxStorageTexturesPerShaderStage }}});
-      setLimitValueU32('maxUniformBuffersPerShaderStage', {{{ C_STRUCTS.WGPULimits.maxUniformBuffersPerShaderStage }}});
-      setLimitValueU32('minUniformBufferOffsetAlignment', {{{ C_STRUCTS.WGPULimits.minUniformBufferOffsetAlignment }}});
-      setLimitValueU32('minStorageBufferOffsetAlignment', {{{ C_STRUCTS.WGPULimits.minStorageBufferOffsetAlignment }}});
+      setLimitValueU32('maxTextureDimension1D', cStructs.WGPULimits.maxTextureDimension1D);
+      setLimitValueU32('maxTextureDimension2D', cStructs.WGPULimits.maxTextureDimension2D);
+      setLimitValueU32('maxTextureDimension3D', cStructs.WGPULimits.maxTextureDimension3D);
+      setLimitValueU32('maxTextureArrayLayers', cStructs.WGPULimits.maxTextureArrayLayers);
+      setLimitValueU32('maxBindGroups', cStructs.WGPULimits.maxBindGroups);
+      setLimitValueU32('maxBindGroupsPlusVertexBuffers', cStructs.WGPULimits.maxBindGroupsPlusVertexBuffers);
+      setLimitValueU32('maxBindingsPerBindGroup', cStructs.WGPULimits.maxBindingsPerBindGroup);
+      setLimitValueU32('maxDynamicUniformBuffersPerPipelineLayout', cStructs.WGPULimits.maxDynamicUniformBuffersPerPipelineLayout);
+      setLimitValueU32('maxDynamicStorageBuffersPerPipelineLayout', cStructs.WGPULimits.maxDynamicStorageBuffersPerPipelineLayout);
+      setLimitValueU32('maxSampledTexturesPerShaderStage', cStructs.WGPULimits.maxSampledTexturesPerShaderStage);
+      setLimitValueU32('maxSamplersPerShaderStage', cStructs.WGPULimits.maxSamplersPerShaderStage);
+      setLimitValueU32('maxStorageBuffersPerShaderStage', cStructs.WGPULimits.maxStorageBuffersPerShaderStage);
+      setLimitValueU32('maxStorageTexturesPerShaderStage', cStructs.WGPULimits.maxStorageTexturesPerShaderStage);
+      setLimitValueU32('maxUniformBuffersPerShaderStage', cStructs.WGPULimits.maxUniformBuffersPerShaderStage);
+      setLimitValueU32('minUniformBufferOffsetAlignment', cStructs.WGPULimits.minUniformBufferOffsetAlignment);
+      setLimitValueU32('minStorageBufferOffsetAlignment', cStructs.WGPULimits.minStorageBufferOffsetAlignment);
   
-      setLimitValueU64('maxUniformBufferBindingSize', {{{ C_STRUCTS.WGPULimits.maxUniformBufferBindingSize }}});
-      setLimitValueU64('maxStorageBufferBindingSize', {{{ C_STRUCTS.WGPULimits.maxStorageBufferBindingSize }}});
+      setLimitValueU64('maxUniformBufferBindingSize', cStructs.WGPULimits.maxUniformBufferBindingSize);
+      setLimitValueU64('maxStorageBufferBindingSize', cStructs.WGPULimits.maxStorageBufferBindingSize);
   
-      setLimitValueU32('maxVertexBuffers', {{{ C_STRUCTS.WGPULimits.maxVertexBuffers }}});
-      setLimitValueU32('maxBufferSize', {{{ C_STRUCTS.WGPULimits.maxBufferSize }}});
-      setLimitValueU32('maxVertexAttributes', {{{ C_STRUCTS.WGPULimits.maxVertexAttributes }}});
-      setLimitValueU32('maxVertexBufferArrayStride', {{{ C_STRUCTS.WGPULimits.maxVertexBufferArrayStride }}});
-      setLimitValueU32('maxInterStageShaderComponents', {{{ C_STRUCTS.WGPULimits.maxInterStageShaderComponents }}});
-      setLimitValueU32('maxInterStageShaderVariables', {{{ C_STRUCTS.WGPULimits.maxInterStageShaderVariables }}});
-      setLimitValueU32('maxColorAttachments', {{{ C_STRUCTS.WGPULimits.maxColorAttachments }}});
-      setLimitValueU32('maxColorAttachmentBytesPerSample', {{{ C_STRUCTS.WGPULimits.maxColorAttachmentBytesPerSample }}});
-      setLimitValueU32('maxComputeWorkgroupStorageSize', {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupStorageSize }}});
-      setLimitValueU32('maxComputeInvocationsPerWorkgroup', {{{ C_STRUCTS.WGPULimits.maxComputeInvocationsPerWorkgroup }}});
-      setLimitValueU32('maxComputeWorkgroupSizeX', {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeX }}});
-      setLimitValueU32('maxComputeWorkgroupSizeY', {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeY }}});
-      setLimitValueU32('maxComputeWorkgroupSizeZ', {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeZ }}});
-      setLimitValueU32('maxComputeWorkgroupsPerDimension', {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupsPerDimension }}});
+      setLimitValueU32('maxVertexBuffers', cStructs.WGPULimits.maxVertexBuffers);
+      setLimitValueU32('maxBufferSize', cStructs.WGPULimits.maxBufferSize);
+      setLimitValueU32('maxVertexAttributes', cStructs.WGPULimits.maxVertexAttributes);
+      setLimitValueU32('maxVertexBufferArrayStride', cStructs.WGPULimits.maxVertexBufferArrayStride);
+      setLimitValueU32('maxInterStageShaderComponents', cStructs.WGPULimits.maxInterStageShaderComponents);
+      setLimitValueU32('maxInterStageShaderVariables', cStructs.WGPULimits.maxInterStageShaderVariables);
+      setLimitValueU32('maxColorAttachments', cStructs.WGPULimits.maxColorAttachments);
+      setLimitValueU32('maxColorAttachmentBytesPerSample', cStructs.WGPULimits.maxColorAttachmentBytesPerSample);
+      setLimitValueU32('maxComputeWorkgroupStorageSize', cStructs.WGPULimits.maxComputeWorkgroupStorageSize);
+      setLimitValueU32('maxComputeInvocationsPerWorkgroup', cStructs.WGPULimits.maxComputeInvocationsPerWorkgroup);
+      setLimitValueU32('maxComputeWorkgroupSizeX', cStructs.WGPULimits.maxComputeWorkgroupSizeX);
+      setLimitValueU32('maxComputeWorkgroupSizeY', cStructs.WGPULimits.maxComputeWorkgroupSizeY);
+      setLimitValueU32('maxComputeWorkgroupSizeZ', cStructs.WGPULimits.maxComputeWorkgroupSizeZ);
+      setLimitValueU32('maxComputeWorkgroupsPerDimension', cStructs.WGPULimits.maxComputeWorkgroupsPerDimension);
     },
 
     // Map from enum string back to enum number, for callbacks.
@@ -954,7 +954,7 @@ var LibraryWebGPU = {
 
     var desc = {
       "label": undefined,
-      "size": WebGPU.makeExtent3D(descriptor + {{{ C_STRUCTS.WGPUTextureDescriptor.size }}}),
+      "size": WebGPU.makeExtent3D(descriptor + cStructs.WGPUTextureDescriptor.size),
       "mipLevelCount": {{{ gpu.makeGetU32('descriptor', C_STRUCTS.WGPUTextureDescriptor.mipLevelCount) }}},
       "sampleCount": {{{ gpu.makeGetU32('descriptor', C_STRUCTS.WGPUTextureDescriptor.sampleCount) }}},
       "dimension": WebGPU.TextureDimension[
@@ -1081,10 +1081,10 @@ var LibraryWebGPU = {
           {{{ gpu.makeGetU32('entryPtr', C_STRUCTS.WGPUBindGroupLayoutEntry.binding) }}},
         "visibility":
           {{{ gpu.makeGetU32('entryPtr', C_STRUCTS.WGPUBindGroupLayoutEntry.visibility) }}},
-        "buffer": makeBufferEntry(entryPtr + {{{ C_STRUCTS.WGPUBindGroupLayoutEntry.buffer }}}),
-        "sampler": makeSamplerEntry(entryPtr + {{{ C_STRUCTS.WGPUBindGroupLayoutEntry.sampler }}}),
-        "texture": makeTextureEntry(entryPtr + {{{ C_STRUCTS.WGPUBindGroupLayoutEntry.texture }}}),
-        "storageTexture": makeStorageTextureEntry(entryPtr + {{{ C_STRUCTS.WGPUBindGroupLayoutEntry.storageTexture }}}),
+        "buffer": makeBufferEntry(entryPtr + cStructs.WGPUBindGroupLayoutEntry.buffer),
+        "sampler": makeSamplerEntry(entryPtr + cStructs.WGPUBindGroupLayoutEntry.sampler),
+        "texture": makeTextureEntry(entryPtr + cStructs.WGPUBindGroupLayoutEntry.texture),
+        "storageTexture": makeStorageTextureEntry(entryPtr + cStructs.WGPUBindGroupLayoutEntry.storageTexture),
       };
     }
 
@@ -1092,7 +1092,7 @@ var LibraryWebGPU = {
       var entries = [];
       for (var i = 0; i < count; ++i) {
         entries.push(makeEntry(entriesPtrs +
-            {{{ C_STRUCTS.WGPUBindGroupLayoutEntry.__size__ }}} * i));
+            cStructs.WGPUBindGroupLayoutEntry.__size__ * i));
       }
       return entries;
     }
@@ -1253,7 +1253,7 @@ var LibraryWebGPU = {
       "layout": WebGPU.makePipelineLayout(
         {{{ makeGetValue('descriptor', C_STRUCTS.WGPUComputePipelineDescriptor.layout, '*') }}}),
       "compute": WebGPU.makeProgrammableStageDescriptor(
-        descriptor + {{{ C_STRUCTS.WGPUComputePipelineDescriptor.compute }}}),
+        descriptor + cStructs.WGPUComputePipelineDescriptor.compute),
     };
     var labelPtr = {{{ makeGetValue('descriptor', C_STRUCTS.WGPUComputePipelineDescriptor.label, '*') }}};
     if (labelPtr) desc["label"] = UTF8ToString(labelPtr);
@@ -1337,8 +1337,8 @@ var LibraryWebGPU = {
     function makeBlendState(bsPtr) {
       if (!bsPtr) return undefined;
       return {
-        "alpha": makeBlendComponent(bsPtr + {{{ C_STRUCTS.WGPUBlendState.alpha }}}),
-        "color": makeBlendComponent(bsPtr + {{{ C_STRUCTS.WGPUBlendState.color }}}),
+        "alpha": makeBlendComponent(bsPtr + cStructs.WGPUBlendState.alpha),
+        "color": makeBlendComponent(bsPtr + cStructs.WGPUBlendState.color),
       };
     }
 
@@ -1355,7 +1355,7 @@ var LibraryWebGPU = {
     function makeColorStates(count, csArrayPtr) {
       var states = [];
       for (var i = 0; i < count; ++i) {
-        states.push(makeColorState(csArrayPtr + {{{ C_STRUCTS.WGPUColorTargetState.__size__ }}} * i));
+        states.push(makeColorState(csArrayPtr + cStructs.WGPUColorTargetState.__size__ * i));
       }
       return states;
     }
@@ -1384,8 +1384,8 @@ var LibraryWebGPU = {
         "depthWriteEnabled": {{{ gpu.makeGetBool('dssPtr', C_STRUCTS.WGPUDepthStencilState.depthWriteEnabled) }}},
         "depthCompare": WebGPU.CompareFunction[
           {{{ gpu.makeGetU32('dssPtr', C_STRUCTS.WGPUDepthStencilState.depthCompare) }}}],
-        "stencilFront": makeStencilStateFace(dssPtr + {{{ C_STRUCTS.WGPUDepthStencilState.stencilFront }}}),
-        "stencilBack": makeStencilStateFace(dssPtr + {{{ C_STRUCTS.WGPUDepthStencilState.stencilBack }}}),
+        "stencilFront": makeStencilStateFace(dssPtr + cStructs.WGPUDepthStencilState.stencilFront),
+        "stencilBack": makeStencilStateFace(dssPtr + cStructs.WGPUDepthStencilState.stencilBack),
         "stencilReadMask": {{{ gpu.makeGetU32('dssPtr', C_STRUCTS.WGPUDepthStencilState.stencilReadMask) }}},
         "stencilWriteMask": {{{ gpu.makeGetU32('dssPtr', C_STRUCTS.WGPUDepthStencilState.stencilWriteMask) }}},
         "depthBias": {{{ makeGetValue('dssPtr', C_STRUCTS.WGPUDepthStencilState.depthBias, 'i32') }}},
@@ -1407,7 +1407,7 @@ var LibraryWebGPU = {
     function makeVertexAttributes(count, vaArrayPtr) {
       var vas = [];
       for (var i = 0; i < count; ++i) {
-        vas.push(makeVertexAttribute(vaArrayPtr + i * {{{ C_STRUCTS.WGPUVertexAttribute.__size__ }}}));
+        vas.push(makeVertexAttribute(vaArrayPtr + i * cStructs.WGPUVertexAttribute.__size__));
       }
       return vas;
     }
@@ -1429,7 +1429,7 @@ var LibraryWebGPU = {
 
       var vbs = [];
       for (var i = 0; i < count; ++i) {
-        vbs.push(makeVertexBuffer(vbArrayPtr + i * {{{ C_STRUCTS.WGPUVertexBufferLayout.__size__ }}}));
+        vbs.push(makeVertexBuffer(vbArrayPtr + i * cStructs.WGPUVertexBufferLayout.__size__));
       }
       return vbs;
     }
@@ -1485,13 +1485,13 @@ var LibraryWebGPU = {
       "layout": WebGPU.makePipelineLayout(
         {{{ makeGetValue('descriptor', C_STRUCTS.WGPURenderPipelineDescriptor.layout, '*') }}}),
       "vertex": makeVertexState(
-        descriptor + {{{ C_STRUCTS.WGPURenderPipelineDescriptor.vertex }}}),
+        descriptor + cStructs.WGPURenderPipelineDescriptor.vertex),
       "primitive": makePrimitiveState(
-        descriptor + {{{ C_STRUCTS.WGPURenderPipelineDescriptor.primitive }}}),
+        descriptor + cStructs.WGPURenderPipelineDescriptor.primitive),
       "depthStencil": makeDepthStencilState(
         {{{ makeGetValue('descriptor', C_STRUCTS.WGPURenderPipelineDescriptor.depthStencil, '*') }}}),
       "multisample": makeMultisampleState(
-        descriptor + {{{ C_STRUCTS.WGPURenderPipelineDescriptor.multisample }}}),
+        descriptor + cStructs.WGPURenderPipelineDescriptor.multisample),
       "fragment": makeFragmentState(
         {{{ makeGetValue('descriptor', C_STRUCTS.WGPURenderPipelineDescriptor.fragment, '*') }}}),
     };
@@ -1707,7 +1707,7 @@ var LibraryWebGPU = {
           assert(storeOpInt !== {{{ gpu.StoreOp.Undefined }}});
       #endif
 
-      var clearValue = WebGPU.makeColor(caPtr + {{{ C_STRUCTS.WGPURenderPassColorAttachment.clearValue }}});
+      var clearValue = WebGPU.makeColor(caPtr + cStructs.WGPURenderPassColorAttachment.clearValue);
 
       return {
         "view": WebGPU.mgrTextureView.get(viewPtr),
@@ -1723,7 +1723,7 @@ var LibraryWebGPU = {
     function makeColorAttachments(count, caPtr) {
       var attachments = [];
       for (var i = 0; i < count; ++i) {
-        attachments.push(makeColorAttachment(caPtr + {{{ C_STRUCTS.WGPURenderPassColorAttachment.__size__ }}} * i));
+        attachments.push(makeColorAttachment(caPtr + cStructs.WGPURenderPassColorAttachment.__size__ * i));
       }
       return attachments;
     }
@@ -1899,11 +1899,11 @@ var LibraryWebGPU = {
     shaderModule.getCompilationInfo().then((compilationInfo) => {
       {{{ runtimeKeepalivePop() }}}
       callUserCallback(() => {
-        var compilationMessagesPtr = _malloc({{{ C_STRUCTS.WGPUCompilationMessage.__size__ }}} * compilationInfo.messages.length);
+        var compilationMessagesPtr = _malloc(cStructs.WGPUCompilationMessage.__size__ * compilationInfo.messages.length);
         var messageStringPtrs = []; // save these to free later
         for (var i = 0; i < compilationInfo.messages.length; ++i) {
           var compilationMessage = compilationInfo.messages[i];
-          var compilationMessagePtr = compilationMessagesPtr + {{{ C_STRUCTS.WGPUCompilationMessage.__size__ }}} * i;
+          var compilationMessagePtr = compilationMessagesPtr + cStructs.WGPUCompilationMessage.__size__ * i;
           var messageSize = lengthBytesUTF8(compilationMessage.message) + 1;
           var messagePtr = _malloc(messageSize);
           messageStringPtrs.push(messagePtr);
@@ -1920,7 +1920,7 @@ var LibraryWebGPU = {
           {{{ makeSetValue('compilationMessagePtr', C_STRUCTS.WGPUCompilationMessage.utf16Offset, 'compilationMessage.offset', 'i64') }}};
           {{{ makeSetValue('compilationMessagePtr', C_STRUCTS.WGPUCompilationMessage.utf16Length, 'compilationMessage.length', 'i64') }}};
         }
-        var compilationInfoPtr = _malloc({{{ C_STRUCTS.WGPUCompilationInfo.__size__ }}});
+        var compilationInfoPtr = _malloc(cStructs.WGPUCompilationInfo.__size__);
         {{{ makeSetValue('compilationInfoPtr', C_STRUCTS.WGPUCompilationInfo.messageCount, 'compilationInfo.messages.length', '*') }}}
         {{{ makeSetValue('compilationInfoPtr', C_STRUCTS.WGPUCompilationInfo.messages, 'compilationMessagesPtr', '*') }}};
 
@@ -2630,7 +2630,7 @@ var LibraryWebGPU = {
       var requiredLimitsPtr = {{{ makeGetValue('descriptor', C_STRUCTS.WGPUDeviceDescriptor.requiredLimits, '*') }}};
       if (requiredLimitsPtr) {
         {{{ gpu.makeCheckDescriptor('requiredLimitsPtr') }}}
-        var limitsPtr = requiredLimitsPtr + {{{ C_STRUCTS.WGPURequiredLimits.limits }}};
+        var limitsPtr = requiredLimitsPtr + cStructs.WGPURequiredLimits.limits;
         var requiredLimits = {};
         function setLimitU32IfDefined(name, limitOffset) {
           var ptr = limitsPtr + limitOffset;
@@ -2649,37 +2649,37 @@ var LibraryWebGPU = {
           }
         }
 
-        setLimitU32IfDefined("maxTextureDimension1D", {{{ C_STRUCTS.WGPULimits.maxTextureDimension1D }}});
-        setLimitU32IfDefined("maxTextureDimension2D", {{{ C_STRUCTS.WGPULimits.maxTextureDimension2D }}});
-        setLimitU32IfDefined("maxTextureDimension3D", {{{ C_STRUCTS.WGPULimits.maxTextureDimension3D }}});
-        setLimitU32IfDefined("maxTextureArrayLayers", {{{ C_STRUCTS.WGPULimits.maxTextureArrayLayers }}});
-        setLimitU32IfDefined("maxBindGroups", {{{ C_STRUCTS.WGPULimits.maxBindGroups }}});
-        setLimitU32IfDefined('maxBindGroupsPlusVertexBuffers', {{{ C_STRUCTS.WGPULimits.maxBindGroupsPlusVertexBuffers }}});
-        setLimitU32IfDefined("maxDynamicUniformBuffersPerPipelineLayout", {{{ C_STRUCTS.WGPULimits.maxDynamicUniformBuffersPerPipelineLayout }}});
-        setLimitU32IfDefined("maxDynamicStorageBuffersPerPipelineLayout", {{{ C_STRUCTS.WGPULimits.maxDynamicStorageBuffersPerPipelineLayout }}});
-        setLimitU32IfDefined("maxSampledTexturesPerShaderStage", {{{ C_STRUCTS.WGPULimits.maxSampledTexturesPerShaderStage }}});
-        setLimitU32IfDefined("maxSamplersPerShaderStage", {{{ C_STRUCTS.WGPULimits.maxSamplersPerShaderStage }}});
-        setLimitU32IfDefined("maxStorageBuffersPerShaderStage", {{{ C_STRUCTS.WGPULimits.maxStorageBuffersPerShaderStage }}});
-        setLimitU32IfDefined("maxStorageTexturesPerShaderStage", {{{ C_STRUCTS.WGPULimits.maxStorageTexturesPerShaderStage }}});
-        setLimitU32IfDefined("maxUniformBuffersPerShaderStage", {{{ C_STRUCTS.WGPULimits.maxUniformBuffersPerShaderStage }}});
-        setLimitU32IfDefined("minUniformBufferOffsetAlignment", {{{ C_STRUCTS.WGPULimits.minUniformBufferOffsetAlignment }}});
-        setLimitU32IfDefined("minStorageBufferOffsetAlignment", {{{ C_STRUCTS.WGPULimits.minStorageBufferOffsetAlignment }}});
-        setLimitU64IfDefined("maxUniformBufferBindingSize", {{{ C_STRUCTS.WGPULimits.maxUniformBufferBindingSize }}});
-        setLimitU64IfDefined("maxStorageBufferBindingSize", {{{ C_STRUCTS.WGPULimits.maxStorageBufferBindingSize }}});
-        setLimitU32IfDefined("maxVertexBuffers", {{{ C_STRUCTS.WGPULimits.maxVertexBuffers }}});
-        setLimitU32IfDefined("maxBufferSize", {{{ C_STRUCTS.WGPULimits.maxBufferSize }}});
-        setLimitU32IfDefined("maxVertexAttributes", {{{ C_STRUCTS.WGPULimits.maxVertexAttributes }}});
-        setLimitU32IfDefined("maxVertexBufferArrayStride", {{{ C_STRUCTS.WGPULimits.maxVertexBufferArrayStride }}});
-        setLimitU32IfDefined("maxInterStageShaderComponents", {{{ C_STRUCTS.WGPULimits.maxInterStageShaderComponents }}});
-        setLimitU32IfDefined("maxInterStageShaderVariables", {{{ C_STRUCTS.WGPULimits.maxInterStageShaderVariables }}});
-        setLimitU32IfDefined("maxColorAttachments", {{{ C_STRUCTS.WGPULimits.maxColorAttachments }}});
-        setLimitU32IfDefined("maxColorAttachmentBytesPerSample", {{{ C_STRUCTS.WGPULimits.maxColorAttachmentBytesPerSample }}});
-        setLimitU32IfDefined("maxComputeWorkgroupStorageSize", {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupStorageSize }}});
-        setLimitU32IfDefined("maxComputeInvocationsPerWorkgroup", {{{ C_STRUCTS.WGPULimits.maxComputeInvocationsPerWorkgroup }}});
-        setLimitU32IfDefined("maxComputeWorkgroupSizeX", {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeX }}});
-        setLimitU32IfDefined("maxComputeWorkgroupSizeY", {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeY }}});
-        setLimitU32IfDefined("maxComputeWorkgroupSizeZ", {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupSizeZ }}});
-        setLimitU32IfDefined("maxComputeWorkgroupsPerDimension", {{{ C_STRUCTS.WGPULimits.maxComputeWorkgroupsPerDimension }}});
+        setLimitU32IfDefined("maxTextureDimension1D", cStructs.WGPULimits.maxTextureDimension1D);
+        setLimitU32IfDefined("maxTextureDimension2D", cStructs.WGPULimits.maxTextureDimension2D);
+        setLimitU32IfDefined("maxTextureDimension3D", cStructs.WGPULimits.maxTextureDimension3D);
+        setLimitU32IfDefined("maxTextureArrayLayers", cStructs.WGPULimits.maxTextureArrayLayers);
+        setLimitU32IfDefined("maxBindGroups", cStructs.WGPULimits.maxBindGroups);
+        setLimitU32IfDefined('maxBindGroupsPlusVertexBuffers', cStructs.WGPULimits.maxBindGroupsPlusVertexBuffers);
+        setLimitU32IfDefined("maxDynamicUniformBuffersPerPipelineLayout", cStructs.WGPULimits.maxDynamicUniformBuffersPerPipelineLayout);
+        setLimitU32IfDefined("maxDynamicStorageBuffersPerPipelineLayout", cStructs.WGPULimits.maxDynamicStorageBuffersPerPipelineLayout);
+        setLimitU32IfDefined("maxSampledTexturesPerShaderStage", cStructs.WGPULimits.maxSampledTexturesPerShaderStage);
+        setLimitU32IfDefined("maxSamplersPerShaderStage", cStructs.WGPULimits.maxSamplersPerShaderStage);
+        setLimitU32IfDefined("maxStorageBuffersPerShaderStage", cStructs.WGPULimits.maxStorageBuffersPerShaderStage);
+        setLimitU32IfDefined("maxStorageTexturesPerShaderStage", cStructs.WGPULimits.maxStorageTexturesPerShaderStage);
+        setLimitU32IfDefined("maxUniformBuffersPerShaderStage", cStructs.WGPULimits.maxUniformBuffersPerShaderStage);
+        setLimitU32IfDefined("minUniformBufferOffsetAlignment", cStructs.WGPULimits.minUniformBufferOffsetAlignment);
+        setLimitU32IfDefined("minStorageBufferOffsetAlignment", cStructs.WGPULimits.minStorageBufferOffsetAlignment);
+        setLimitU64IfDefined("maxUniformBufferBindingSize", cStructs.WGPULimits.maxUniformBufferBindingSize);
+        setLimitU64IfDefined("maxStorageBufferBindingSize", cStructs.WGPULimits.maxStorageBufferBindingSize);
+        setLimitU32IfDefined("maxVertexBuffers", cStructs.WGPULimits.maxVertexBuffers);
+        setLimitU32IfDefined("maxBufferSize", cStructs.WGPULimits.maxBufferSize);
+        setLimitU32IfDefined("maxVertexAttributes", cStructs.WGPULimits.maxVertexAttributes);
+        setLimitU32IfDefined("maxVertexBufferArrayStride", cStructs.WGPULimits.maxVertexBufferArrayStride);
+        setLimitU32IfDefined("maxInterStageShaderComponents", cStructs.WGPULimits.maxInterStageShaderComponents);
+        setLimitU32IfDefined("maxInterStageShaderVariables", cStructs.WGPULimits.maxInterStageShaderVariables);
+        setLimitU32IfDefined("maxColorAttachments", cStructs.WGPULimits.maxColorAttachments);
+        setLimitU32IfDefined("maxColorAttachmentBytesPerSample", cStructs.WGPULimits.maxColorAttachmentBytesPerSample);
+        setLimitU32IfDefined("maxComputeWorkgroupStorageSize", cStructs.WGPULimits.maxComputeWorkgroupStorageSize);
+        setLimitU32IfDefined("maxComputeInvocationsPerWorkgroup", cStructs.WGPULimits.maxComputeInvocationsPerWorkgroup);
+        setLimitU32IfDefined("maxComputeWorkgroupSizeX", cStructs.WGPULimits.maxComputeWorkgroupSizeX);
+        setLimitU32IfDefined("maxComputeWorkgroupSizeY", cStructs.WGPULimits.maxComputeWorkgroupSizeY);
+        setLimitU32IfDefined("maxComputeWorkgroupSizeZ", cStructs.WGPULimits.maxComputeWorkgroupSizeZ);
+        setLimitU32IfDefined("maxComputeWorkgroupsPerDimension", cStructs.WGPULimits.maxComputeWorkgroupsPerDimension);
         desc["requiredLimits"] = requiredLimits;
       }
 

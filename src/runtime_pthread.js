@@ -221,7 +221,7 @@ if (ENVIRONMENT_IS_PTHREAD) {
         }
       } else if (cmd === 'cancel') { // Main thread is asking for a pthread_cancel() on this thread.
         if (_pthread_self()) {
-          __emscripten_thread_exit({{{ cDefs.PTHREAD_CANCELED }}});
+          __emscripten_thread_exit(cDefs.PTHREAD_CANCELED);
         }
       } else if (msgData.target === 'setimmediate') {
         // no-op

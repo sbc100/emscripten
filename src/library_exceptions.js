@@ -30,7 +30,7 @@ var LibraryExceptions = {
     // excPtr - Thrown object pointer to wrap. Metadata pointer is calculated from it.
     constructor(excPtr) {
       this.excPtr = excPtr;
-      this.ptr = excPtr - {{{ C_STRUCTS.__cxa_exception.__size__ }}};
+      this.ptr = excPtr - cStructs.__cxa_exception.__size__;
     }
 
     set_type(type) {
@@ -259,7 +259,7 @@ var LibraryExceptions = {
         // Catch all clause matched or exactly the same type is caught
         break;
       }
-      var adjusted_ptr_addr = info.ptr + {{{ C_STRUCTS.__cxa_exception.adjustedPtr }}};
+      var adjusted_ptr_addr = info.ptr + cStructs.__cxa_exception.adjustedPtr;
       if (___cxa_can_catch(caughtType, thrownType, adjusted_ptr_addr)) {
 #if EXCEPTION_DEBUG
         dbg("  findMatchingCatch found " + [ptrToString(info.get_adjusted_ptr()), caughtType]);

@@ -275,7 +275,7 @@ FS.init();
       }
     },
     stat(path) {
-      var statBuf = _malloc({{{ C_STRUCTS.stat.__size__ }}});
+      var statBuf = _malloc(cStructs.stat.__size__);
       FS.handleError(withStackSave(() =>
         __wasmfs_stat(stringToUTF8OnStack(path), statBuf)
       ));
@@ -285,7 +285,7 @@ FS.init();
       return stats;
     },
     lstat(path) {
-      var statBuf = _malloc({{{ C_STRUCTS.stat.__size__ }}});
+      var statBuf = _malloc(cStructs.stat.__size__);
       FS.handleError(withStackSave(() =>
         __wasmfs_lstat(stringToUTF8OnStack(path), statBuf)
       ));
@@ -322,11 +322,11 @@ FS.init();
     },
     findObject(path) {
       var result = withStackSave(() => __wasmfs_identify(stringToUTF8OnStack(path)));
-      if (result == {{{ cDefs.ENOENT }}}) {
+      if (result == cDefs.ENOENT) {
         return null;
       }
       return {
-        isFolder: result == {{{ cDefs.EISDIR }}},
+        isFolder: result == cDefs.EISDIR,
         isDevice: false, // TODO: wasmfs support for devices
       };
     },
@@ -419,10 +419,10 @@ FS.init();
             try {
               result = input();
             } catch (e) {
-              throw new FS.ErrnoError({{{ cDefs.EIO }}});
+              throw new FS.ErrnoError(cDefs.EIO);
             }
             if (result === undefined && bytesRead === 0) {
-              throw new FS.ErrnoError({{{ cDefs.EAGAIN }}});
+              throw new FS.ErrnoError(cDefs.EAGAIN);
             }
             if (result === null || result === undefined) break;
             bytesRead++;
@@ -435,7 +435,7 @@ FS.init();
             try {
               output(buffer[offset+i]);
             } catch (e) {
-              throw new FS.ErrnoError({{{ cDefs.EIO }}});
+              throw new FS.ErrnoError(cDefs.EIO);
             }
           }
           return i;
@@ -516,8 +516,8 @@ FS.init();
   $FS_create__deps: ['$FS_mknod'],
   // Default settings copied from the legacy JS FS API.
   $FS_create: (path, mode = 438 /* 0666 */) => {
-    mode &= {{{ cDefs.S_IALLUGO }}};
-    mode |= {{{ cDefs.S_IFREG }}};
+    mode &= cDefs.S_IALLUGO;
+    mode |= cDefs.S_IFREG;
     return FS_mknod(path, mode, 0);
   },
 
@@ -564,7 +564,7 @@ FS.init();
       try {
         FS_mkdir(d, mode);
       } catch(e) {
-        if (e.errno != {{{ cDefs.EEXIST }}}) throw e;
+        if (e.errno != cDefs.EEXIST) throw e;
       }
     }
   },

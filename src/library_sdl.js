@@ -60,7 +60,7 @@ var LibrarySDL = {
       volume: 1.0
     },
     mixerFrequency: 22050,
-    mixerFormat: {{{ cDefs.AUDIO_S16LSB }}},
+    mixerFormat: cDefs.AUDIO_S16LSB,
     mixerNumChannels: 2,
     mixerChunkSize: 1024,
     channelMinimumNumber: 0,
@@ -322,7 +322,7 @@ var LibrarySDL = {
 #if ASSERTIONS
       // Canvas screens are always RGBA.
       var format = {{{ makeGetValue('fmt', C_STRUCTS.SDL_PixelFormat.format, 'i32') }}};
-      if (format != {{{ cDefs.SDL_PIXELFORMAT_RGBA8888 }}}) {
+      if (format != cDefs.SDL_PIXELFORMAT_RGBA8888) {
         warnOnce('Unsupported pixel format!');
       }
 #endif
@@ -351,8 +351,8 @@ var LibrarySDL = {
       var is_SDL_HWPALETTE = flags & 0x00200000;
       var is_SDL_OPENGL = flags & 0x04000000;
 
-      var surf = _malloc({{{ C_STRUCTS.SDL_Surface.__size__ }}});
-      var pixelFormat = _malloc({{{ C_STRUCTS.SDL_PixelFormat.__size__ }}});
+      var surf = _malloc(cStructs.SDL_Surface.__size__);
+      var pixelFormat = _malloc(cStructs.SDL_PixelFormat.__size__);
       //surface with SDL_HWPALETTE flag is 8bpp surface (1 byte)
       var bpp = is_SDL_HWPALETTE ? 1 : 4;
       var buffer = 0;
@@ -471,7 +471,7 @@ var LibrarySDL = {
     },
 
     freeSurface(surf) {
-      var refcountPointer = surf + {{{ C_STRUCTS.SDL_Surface.refcount }}};
+      var refcountPointer = surf + cStructs.SDL_Surface.refcount;
       var refcount = {{{ makeGetValue('refcountPointer', '0', 'i32') }}};
       if (refcount > 1) {
         {{{ makeSetValue('refcountPointer', '0', 'refcount - 1', 'i32') }}};
@@ -662,7 +662,7 @@ var LibrarySDL = {
               type: 'touchmove',
               touch: {
                 identifier: 0,
-                deviceID: {{{ cDefs.SDL_TOUCH_MOUSEID }}},
+                deviceID: cDefs.SDL_TOUCH_MOUSEID,
                 pageX: event.pageX,
                 pageY: event.pageY
               }
@@ -698,7 +698,7 @@ var LibrarySDL = {
               type: 'touchstart',
               touch: {
                 identifier: 0,
-                deviceID: {{{ cDefs.SDL_TOUCH_MOUSEID }}},
+                deviceID: cDefs.SDL_TOUCH_MOUSEID,
                 pageX: event.pageX,
                 pageY: event.pageY
               }
@@ -714,7 +714,7 @@ var LibrarySDL = {
               type: 'touchend',
               touch: {
                 identifier: 0,
-                deviceID: {{{ cDefs.SDL_TOUCH_MOUSEID }}},
+                deviceID: cDefs.SDL_TOUCH_MOUSEID,
                 pageX: event.pageX,
                 pageY: event.pageY
               }
@@ -908,7 +908,7 @@ var LibrarySDL = {
     makeCEvent(event, ptr) {
       if (typeof event == 'number') {
         // This is a pointer to a copy of a native C event that was SDL_PushEvent'ed
-        _memcpy(ptr, event, {{{ C_STRUCTS.SDL_KeyboardEvent.__size__ }}});
+        _memcpy(ptr, event, cStructs.SDL_KeyboardEvent.__size__);
         _free(event); // the copy is no longer needed
         return;
       }
@@ -1205,16 +1205,16 @@ var LibrarySDL = {
         if (channelData.length != sizeSamplesPerChannel) {
           throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + sizeSamplesPerChannel + ' samples!';
         }
-        if (audio.format == {{{ cDefs.AUDIO_S16LSB }}}) {
+        if (audio.format == cDefs.AUDIO_S16LSB) {
           for (var j = 0; j < sizeSamplesPerChannel; ++j) {
             channelData[j] = ({{{ makeGetValue('heapPtr', '(j*numChannels + c)*2', 'i16') }}}) / 0x8000;
           }
-        } else if (audio.format == {{{ cDefs.AUDIO_U8 }}}) {
+        } else if (audio.format == cDefs.AUDIO_U8) {
           for (var j = 0; j < sizeSamplesPerChannel; ++j) {
             var v = ({{{ makeGetValue('heapPtr', 'j*numChannels + c', 'i8') }}});
             channelData[j] = ((v >= 0) ? v-128 : v+128) /128;
           }
-        } else if (audio.format == {{{ cDefs.AUDIO_F32 }}}) {
+        } else if (audio.format == cDefs.AUDIO_F32) {
           for (var j = 0; j < sizeSamplesPerChannel; ++j) {
             channelData[j] = ({{{ makeGetValue('heapPtr', '(j*numChannels + c)*4', 'float') }}});
           }
@@ -1349,7 +1349,7 @@ var LibrarySDL = {
   SDL_Linked_Version__proxy: 'sync',
   SDL_Linked_Version: () => {
     if (SDL.version === null) {
-      SDL.version = _malloc({{{ C_STRUCTS.SDL_version.__size__ }}});
+      SDL.version = _malloc(cStructs.SDL_version.__size__);
       {{{ makeSetValue('SDL.version + ' + C_STRUCTS.SDL_version.major, '0', '1', 'i8') }}};
       {{{ makeSetValue('SDL.version + ' + C_STRUCTS.SDL_version.minor, '0', '3', 'i8') }}};
       {{{ makeSetValue('SDL.version + ' + C_STRUCTS.SDL_version.patch, '0', '0', 'i8') }}};
@@ -1416,8 +1416,8 @@ var LibrarySDL = {
   SDL_GetVideoInfo__deps: ['$zeroMemory'],
   SDL_GetVideoInfo__proxy: 'sync',
   SDL_GetVideoInfo: () => {
-    var ret = _malloc({{{ C_STRUCTS.SDL_VideoInfo.__size__ }}});
-    zeroMemory(ret, {{{ C_STRUCTS.SDL_version.__size__ }}});
+    var ret = _malloc(cStructs.SDL_VideoInfo.__size__);
+    zeroMemory(ret, cStructs.SDL_version.__size__);
     {{{ makeSetValue('ret', C_STRUCTS.SDL_VideoInfo.current_w, 'Module["canvas"].width', 'i32') }}};
     {{{ makeSetValue('ret', C_STRUCTS.SDL_VideoInfo.current_h, 'Module["canvas"].height', 'i32') }}};
     return ret;
@@ -1996,8 +1996,8 @@ var LibrarySDL = {
 
   SDL_PushEvent__proxy: 'sync',
   SDL_PushEvent: (ptr) => {
-    var copy = _malloc({{{ C_STRUCTS.SDL_KeyboardEvent.__size__ }}});
-    _memcpy(copy, ptr, {{{ C_STRUCTS.SDL_KeyboardEvent.__size__ }}});
+    var copy = _malloc(cStructs.SDL_KeyboardEvent.__size__);
+    _memcpy(copy, ptr, cStructs.SDL_KeyboardEvent.__size__);
     SDL.events.push(copy);
     return 0;
   },
@@ -2044,7 +2044,7 @@ var LibrarySDL = {
     SDL.eventHandlerContext = userdata;
 
     // All SDLEvents take the same amount of memory
-    if (!SDL.eventHandlerTemp) SDL.eventHandlerTemp = _malloc({{{ C_STRUCTS.SDL_KeyboardEvent.__size__ }}});
+    if (!SDL.eventHandlerTemp) SDL.eventHandlerTemp = _malloc(cStructs.SDL_KeyboardEvent.__size__);
   },
 
   SDL_SetColors__proxy: 'sync',
@@ -2327,11 +2327,11 @@ var LibrarySDL = {
         timer: null
       };
       // The .silence field tells the constant sample value that corresponds to the safe un-skewed silence value for the wave data.
-      if (SDL.audio.format == {{{ cDefs.AUDIO_U8 }}}) {
+      if (SDL.audio.format == cDefs.AUDIO_U8) {
         SDL.audio.silence = 128; // Audio ranges in [0, 255], so silence is half-way in between.
-      } else if (SDL.audio.format == {{{ cDefs.AUDIO_S16LSB }}}) {
+      } else if (SDL.audio.format == cDefs.AUDIO_S16LSB) {
         SDL.audio.silence = 0; // Signed data in range [-32768, 32767], silence is 0.
-      } else if (SDL.audio.format == {{{ cDefs.AUDIO_F32 }}}) {
+      } else if (SDL.audio.format == cDefs.AUDIO_F32) {
         SDL.audio.silence = 0.0; // Float data in range [-1.0, 1.0], silence is 0.0
       } else {
         throw 'Invalid SDL audio format ' + SDL.audio.format + '!';
@@ -2367,11 +2367,11 @@ var LibrarySDL = {
       }
 
       var totalSamples = SDL.audio.samples*SDL.audio.channels;
-      if (SDL.audio.format == {{{ cDefs.AUDIO_U8 }}}) {
+      if (SDL.audio.format == cDefs.AUDIO_U8) {
         SDL.audio.bytesPerSample = 1;
-      } else if (SDL.audio.format == {{{ cDefs.AUDIO_S16LSB }}}) {
+      } else if (SDL.audio.format == cDefs.AUDIO_S16LSB) {
         SDL.audio.bytesPerSample = 2;
-      } else if (SDL.audio.format == {{{ cDefs.AUDIO_F32 }}}) {
+      } else if (SDL.audio.format == cDefs.AUDIO_F32) {
         SDL.audio.bytesPerSample = 4;
       } else {
         throw `Invalid SDL audio format ${SDL.audio.format}!`;
@@ -3339,13 +3339,13 @@ var LibrarySDL = {
 
   SDL_GL_GetSwapInterval__proxy: 'sync',
   SDL_GL_GetSwapInterval: () => {
-    if (Browser.mainLoop.timingMode == {{{ cDefs.EM_TIMING_RAF }}}) return Browser.mainLoop.timingValue;
+    if (Browser.mainLoop.timingMode == cDefs.EM_TIMING_RAF) return Browser.mainLoop.timingValue;
     else return 0;
   },
 
   SDL_GL_SetSwapInterval__deps: ['emscripten_set_main_loop_timing'],
   SDL_GL_SetSwapInterval: (state) => {
-    _emscripten_set_main_loop_timing({{{ cDefs.EM_TIMING_RAF }}}, state);
+    _emscripten_set_main_loop_timing(cDefs.EM_TIMING_RAF, state);
   },
 
   SDL_SetWindowTitle__proxy: 'sync',
