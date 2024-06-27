@@ -33,7 +33,7 @@ int main() {
   struct tm tm;
 
   for (int i = 0; i < sizeof(day_tests) / sizeof(day_tests[0]); ++i) {
-    memset(&tm, '\0', sizeof(tm));
+    memset(&tm, 0, sizeof(tm));
     char *ptr = strptime(day_tests[i].input, day_tests[i].format, &tm);
     assert(ptr);
 

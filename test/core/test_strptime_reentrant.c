@@ -7,6 +7,7 @@
 
 // glibc requires _XOPEN_SOURCE to be defined in order to get strptime.
 #define _XOPEN_SOURCE
+
 #include <assert.h>
 #include <time.h>
 #include <stdio.h>
@@ -39,6 +40,14 @@ int main() {
       tm.tm_mday != 12 || tm.tm_mon != 1 || tm.tm_year != 107) {
     printf("ERR: unexpected tm content (1) - %d/%d/%d %d:%d:%d\n", tm.tm_mon + 1,
            tm.tm_mday, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    assert(tm.tm_sec == 21);
+    assert(tm.tm_min == 13);
+    assert(tm.tm_hour == 16);
+    assert(tm.tm_mday == 12);
+    assert(tm.tm_mon == 1);
+    assert(tm.tm_year == 107);
+    assert(tm.tm_wday == 1);
+    assert(tm.tm_yday == 42);
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_WDAY
@@ -47,7 +56,7 @@ int main() {
 #endif
 
   if (strptime("8", "%d", &tm) == NULL) {
-    printf("ERR: strptime failed");
+    printf("ERR: strptime failed\n");
     exit(EXIT_FAILURE);
   }
 

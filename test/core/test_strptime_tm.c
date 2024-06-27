@@ -4,6 +4,8 @@
  * University of Illinois/NCSA Open Source License.  Both these licenses can be
  * found in the LICENSE file.
  */
+#define _XOPEN_SOURCE
+#define _DEFAULT_SOURCE
 
 // glibc requires _XOPEN_SOURCE to be defined in order to get strptime.
 #define _XOPEN_SOURCE
@@ -107,5 +109,6 @@ int main() {
   STRPTIME("12 34    56","%H   %M %S",&tm);
   printf("%d,%d,%d\n",tm.tm_hour,tm.tm_min,tm.tm_sec);
 
+  printf("done\n");
   return 0;
 }
