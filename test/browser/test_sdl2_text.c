@@ -37,8 +37,8 @@ int main() {
   SDL_CreateWindow("window", 0, 0, 600, 450, 0);
   SDL_StartTextInput();
 
-  emscripten_run_script("simulateKeyDown('a'.charCodeAt(0))");
-  emscripten_run_script("simulateKeyDown('A'.charCodeAt(0))");
+  emscripten_run_script("simulateKeyDown('KeyA', 'a')");
+  emscripten_run_script("simulateKeyDown('KeyA', 'A')");
 
   one();
 

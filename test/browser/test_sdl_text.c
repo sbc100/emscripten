@@ -38,8 +38,8 @@ int main() {
   SDL_SetVideoMode(600, 450, 32, SDL_HWSURFACE);
   SDL_StartTextInput();
 
-  emscripten_run_script("simulateKeyDown('a'.charCodeAt(0))");
-  emscripten_run_script("simulateKeyDown('A'.charCodeAt(0))");
+  emscripten_run_script("simulateKeyDown('KeyA', 'a')");
+  emscripten_run_script("simulateKeyDown('KeyA', 'A')");
 
   emscripten_exit_with_live_runtime();
 }

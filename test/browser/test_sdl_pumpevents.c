@@ -54,11 +54,11 @@ int main(int argc, char *argv[]) {
    SDL_Init(SDL_INIT_EVERYTHING);
    SDL_SetVideoMode(600, 400, 32, SDL_SWSURFACE);
 
-   emscripten_run_script("simulateKeyDown(37);"); // left
+   emscripten_run_script("simulateKeyDown('ArrowLeft');");
    loop1();
-   emscripten_run_script("simulateKeyDown(39);"); // right
+   emscripten_run_script("simulateKeyDown('ArrowRight');");
    loop2();
-   emscripten_run_script("simulateKeyDown(65);"); // A
+   emscripten_run_script("simulateKeyDown('KeyA', 'A');");
    alphakey();
    return 0;
 }
