@@ -15118,3 +15118,7 @@ addToLibrary({
   def test_fs_writev_partial_write(self):
     self.set_setting('FORCE_FILESYSTEM')
     self.do_run_in_out_file_test('fs/test_writev_partial_write.c')
+
+  @is_slow_test
+  def xx_test_opencv(self):
+    lib = self.get_library('third_party/openjpeg')
