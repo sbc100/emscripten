@@ -193,7 +193,6 @@ def lld_flags_for_executable(external_symbols):
 
   if settings.RELOCATABLE:
     cmd.append('--experimental-pic')
-    cmd.append('--unresolved-symbols=import-dynamic')
     if not settings.WASM_BIGINT:
       # When we don't have WASM_BIGINT available, JS signature legalization
       # in binaryen will mutate the signatures of the imports/exports of our
@@ -202,8 +201,11 @@ def lld_flags_for_executable(external_symbols):
       cmd.append('--no-shlib-sigcheck')
     if settings.SIDE_MODULE:
       cmd.append('-shared')
+      cmd.append('--unresolved-symbols=import-dynamic')
     else:
       cmd.append('-pie')
+      if not settings.ERROR_ON_UNDEFINED_SYMBOLS:
+        cmd.append('--unresolved-symbols=import-dynamic')
     if not settings.LINKABLE:
       cmd.append('--no-export-dynamic')
   else:
