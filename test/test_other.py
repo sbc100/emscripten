@@ -27,6 +27,7 @@ from subprocess import PIPE, STDOUT
 if __name__ == '__main__':
   raise Exception('do not run this file directly; do something like: test/runner other')
 
+from tools.building import get_building_env
 from tools.shared import config
 from tools.shared import EMCC, EMXX, EMAR, EMRANLIB, FILE_PACKAGER, LLVM_NM
 from tools.shared import CLANG_CC, CLANG_CXX, LLVM_AR, LLVM_DWARFDUMP, LLVM_DWP, EMCMAKE, EMCONFIGURE, WASM_LD
@@ -35,7 +36,7 @@ from common import env_modify, no_mac, no_windows, only_windows, requires_native
 from common import create_file, parameterized, NON_ZERO, node_pthreads, TEST_ROOT, test_file
 from common import compiler_for, EMBUILDER, requires_v8, requires_node, requires_wasm64, requires_node_canary
 from common import requires_wasm_exnref, crossplatform, with_all_eh_sjlj, with_all_sjlj
-from common import also_with_standalone_wasm, also_with_env_modify, also_with_wasm2js
+from common import also_with_standalone_wasm, also_with_wasm2js
 from common import also_with_minimal_runtime, also_with_wasm_bigint, also_with_wasm64, flaky
 from common import EMTEST_BUILD_VERBOSE, PYTHON, WEBIDL_BINDER
 from common import requires_network, parameterize
@@ -366,7 +367,7 @@ class other(RunnerCore):
   })
   @node_pthreads
   def test_emcc_output_worker_mjs(self, args):
-    create_file('extern-post.js', 'await Module();')
+    create_file('extern-post.js', 'if (!isPthread) await Module();')
     os.mkdir('subdir')
     self.run_process([EMCC, '-o', 'subdir/hello_world.mjs',
                       '-sEXIT_RUNTIME', '-sPROXY_TO_PTHREAD', '-pthread', '-O1',
@@ -374,7 +375,7 @@ class other(RunnerCore):
                       test_file('hello_world.c')] + args)
     src = read_file('subdir/hello_world.mjs')
     self.assertContained("new URL('hello_world.wasm', import.meta.url)", src)
-    self.assertContained("new Worker(new URL(import.meta.url), workerOptions)", src)
+    self.assertContained("new Worker(new URL('hello_world.mjs', import.meta.url), workerOptions)", src)
     self.assertContained('export default Module;', src)
     self.assertContained('hello, world!', self.run_js('subdir/hello_world.mjs'))
 
@@ -386,7 +387,7 @@ class other(RunnerCore):
                       test_file('hello_world.c'), '-sSINGLE_FILE'])
     src = read_file('hello_world.mjs')
     self.assertNotContained("new URL('data:", src)
-    self.assertContained("new Worker(new URL(import.meta.url), workerOptions)", src)
+    self.assertContained("new Worker(new URL('hello_world.mjs', import.meta.url), workerOptions)", src)
     self.assertContained('hello, world!', self.run_js('hello_world.mjs'))
 
   def test_emcc_output_mjs_closure(self):
@@ -817,6 +818,16 @@ f.close()
     libdir = cache.get_lib_dir(absolute=True)
     expected = os.path.join(libdir, 'libcompiler_rt.a')
     self.assertEqual(output.strip(), expected)
+
+  @crossplatform
+  def test_print_resource_dir(self):
+    output = self.run_process([EMCC, '-print-resource-dir'], stdout=PIPE).stdout
+    print(output)
+    lines = output.strip().splitlines()
+    self.assertEqual(len(lines), 1)
+    resource_dir = os.path.normcase(lines[0])
+    llvm_root = os.path.normcase(os.path.dirname(config.LLVM_ROOT))
+    self.assertContained(llvm_root, resource_dir)
 
   @crossplatform
   @parameterized({
@@ -2793,40 +2804,40 @@ More info: https://emscripten.org
     self.assertGreater(len(js), 100 * SLACK)
 
   @parameterized({
-    'minifyGlobals': ('optimizer/test-js-optimizer-minifyGlobals.js', ['minifyGlobals']),
-    'minifyLocals': ('optimizer/test-js-optimizer-minifyLocals.js', ['minifyLocals']),
-    'JSDCE': ('optimizer/JSDCE.js', ['JSDCE']),
-    'JSDCE-hasOwnProperty': ('optimizer/JSDCE-hasOwnProperty.js', ['JSDCE']),
-    'JSDCE-defaultArg': ('optimizer/JSDCE-defaultArg.js', ['JSDCE']),
-    'JSDCE-fors': ('optimizer/JSDCE-fors.js', ['JSDCE']),
-    'JSDCE-objectPattern': ('optimizer/JSDCE-objectPattern.js', ['JSDCE']),
-    'AJSDCE': ('optimizer/AJSDCE.js', ['AJSDCE']),
-    'emitDCEGraph': ('optimizer/emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
-    'emitDCEGraph-closure': ('optimizer/emitDCEGraph.js', ['emitDCEGraph', '--no-print', '--closure-friendly']),
-    'emitDCEGraph2': ('optimizer/emitDCEGraph2.js', ['emitDCEGraph', '--no-print']),
-    'emitDCEGraph3': ('optimizer/emitDCEGraph3.js', ['emitDCEGraph', '--no-print']),
-    'emitDCEGraph4': ('optimizer/emitDCEGraph4.js', ['emitDCEGraph', '--no-print']),
-    'emitDCEGraph5': ('optimizer/emitDCEGraph5.js', ['emitDCEGraph', '--no-print']),
-    'minimal-runtime-applyDCEGraphRemovals': ('optimizer/minimal-runtime-applyDCEGraphRemovals.js', ['applyDCEGraphRemovals']),
-    'applyDCEGraphRemovals': ('optimizer/applyDCEGraphRemovals.js', ['applyDCEGraphRemovals']),
-    'applyImportAndExportNameChanges': ('optimizer/applyImportAndExportNameChanges.js', ['applyImportAndExportNameChanges']),
-    'applyImportAndExportNameChanges2': ('optimizer/applyImportAndExportNameChanges2.js', ['applyImportAndExportNameChanges']),
-    'minimal-runtime-emitDCEGraph': ('optimizer/minimal-runtime-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
-    'minimal-runtime-2-emitDCEGraph': ('optimizer/minimal-runtime-2-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
-    'standalone-emitDCEGraph': ('optimizer/standalone-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
-    'emittedJSPreservesParens': ('optimizer/emittedJSPreservesParens.js', []),
-    'growableHeap': ('optimizer/test-growableHeap.js', ['growableHeap']),
-    'unsignPointers': ('optimizer/test-unsignPointers.js', ['unsignPointers']),
-    'asanify': ('optimizer/test-asanify.js', ['asanify']),
-    'safeHeap': ('optimizer/test-safeHeap.js', ['safeHeap']),
-    'LittleEndianHeap': ('optimizer/test-LittleEndianHeap.js', ['littleEndianHeap']),
+    'minifyGlobals': ('minifyGlobals.js', ['minifyGlobals']),
+    'minifyLocals': ('minifyLocals.js', ['minifyLocals']),
+    'JSDCE': ('JSDCE.js', ['JSDCE']),
+    'JSDCE-hasOwnProperty': ('JSDCE-hasOwnProperty.js', ['JSDCE']),
+    'JSDCE-defaultArg': ('JSDCE-defaultArg.js', ['JSDCE']),
+    'JSDCE-fors': ('JSDCE-fors.js', ['JSDCE']),
+    'JSDCE-objectPattern': ('JSDCE-objectPattern.js', ['JSDCE']),
+    'AJSDCE': ('AJSDCE.js', ['AJSDCE']),
+    'emitDCEGraph': ('emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
+    'emitDCEGraph-closure': ('emitDCEGraph.js', ['emitDCEGraph', '--no-print', '--closure-friendly']),
+    'emitDCEGraph2': ('emitDCEGraph2.js', ['emitDCEGraph', '--no-print']),
+    'emitDCEGraph3': ('emitDCEGraph3.js', ['emitDCEGraph', '--no-print']),
+    'emitDCEGraph4': ('emitDCEGraph4.js', ['emitDCEGraph', '--no-print']),
+    'emitDCEGraph5': ('emitDCEGraph5.js', ['emitDCEGraph', '--no-print']),
+    'minimal-runtime-applyDCEGraphRemovals': ('minimal-runtime-applyDCEGraphRemovals.js', ['applyDCEGraphRemovals']),
+    'applyDCEGraphRemovals': ('applyDCEGraphRemovals.js', ['applyDCEGraphRemovals']),
+    'applyImportAndExportNameChanges': ('applyImportAndExportNameChanges.js', ['applyImportAndExportNameChanges']),
+    'applyImportAndExportNameChanges2': ('applyImportAndExportNameChanges2.js', ['applyImportAndExportNameChanges']),
+    'minimal-runtime-emitDCEGraph': ('minimal-runtime-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
+    'minimal-runtime-2-emitDCEGraph': ('minimal-runtime-2-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
+    'standalone-emitDCEGraph': ('standalone-emitDCEGraph.js', ['emitDCEGraph', '--no-print']),
+    'emittedJSPreservesParens': ('emittedJSPreservesParens.js', []),
+    'growableHeap': ('test-growableHeap.js', ['growableHeap']),
+    'unsignPointers': ('test-unsignPointers.js', ['unsignPointers', '--closure-friendly']),
+    'asanify': ('test-asanify.js', ['asanify']),
+    'safeHeap': ('test-safeHeap.js', ['safeHeap']),
+    'LittleEndianHeap': ('test-LittleEndianHeap.js', ['littleEndianHeap']),
   })
   @crossplatform
-  def test_js_optimizer(self, input, passes):
-    input = test_file(input)
-    expected_file = os.path.splitext(input)[0] + '-output.js'
+  def test_js_optimizer(self, filename, passes):
+    filename = test_file('js_optimizer', filename)
+    expected_file = shared.unsuffixed(filename) + '-output.js'
     # test calling optimizer
-    js = self.run_process(config.NODE_JS + [path_from_root('tools/acorn-optimizer.mjs'), input] + passes, stdin=PIPE, stdout=PIPE).stdout
+    js = self.run_process(config.NODE_JS + [path_from_root('tools/acorn-optimizer.mjs'), filename] + passes, stdin=PIPE, stdout=PIPE).stdout
     if common.EMTEST_REBASELINE:
       write_file(expected_file, js)
     else:
@@ -2843,7 +2854,7 @@ More info: https://emscripten.org
     self.run_process([PYTHON, path_from_root('tools/js_optimizer.py'), 'huge.js', '--minify-whitespace'])
 
   @parameterized({
-    'wasm2js': ('wasm2js', ['minifyNames', 'last']),
+    'wasm2js': ('wasm2js', ['minifyNames']),
     'constructor': ('constructor', ['minifyNames'])
   })
   @crossplatform
@@ -2851,10 +2862,10 @@ More info: https://emscripten.org
     # run the js optimizer python script. this differs from test_js_optimizer
     # which runs the internal js optimizer JS script directly (which the python
     # script calls)
-    shutil.copyfile(test_file('optimizer', name + '.js'), name + '.js')
+    shutil.copyfile(test_file('js_optimizer', name + '.js'), name + '.js')
     self.run_process([PYTHON, path_from_root('tools/js_optimizer.py'), name + '.js'] + passes)
     actual = read_file(name + '.js.jsopt.js')
-    self.assertFileContents(test_file('optimizer', name + '-output.js'), actual)
+    self.assertFileContents(test_file('js_optimizer', name + '-output.js'), actual)
 
   def test_m_mm(self):
     create_file('foo.c', '#include <emscripten.h>')
@@ -3029,7 +3040,7 @@ More info: https://emscripten.org
   @with_env_modify({'EMSCRIPTEN_ROOT': path_from_root()})
   def test_scons(self):
     # this test copies the site_scons directory alongside the test
-    shutil.copytree(test_file('scons'), 'test')
+    shutil.copytree(test_file('scons/simple'), 'test')
     shutil.copytree(path_from_root('tools/scons/site_scons'), Path('test/site_scons'))
     with utils.chdir('test'):
       self.run_process(['scons'])
@@ -3037,16 +3048,75 @@ More info: https://emscripten.org
     self.assertContained('If you see this - the world is all right!', output)
 
   @requires_scons
-  @with_env_modify({'EMSCRIPTEN_TOOLPATH': path_from_root('tools/scons/site_scons'),
-                    'EMSCRIPTEN_ROOT': path_from_root()})
+  @with_env_modify({
+    'EMSCRIPTEN_ROOT': path_from_root(),
+    'EMSCONS_PKG_CONFIG_LIBDIR': '/pkg/config/libdir',
+    'EMSCONS_PKG_CONFIG_PATH': '/pkg/config/path',
+  })
+  def test_scons_env(self):
+    # this test copies the site_scons directory alongside the test
+    shutil.copytree(test_file('scons/env'), 'test')
+    shutil.copytree(path_from_root('tools/scons/site_scons'), Path('test/site_scons'))
+
+    expected_to_propagate = json.dumps({
+      'CC': path_from_root('emcc'),
+      'CXX': path_from_root('em++'),
+      'AR': path_from_root('emar'),
+      'RANLIB': path_from_root('emranlib'),
+      'ENV': {
+        'PKG_CONFIG_LIBDIR': '/pkg/config/libdir',
+        'PKG_CONFIG_PATH': '/pkg/config/path',
+      }
+    })
+
+    with utils.chdir('test'):
+      self.run_process(['scons', '--expected-env', expected_to_propagate])
+
+  @requires_scons
+  def test_scons_env_no_emscons(self):
+    shutil.copytree(test_file('scons/env'), 'test')
+    shutil.copytree(path_from_root('tools/scons/site_scons'), Path('test/site_scons'))
+
+    expected_to_propagate = json.dumps({
+      'CC': 'emcc',
+      'CXX': 'em++',
+      'AR': 'emar',
+      'RANLIB': 'emranlib',
+      'ENV': {
+        'PKG_CONFIG_LIBDIR': None,
+        'PKG_CONFIG_PATH': None,
+      }
+    })
+
+    with utils.chdir('test'):
+      self.run_process(['scons', '--expected-env', expected_to_propagate])
+
+  @requires_scons
   def test_emscons(self):
-    # uses the emscons wrapper which requires EMSCRIPTEN_TOOLPATH to find
-    # site_scons
-    shutil.copytree(test_file('scons'), 'test')
+    shutil.copytree(test_file('scons/simple'), 'test')
     with utils.chdir('test'):
       self.run_process([path_from_root('emscons'), 'scons'])
       output = self.run_js('scons_integration.js', assert_returncode=5)
     self.assertContained('If you see this - the world is all right!', output)
+
+  @requires_scons
+  def test_emscons_env(self):
+    shutil.copytree(test_file('scons/env'), 'test')
+
+    building_env = get_building_env()
+    expected_to_propagate = json.dumps({
+      'CC': path_from_root('emcc'),
+      'CXX': path_from_root('em++'),
+      'AR': path_from_root('emar'),
+      'RANLIB': path_from_root('emranlib'),
+      'ENV': {
+        'PKG_CONFIG_LIBDIR': building_env['PKG_CONFIG_LIBDIR'],
+        'PKG_CONFIG_PATH': building_env['PKG_CONFIG_PATH'],
+      }
+    })
+
+    with utils.chdir('test'):
+      self.run_process([path_from_root('emscons'), 'scons', '--expected-env', expected_to_propagate])
 
   def test_embind_fail(self):
     out = self.expect_fail([EMXX, test_file('embind/test_unsigned.cpp')])
@@ -3577,6 +3647,31 @@ More info: https://emscripten.org
     self.assertTrue('./data1.txt \\' in after)
     self.assertTrue('./subdir \\' in after)
     self.assertTrue('./subdir/data2.txt \\' in after)
+
+  def test_file_packager_modularize(self):
+    create_file('somefile.txt', 'hello world')
+    self.run_process([FILE_PACKAGER, 'test.data', '--js-output=embed.js', '--preload', 'somefile.txt'])
+
+    create_file('main.c', r'''
+      #include <assert.h>
+      #include <stdio.h>
+      int main() {
+        FILE *f = fopen("somefile.txt", "r");
+        assert(f);
+        char buf[20] = { 0 };
+        int rtn = fread(buf, 1, 20, f);
+        fclose(f);
+        printf("|%s|\n", buf);
+        return 0;
+      }
+    ''')
+
+    create_file('post.js', 'MyModule(Module).then(() => console.log("done"));')
+
+    self.run_process([EMCC, 'main.c', '--extern-pre-js=embed.js', '--extern-post-js=post.js', '-sMODULARIZE', '-sEXPORT_NAME=MyModule', '-sFORCE_FILESYSTEM'])
+
+    result = self.run_js('a.out.js')
+    self.assertContained('|hello world|', result)
 
   def test_sdl_headless(self):
     shutil.copyfile(test_file('screenshot.png'), 'example.png')
@@ -4817,8 +4912,7 @@ int main() {
     'O1': [['-O1']],
   })
   def test_fs_after_main(self, args):
-    self.run_process([EMXX, test_file('fs_after_main.cpp')])
-    self.assertContained('Test passed.', self.run_js('a.out.js'))
+    self.do_runf('test_fs_after_main.c', 'Test passed.')
 
   def test_oz_size(self):
     sizes = {}
@@ -5842,15 +5936,30 @@ int main()
       self.run_process([EMXX, 'src.cpp', '-sDISABLE_EXCEPTION_CATCHING=0'])
     self.assertContained('Caught exception: std::exception', self.run_js('a.out.js'))
 
+  @with_env_modify({'EMCC_FORCE_STDLIBS': '1'})
+  def test_force_stdlibs(self):
+    self.do_runf('hello_world.c')
+    # See https://github.com/emscripten-core/emscripten/issues/22161
+    self.do_runf('hello_world.c', emcc_args=['-sWASM_BIGINT'])
+
   @crossplatform
-  @also_with_env_modify({'gb_locale': {'LC_ALL': 'en_GB'}, 'long_tz': {'TZ': 'Asia/Kathmandu'}})
   def test_strftime_zZ(self):
-    if os.environ.get('LC_ALL') == 'en_GB' and MACOS:
+    if MACOS:
       self.skipTest('setting LC_ALL is not compatible with macOS python')
-    self.do_runf('other/test_strftime_zZ.c', 'ok!')
+
+    tz_lang_infos = [
+      {'env': {'LC_ALL': 'en_GB', 'TZ': 'Europe/London'}, 'expected_utc': 'UTC+0100'},
+      {'env': {'LC_ALL': 'th_TH', 'TZ': 'Asia/Bangkok'}, 'expected_utc': 'UTC+0700'},
+      {'env': {'LC_ALL': 'ar-AE', 'TZ': 'Asia/Dubai'}, 'expected_utc': 'UTC+0400'},
+      {'env': {'LC_ALL': 'en-US', 'TZ': 'America/Los_Angeles'}, 'expected_utc': 'UTC-0700'}
+    ]
+
+    for tz_lang_info in tz_lang_infos:
+      with env_modify(tz_lang_info['env']):
+        self.do_runf('other/test_strftime_zZ.c', 'The current timezone is: %s' % (tz_lang_info['expected_utc']))
 
   def test_strptime_symmetry(self):
-    self.do_runf('strptime_symmetry.cpp', 'TEST PASSED')
+    self.do_other_test('test_strptime_symmetry.c')
 
   @also_with_wasmfs
   def test_truncate_from_0(self):
@@ -6487,19 +6596,6 @@ typeof _main: function
 typeof result.then: undefined
 after
 ''', self.run_js('a.out.js'))
-
-  def test_modularize_argument_misuse(self):
-    create_file('test.c', '''
-      #include <emscripten.h>
-      EMSCRIPTEN_KEEPALIVE int foo() { return 42; }''')
-
-    create_file('post.js', r'''
-      var arg = { bar: 1 };
-      var promise = Module(arg);
-      arg._foo();''')
-
-    expected = "Aborted(Access to module property ('_foo') is no longer possible via the module constructor argument; Instead, use the result of the module constructor"
-    self.do_runf('test.c', expected, assert_returncode=NON_ZERO, emcc_args=['--no-entry', '-sMODULARIZE', '--extern-post-js=post.js'])
 
   def test_export_all_3142(self):
     create_file('src.cpp', r'''
@@ -8012,6 +8108,26 @@ int main() {}
     self.assertNotContained('ctor_evaller: not successful', err)
     self.assertContained('could not eval: call import: env.external_thing', err)
 
+  @uses_canonical_tmp
+  @with_env_modify({'EMCC_DEBUG': '1'})
+  @parameterized({
+    # StackIR optimizations should happen once at the end, and not multiple
+    # times in the middle. In -O2 we simply do them in the main wasm-opt
+    # invocation, while in -O3 we run wasm-opt later, and so we should disable
+    # StackIR first and enable it at the end.
+    'O2': (['-O2'], False),
+    'O3': (['-O3'], True),
+  })
+  def test_binaryen_stack_ir(self, opts, disable_and_enable):
+    err = self.run_process([EMXX, test_file('hello_world.c')] + opts, stderr=PIPE).stderr
+    DISABLE = '--no-stack-ir'
+    ENABLE = '--optimize-stack-ir'
+    self.assertContainedIf(DISABLE, err, disable_and_enable)
+    self.assertContainedIf(ENABLE, err, disable_and_enable)
+    # they should also appear at most once each
+    self.assertLess(err.count(DISABLE), 2)
+    self.assertLess(err.count(ENABLE), 2)
+
   def test_override_js_execution_environment(self):
     create_file('main.c', r'''
       #include <emscripten.h>
@@ -8349,12 +8465,12 @@ int main() {
         (['-O0', '--profiling-funcs'], False, False, True, False),
         (['-O1'],        False, False, True, False),
         (['-O2'],        False, True,  False, False),
-        (['-O2', '-g1'], False, True,  True, False),
+        (['-O2', '-g1'], False, False, True, False),
         (['-O2', '-g'],  True,  False, True, False),
         (['-O2', '--closure=1'],         False, True, False, True),
         (['-O2', '--closure=1', '-g1'],  False, True, True,  True),
       ]:
-      print(args, expect_emit_text)
+      print(args, expect_emit_text, expect_clean_js, expect_whitespace_js, expect_closured)
       delete_file('a.out.wat')
       cmd = [EMCC, test_file('hello_world.c')] + args
       print(' '.join(cmd))
@@ -8473,7 +8589,7 @@ int main() {
 
     if check_size:
       # measure the wasm size without the name section
-      self.run_process([wasm_opt, 'a.out.wasm', '--strip-debug', '--all-features', '-o', 'a.out.nodebug.wasm'])
+      building.strip('a.out.wasm', 'a.out.nodebug.wasm', sections=['name'])
       wasm_size = os.path.getsize('a.out.nodebug.wasm')
       size_file = expected_basename + '.size'
       js_size = os.path.getsize('a.out.js')
@@ -8624,8 +8740,7 @@ int main() {
 
   @parameterized({
     'js_fs':  (['-O3', '-sNO_WASMFS'], [], []), # noqa
-    # XXX disabled for LLVM roll
-    # 'wasmfs': (['-O3', '-sWASMFS'],    [], []), # noqa
+    'wasmfs': (['-O3', '-sWASMFS'],    [], []), # noqa
   })
   def test_metadce_files(self, *args):
     self.run_metadce_test('files.cpp', *args)
@@ -8981,7 +9096,7 @@ int main() {
   @with_all_eh_sjlj
   def test_exceptions_rethrow_stack_trace_and_message(self):
     self.emcc_args += ['-g']
-    if '-fwasm-excpeptions' in self.emcc_args:
+    if '-fwasm-exceptions' in self.emcc_args:
       # FIXME Node v18.13 (LTS as of Jan 2023) has not yet implemented the new
       # optional 'traceStack' option in WebAssembly.Exception constructor
       # (https://developer.mozilla.org/en-US/docs/WebAssembly/JavaScript_interface/Exception/Exception)
@@ -11538,7 +11653,6 @@ int main(void) {
       }
     ''')
     expected = [
-      '`Module.read` has been replaced by `read_`',
       '`Module.asm` has been replaced by `wasmExports`',
     ]
     self.do_runf('src.c', expected, assert_all=True, emcc_args=['-sASSERTIONS'])
@@ -11570,7 +11684,6 @@ int main(void) {
       }
     ''')
     expected = '''
-Aborted(`Module.read` has been replaced by `read_` (the initial value can be provided on Module, but after startup the value is only looked for on a local variable of that name))
 Aborted(`Module.wasmBinary` has been replaced by `wasmBinary` (the initial value can be provided on Module, but after startup the value is only looked for on a local variable of that name))
 Aborted(`Module.arguments` has been replaced by `arguments_` (the initial value can be provided on Module, but after startup the value is only looked for on a local variable of that name))
 '''
@@ -11904,6 +12017,10 @@ Aborted(`Module.arguments` has been replaced by `arguments_` (the initial value 
     self.set_setting('PTHREAD_POOL_SIZE', 1)
     self.do_run_in_out_file_test('other/test_pthread_reuse.c')
 
+  @node_pthreads
+  def test_pthread_relocatable(self):
+    self.do_runf('hello_world.c', 'hello, world!', emcc_args=['-sRELOCATABLE'])
+
   def test_stdin_preprocess(self):
     create_file('temp.h', '#include <string>')
     outputStdin = self.run_process([EMCC, '-x', 'c++', '-dM', '-E', '-'], input="#include <string>", stdout=PIPE).stdout
@@ -12047,7 +12164,11 @@ Aborted(`Module.arguments` has been replaced by `arguments_` (the initial value 
     stderr = self.run_process([EMCC, 'a.c', 'b.c'], stderr=PIPE).stderr
     self.assertContained('function signature mismatch: foo', stderr)
     self.expect_fail([EMCC, '-Wl,--fatal-warnings', 'a.c', 'b.c'])
+    # STRICT mode implies fatal warnings
     self.expect_fail([EMCC, '-sSTRICT', 'a.c', 'b.c'])
+    # Unless `--no-fatal-warnings` is explictly passed
+    stderr = self.run_process([EMCC, '-sSTRICT', '-Wl,--no-fatal-warnings', 'a.c', 'b.c'], stderr=PIPE).stderr
+    self.assertContained('function signature mismatch: foo', stderr)
 
   # Verifies that warning messages that Closure outputs are recorded to console
   def test_closure_warnings(self):
@@ -12676,13 +12797,13 @@ exec "$@"
     # This test will start failing whenever the struct info changes (e.g. offset or defines
     # change).  However it's easy to rebaseline with --rebaseline.
     self.run_process([PYTHON, path_from_root('tools/maint/gen_struct_info.py'), '-o', 'out.json'])
-    self.assertFileContents(path_from_root('src/generated_struct_info32.json'), read_file('out.json'))
+    self.assertFileContents(path_from_root('src/struct_info_generated.json'), read_file('out.json'))
 
     # Same again for wasm64
     node_version = shared.get_node_version(self.get_nodejs())
     if node_version and node_version >= (14, 0, 0):
       self.run_process([PYTHON, path_from_root('tools/maint/gen_struct_info.py'), '--wasm64', '-o', 'out.json'])
-      self.assertFileContents(path_from_root('src/generated_struct_info64.json'), read_file('out.json'))
+      self.assertFileContents(path_from_root('src/struct_info_generated_wasm64.json'), read_file('out.json'))
 
   @crossplatform
   def test_gen_sig_info(self):
@@ -13535,19 +13656,18 @@ myMethod: 43
     self.emcc_args.append('-fsanitize=leak')
     self.do_other_test('test_gmtime_noleak.c')
 
-  def test_build_fetch_examples(self):
+  def test_build_fetch_tests(self):
     # We can't run these outside of the browser, but at least we can
     # make sure they build.
     self.set_setting('FETCH')
-    self.build(test_file('fetch/example_async_xhr_to_memory.c'))
-    self.build(test_file('fetch/example_async_xhr_to_memory_via_indexeddb.c'))
-    self.build(test_file('fetch/example_idb_delete.c'))
-    self.build(test_file('fetch/example_idb_store.c'))
-    self.build(test_file('fetch/example_stream_async_xhr.c'))
-    self.build(test_file('fetch/example_synchronous_fetch.c'))
-    self.build(test_file('fetch/example_sync_xhr_to_memory.c'))
-    self.build(test_file('fetch/example_waitable_xhr_to_memory.c'))
-    self.build(test_file('fetch/example_xhr_progress.c'))
+    self.build(test_file('fetch/test_fetch_to_memory_sync.c'))
+    self.build(test_file('fetch/test_fetch_to_memory_async.c'))
+    self.build(test_file('fetch/test_fetch_persist.c'))
+    self.build(test_file('fetch/test_fetch_idb_delete.c'))
+    self.build(test_file('fetch/test_fetch_idb_store.c'))
+    self.build(test_file('fetch/test_fetch_stream_async.c'))
+    self.build(test_file('fetch/test_fetch_sync.c'))
+    self.build(test_file('fetch/test_fetch_progress.c'))
 
   def test_fetch_init_node(self):
     # Make sure that `Fetch` initialises correctly under Node where
@@ -14871,3 +14991,41 @@ addToLibrary({
   def test_SUPPORT_BIG_ENDIAN(self):
     # Just a simple build-only test for now
     self.run_process([EMCC, '-sSUPPORT_BIG_ENDIAN', test_file('hello_world.c')])
+
+  @parameterized({
+    'noexcept': ['-fno-exceptions'],
+    'default': [],
+    'except': ['-sDISABLE_EXCEPTION_CATCHING=0'],
+    'except_wasm': ['-fwasm-exceptions'],
+    'except_wasm_exnref': ['-fwasm-exceptions', '-sWASM_EXNREF']
+  })
+  def test_std_promise_link(self, *args):
+    # Regression test for a bug where std::promise's destructor caused a link
+    # error with __cxa_init_primary_exception when no exception argument was
+    # given (which defaults to -fignore-exceptions)
+    create_file('src.cpp', r'''
+      #include <future>
+      int main() {
+        std::promise<int> p;
+        return 0;
+      }
+    ''')
+    self.run_process([EMXX, 'src.cpp', '-pthread'] + list(args))
+
+  def test_stack_protector(self):
+    self.do_other_test('test_stack_protector.c', emcc_args=['-fstack-protector'], assert_returncode=NON_ZERO)
+
+  def test_save_temp(self):
+    self.run_process([EMCC, '--save-temps', test_file('hello_world.c')])
+    self.assertExists('a.out.js')
+    # clang itself takes care of creating these three
+    self.assertExists('hello_world.i')
+    self.assertExists('hello_world.s')
+    self.assertExists('hello_world.bc')
+    # emcc takes care of creating the .o
+    self.assertExists('hello_world.o')
+
+  def test_extra_struct_info(self):
+    stderr = self.run_process([EMCC, test_file('hello_world.c'), '--js-library', test_file('other/test_extra_struct_info.js')], stderr=PIPE).stderr
+    self.assertContained('(before) AF_INET=2', stderr)
+    self.assertContained('(after) AF_INET=42', stderr)

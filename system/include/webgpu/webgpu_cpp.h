@@ -622,6 +622,7 @@ namespace wgpu {
     class Texture;
     class TextureView;
 
+    struct AdapterInfo;
     struct AdapterProperties;
     struct BindGroupEntry;
     struct BlendComponent;
@@ -797,6 +798,7 @@ namespace wgpu {
         using ObjectBase::operator=;
 
         size_t EnumerateFeatures(FeatureName * features) const;
+        void GetInfo(AdapterInfo * info) const;
         Bool GetLimits(SupportedLimits * limits) const;
         void GetProperties(AdapterProperties * properties) const;
         Bool HasFeature(FeatureName feature) const;
@@ -1214,6 +1216,24 @@ namespace wgpu {
     Bool GetInstanceFeatures(InstanceFeatures * features);
     Proc GetProcAddress(Device device, char const * procName);
 
+    struct AdapterInfo {
+        AdapterInfo() = default;
+        ~AdapterInfo();
+        AdapterInfo(const AdapterInfo&) = delete;
+        AdapterInfo& operator=(const AdapterInfo&) = delete;
+        AdapterInfo(AdapterInfo&&);
+        AdapterInfo& operator=(AdapterInfo&&);
+        ChainedStructOut  * nextInChain = nullptr;
+        char const * const vendor = nullptr;
+        char const * const architecture = nullptr;
+        char const * const device = nullptr;
+        char const * const description = nullptr;
+        BackendType const backendType = {};
+        AdapterType const adapterType = {};
+        uint32_t const vendorID = {};
+        uint32_t const deviceID = {};
+    };
+
     struct AdapterProperties {
         AdapterProperties() = default;
         ~AdapterProperties();
@@ -1560,7 +1580,7 @@ namespace wgpu {
         TextureUsage usage = TextureUsage::RenderAttachment;
         size_t viewFormatCount = 0;
         TextureFormat const * viewFormats;
-        CompositeAlphaMode alphaMode = CompositeAlphaMode::Opaque;
+        CompositeAlphaMode alphaMode = CompositeAlphaMode::Auto;
         uint32_t width;
         uint32_t height;
         PresentMode presentMode = PresentMode::Fifo;

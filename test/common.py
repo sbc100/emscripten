@@ -63,7 +63,6 @@ EMTEST_RETRY_FLAKY = None
 EMTEST_LACKS_NATIVE_CLANG = None
 EMTEST_VERBOSE = None
 EMTEST_REBASELINE = None
-EMTEST_FORCE64 = None
 
 # Verbosity level control for subprocess calls to configure + make.
 # 0: disabled.
@@ -796,6 +795,11 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       self.skipTest('no dynamic linking support in wasm2js yet')
     if '-fsanitize=undefined' in self.emcc_args:
       self.skipTest('no dynamic linking support in UBSan yet')
+    # MEMORY64=2 mode doesn't currently support dynamic linking because
+    # The side modules are lowered to wasm32 when they are built, making
+    # them unlinkable with wasm64 binaries.
+    if self.get_setting('MEMORY64') == 2:
+      self.skipTest('MEMORY64=2 + dynamic linking is not currently supported')
 
   def require_v8(self):
     if not config.V8_ENGINE or config.V8_ENGINE not in config.JS_ENGINES:
@@ -821,11 +825,12 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     self.require_engine(nodejs)
     return nodejs
 
+  def node_is_canary(self, nodejs):
+    return nodejs and nodejs[0] and 'canary' in nodejs[0]
+
   def require_node_canary(self):
     nodejs = self.get_nodejs()
-    if nodejs:
-      version = shared.get_node_version(nodejs)
-      if version >= (20, 0, 0):
+    if self.node_is_canary(nodejs):
         self.require_engine(nodejs)
         return
 
@@ -901,8 +906,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   def require_wasm_exnref(self):
     nodejs = self.get_nodejs()
     if nodejs:
-      version = shared.get_node_version(nodejs)
-      if version >= (22, 0, 0):
+      if self.node_is_canary(nodejs):
         self.js_engines = [nodejs]
         self.node_args.append('--experimental-wasm-exnref')
         return
@@ -914,9 +918,9 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       return
 
     if 'EMTEST_SKIP_EH' in os.environ:
-      self.skipTest('test requires node >= 22 or d8 (and EMTEST_SKIP_EH is set)')
+      self.skipTest('test requires canary or d8 (and EMTEST_SKIP_EH is set)')
     else:
-      self.fail('either d8 or node >= 22 required to run wasm-eh tests.  Use EMTEST_SKIP_EH to skip')
+      self.fail('either d8 or node canary required to run wasm-eh tests.  Use EMTEST_SKIP_EH to skip')
 
   def require_jspi(self):
     # emcc warns about stack switching being experimental, and we build with
@@ -934,10 +938,8 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
     exp_args = ['--experimental-wasm-stack-switching', '--experimental-wasm-type-reflection']
     nodejs = self.get_nodejs()
     if nodejs:
-      version = shared.get_node_version(nodejs)
-      # Support for JSPI came earlier than 19, but 19 is what currently works
-      # with emscripten's implementation.
-      if version >= (19, 0, 0):
+      # Support for JSPI came earlier than 22, but the new API changes are not yet in any node
+      if self.node_is_canary(nodejs):
         self.js_engines = [nodejs]
         self.node_args += exp_args
         return
@@ -949,9 +951,9 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
       return
 
     if 'EMTEST_SKIP_JSPI' in os.environ:
-      self.skipTest('test requires node >= 19 or d8 (and EMTEST_SKIP_JSPI is set)')
+      self.skipTest('test requires node canary or d8 (and EMTEST_SKIP_JSPI is set)')
     else:
-      self.fail('either d8 or node >= 19 required to run JSPI tests.  Use EMTEST_SKIP_JSPI to skip')
+      self.fail('either d8 or node canary required to run JSPI tests.  Use EMTEST_SKIP_JSPI to skip')
 
   def require_wasm2js(self):
     if self.is_wasm64():
@@ -1153,7 +1155,7 @@ class RunnerCore(unittest.TestCase, metaclass=RunnerMeta):
   #                  libraries, for example
   def get_emcc_args(self, main_file=False, compile_only=False, asm_only=False):
     def is_ldflag(f):
-      return any(f.startswith(s) for s in ['-sENVIRONMENT=', '--pre-js=', '--post-js='])
+      return any(f.startswith(s) for s in ['-sEXPORT_ES6', '-sPROXY_TO_PTHREAD', '-sENVIRONMENT=', '--pre-js=', '--post-js=', '-sPTHREAD_POOL_SIZE='])
 
     args = self.serialize_settings(compile_only or asm_only) + self.emcc_args
     if asm_only:
@@ -1956,9 +1958,7 @@ def harness_server_func(in_queue, out_queue, port):
           To get logging to the console from browser tests, add this to
           print/printErr/the exception handler in src/shell.html:
 
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', encodeURI('http://localhost:8888?stdout=' + text));
-            xhr.send();
+            fetch(encodeURI('http://localhost:8888?stdout=' + text));
         '''
         print('[client logging:', unquote_plus(self.path), ']')
         self.send_response(200)
@@ -2272,7 +2272,7 @@ class BrowserCore(RunnerCore):
         # also include report_result.c and force-include report_result.h
         self.run_process([EMCC, '-c', '-I' + TEST_ROOT,
                           '-DEMTEST_PORT_NUMBER=%d' % self.port,
-                          test_file('report_result.c')] + self.get_emcc_args(compile_only=True))
+                          test_file('report_result.c')] + self.get_emcc_args(compile_only=True) + (['-fPIC'] if '-fPIC' in args else []))
         args += ['report_result.o', '-include', test_file('report_result.h')]
     if EMTEST_BROWSER == 'node':
       args.append('-DEMTEST_NODE')

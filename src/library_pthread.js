@@ -379,6 +379,7 @@ var LibraryPThread = {
         'wasmOffsetConverter': wasmOffsetConverter,
 #endif
 #if MAIN_MODULE
+        'dynamicLibraries': dynamicLibraries,
         // Share all modules that have been loaded so far.  New workers
         // won't start running threads until these are all loaded.
         'sharedModules': sharedModules,
@@ -429,7 +430,7 @@ var LibraryPThread = {
         // a pthread.
         'workerData': 'em-pthread',
 #endif
-#if ENVIRONMENT_MAY_BE_WEB
+#if ENVIRONMENT_MAY_BE_WEB || ENVIRONMENT_MAY_BE_WORKER
         // This is the way that we signal to the Web Worker that it is hosting
         // a pthread.
         'name': 'em-pthread',
@@ -446,13 +447,17 @@ var LibraryPThread = {
         var p = trustedTypes.createPolicy(
           'emscripten#workerPolicy1',
           {
-            createScriptURL: (ignored) => new URL(import.meta.url)
+            createScriptURL: (ignored) => new URL("{{{ TARGET_JS_NAME }}}", import.meta.url)
           }
         );
         worker = new Worker(p.createScriptURL('ignored'), workerOptions);
       } else
 #endif
-      worker = new Worker(new URL(import.meta.url), workerOptions);
+      // We need to generate the URL with import.meta.url as the base URL of the JS file
+      // instead of just using new URL(import.meta.url) because bundler's only recognize
+      // the first case in their bundling step. The latter ends up producing an invalid
+      // URL to import from the server (e.g., for webpack the file:// path).
+      worker = new Worker(new URL('{{{ TARGET_JS_NAME }}}', import.meta.url), workerOptions);
 #else
       var pthreadMainJs = _scriptName;
 #if expectToReceiveOnModule('mainScriptUrlOrBlob')
@@ -954,7 +959,7 @@ var LibraryPThread = {
   $proxyToMainThreadPtr: (...args) => BigInt(proxyToMainThread(...args)),
 #endif
 
-  $proxyToMainThread__deps: ['$stackSave', '$stackRestore', '$stackAlloc', '_emscripten_run_on_main_thread_js'].concat(i53ConversionDeps),
+  $proxyToMainThread__deps: ['$stackSave', '$stackRestore', '$stackAlloc', '_emscripten_run_on_main_thread_js', ...i53ConversionDeps],
   $proxyToMainThread__docs: '/** @type{function(number, (number|boolean), ...number)} */',
   $proxyToMainThread: (funcIndex, emAsmAddr, sync, ...callArgs) => {
     // EM_ASM proxying is done by passing a pointer to the address of the EM_ASM
@@ -1241,6 +1246,12 @@ var LibraryPThread = {
       }
     }
   },
+#elif RELOCATABLE
+  // Provide a dummy version of _emscripten_thread_exit_joinable when
+  // RELOCATABLE is used without MAIN_MODULE.  This is because the call
+  // site in pthread_create.c is not able to distinguish between these
+  // two cases.
+  _emscripten_thread_exit_joinable: (thread) => {},
 #endif // MAIN_MODULE
 
   $checkMailbox__deps: ['$callUserCallback',

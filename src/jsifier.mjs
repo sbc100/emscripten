@@ -124,6 +124,9 @@ function getTransitiveDeps(symbol, debug) {
       directDeps = directDeps.filter((d) => typeof d === 'string');
       for (const dep of directDeps) {
         const resolved = resolveAlias(dep);
+        if (VERBOSE && !transitiveDeps.has(dep)) {
+          printErr(`adding dependency ${symbol} -> ${dep}`);
+        }
         transitiveDeps.add(resolved);
         toVisit.push(resolved);
       }
@@ -700,7 +703,7 @@ function(${args}) {
       }
     }
 
-    postSets = postSets.concat(orderedPostSets);
+    postSets.push(...orderedPostSets);
 
     const shellFile = MINIMAL_RUNTIME ? 'shell_minimal.js' : 'shell.js';
     includeFile(shellFile);

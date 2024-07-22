@@ -2087,7 +2087,7 @@ int main(int argc, char **argv) {
     self.set_setting('SAFE_HEAP')
     self.do_core_test('test_memorygrowth_3.c')
 
-  @also_with_standalone_wasm(impure=True)
+  @also_with_standalone_wasm()
   @no_4gb('depends on INITIAL_MEMORY')
   @no_2gb('depends on INITIAL_MEMORY')
   def test_memorygrowth_MAXIMUM_MEMORY(self):
@@ -2221,6 +2221,8 @@ int main(int argc, char **argv) {
   @no_wasm2js('massive switches can break js engines')
   @is_slow_test
   def test_biggerswitch(self):
+    if self.is_optimizing():
+      self.skipTest('https://github.com/emscripten-core/emscripten/issues/22179')
     if not self.is_optimizing():
       self.skipTest('nodejs takes >6GB to compile this if the wasm is not optimized, which OOMs, see https://github.com/emscripten-core/emscripten/issues/7928#issuecomment-458308453')
     num_cases = 20000
@@ -2695,8 +2697,6 @@ The current type of b is: 9
     self.do_core_test('test_strptime_days.c')
 
   def test_strptime_reentrant(self):
-    # needs to flush stdio streams
-    self.set_setting('EXIT_RUNTIME')
     self.do_core_test('test_strptime_reentrant.c')
 
   @crossplatform
@@ -3596,26 +3596,6 @@ ok
 ''')
 
   @needs_dylink
-  def test_dlfcn_mallocs(self):
-    # will be exhausted without functional malloc/free
-    if not self.has_changed_setting('INITIAL_MEMORY'):
-      self.set_setting('INITIAL_MEMORY', '64mb')
-
-    create_file('liblib.c', r'''
-      #include <assert.h>
-      #include <stdio.h>
-      #include <string.h>
-      #include <stdlib.h>
-
-      void *mallocproxy(int n) { return malloc(n); }
-      void freeproxy(void *p) { free(p); }
-      ''')
-    self.build_dlfcn_lib('liblib.c')
-
-    self.prep_dlfcn_main()
-    self.do_runf('dlmalloc_proxy.c', '*293,153*')
-
-  @needs_dylink
   def test_dlfcn_longjmp(self):
     create_file('liblib.c', r'''
       #include <setjmp.h>
@@ -3957,6 +3937,52 @@ ok
       ''')
 
     self.do_runf('main.c', 'main\nfunc_a\nfunc_sub\nfunc_b\nfunc_sub\ndone\n')
+
+  @needs_dylink
+  def test_dlfcn_preload(self):
+    # Create chain of dependencies and load the first libary with preload plugin.
+    # main -> libb.so -> liba.so
+    create_file('liba.c', r'''
+      #include <stdio.h>
+      int liba_fun() {
+        return 23;
+      }
+    ''')
+    self.build_dlfcn_lib('liba.c', outfile='liba.so')
+
+    create_file('libb.c', r'''
+      #include <stdio.h>
+      int liba_fun();
+
+      int libb_fun() {
+        return liba_fun()*2;
+      }
+    ''')
+    self.build_dlfcn_lib('libb.c', outfile='libb.so', emcc_args=['liba.so'])
+
+    self.prep_dlfcn_main(['--preload-file', 'libb.so', '--use-preload-plugins', '-L.', '-sAUTOLOAD_DYLIBS=0', 'libb.so'])
+    create_file('main.c', r'''
+      #include <assert.h>
+      #include <dlfcn.h>
+      #include <stdio.h>
+      #include <sys/stat.h>
+
+      int main() {
+        // Check the file exists in the VFS
+        struct stat statbuf;
+        assert(stat("/libb.so", &statbuf) == 0);
+        void *lib_handle = dlopen("/libb.so", RTLD_LOCAL | RTLD_NOW);
+        assert(lib_handle);
+        typedef int (*intfunc)();
+        intfunc x = (intfunc)dlsym(lib_handle, "libb_fun");
+        assert(x);
+        assert(x() == 46);
+        printf("done\n");
+        return 0;
+
+      }
+    ''')
+    self.do_runf('main.c', 'done\n')
 
   def dylink_test(self, main, side, expected=None, header=None, force_c=False,
                   main_module=2, **kwargs):
@@ -5423,11 +5449,7 @@ Module = {
 
     create_file('test.file', 'some data')
 
-    def clean(out):
-      return '\n'.join([line for line in out.split('\n') if 'binaryen' not in line and 'wasm' not in line and 'so not running' not in line])
-
-    self.do_runf('files.cpp', ('size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\n5 bytes to dev/null: 5\nok.\ntexte\n', 'size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\ntexte\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\n5 bytes to dev/null: 5\nok.\n'),
-                 output_nicerizer=clean)
+    self.do_run_in_out_file_test('test_files.c')
 
   def test_files_m(self):
     # Test for Module.stdin etc.
@@ -6817,12 +6839,11 @@ void* operator new(size_t size) {
     # See https://github.com/emscripten-core/emscripten/issues/20757
     self.emcc_args.append('-Wno-deprecated-declarations')
     poppler = self.get_poppler_library()
-    pdf_data = read_binary(test_file('poppler/paper.pdf'))
-    create_file('paper.pdf.js', str(list(bytearray(pdf_data))))
+    shutil.copyfile(test_file('poppler/paper.pdf'), 'paper.pdf')
 
     create_file('pre.js', '''
     Module.preRun = () => {
-      FS.createDataFile('/', 'paper.pdf', eval(read_('paper.pdf.js')), true, false, false);
+      FS.createDataFile('/', 'paper.pdf', readBinary('paper.pdf'), true, false, false);
     };
     Module.postRun = () => {
       var FileData = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents['filename-1.ppm']));
@@ -9268,7 +9289,7 @@ NODEFS is no longer included by default; build with -lnodefs.js
     self.set_setting('USE_OFFSET_CONVERTER')
     self.set_setting('MODULARIZE')
     self.set_setting('EXPORT_NAME', 'foo')
-    create_file('post.js', 'foo();')
+    create_file('post.js', 'if (!isPthread) foo();')
     self.emcc_args += ['--extern-post-js', 'post.js']
     if '-g' in self.emcc_args:
       self.emcc_args += ['-DDEBUG']
@@ -9417,13 +9438,17 @@ NODEFS is no longer included by default; build with -lnodefs.js
     self.emcc_args += args
     self.emcc_args += ['--pre-js', 'pre.js']
     self.emcc_args += ['--js-library', 'lib.js']
-    # This test is for setting dynamicLibraries at runtime so we don't
+    # This test is for setting dynamicLibraries at runtime, so we don't
     # want emscripten loading `liblib.so` automatically (which it would
-    # do without this setting.
+    # do without this setting)
     self.set_setting('NO_AUTOLOAD_DYLIBS')
 
     create_file('pre.js', '''
-      Module['dynamicLibraries'] = ['liblib.so'];
+      if (typeof ENVIRONMENT_IS_PTHREAD == 'undefined' || !ENVIRONMENT_IS_PTHREAD) {
+        // Load liblib.so on the main thread, this would be equivalent to
+        // defining it outside the module (e.g. in MODULARIZE mode).
+        Module['dynamicLibraries'] = ['liblib.so'];
+      }
     ''')
 
     create_file('lib.js', '''
