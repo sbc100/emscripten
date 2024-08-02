@@ -259,6 +259,11 @@ void test_asctime() {
   printf("winter month again: %d\n", tm->tm_mon);
 }
 
+void test_ctime() {
+  time_t t = 0;
+  printf("ctime: '%s'\n", ctime(&t));
+}
+
 void test_ctime_r() {
   // Verify that ctime_r(x, buf) is equivalent to asctime_r(localtime(x), buf).
   time_t t7 = time(0);
@@ -313,6 +318,7 @@ int main() {
   test_difftime();
   test_dysize();
   test_asctime();
+  test_ctime();
   test_ctime_r();
   test_clock_advances();
   test_timespec_get();
