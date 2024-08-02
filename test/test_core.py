@@ -2689,9 +2689,6 @@ The current type of b is: 9
     # Confirms they are called in reverse order
     self.do_core_test('test_timeb.c')
 
-  def test_time_c(self):
-    self.do_core_test('test_time_c.c')
-
   def test_gmtime(self):
     self.do_core_test('test_gmtime.c')
 

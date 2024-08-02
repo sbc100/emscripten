@@ -40,6 +40,8 @@ winter asctime: Wed Dec 25 03:22:43 2002
 summer asctime_r: Mon Jul  1 13:02:05 2002
 winter asctime again: Wed Dec 25 03:22:43 2002
 winter month again: 11
+ctime: 'Wed Dec 31 16:00:00 1969
+'
 ctime matched: 1
 clock(start): 1
 clock(end): 1
