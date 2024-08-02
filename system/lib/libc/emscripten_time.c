@@ -89,8 +89,32 @@ weak int dysize(int year) {
   return leap ? 366 : 365;
 }
 
+weak time_t timegm(struct tm *tm) {
+  tzset();
+  return _timegm_js(tm);
+}
+
+weak struct tm *__localtime_r(const time_t *restrict t, struct tm *restrict tm) {
+  tzset();
+  _localtime_js(*t, tm);
+  // __localtime_js sets everything but the tmzone pointer
+  tm->__tm_zone = tm->tm_isdst ? tzname[1] :tzname[0];
+  return tm;
+}
+
+weak struct tm *__gmtime_r(const time_t *restrict t, struct tm *restrict tm) {
+  tzset();
+  _gmtime_js(*t, tm);
+  tm->tm_isdst = 0;
+  tm->__tm_gmtoff = 0;
+  tm->__tm_zone = "GMT";
+  return tm;
+}
+
 weak_alias(__time, time);
 weak_alias(__clock, clock);
 weak_alias(__clock_gettime, clock_gettime);
 weak_alias(__clock_getres, clock_getres);
 weak_alias(__gettimeofday, gettimeofday);
+weak_alias(__gmtime_r, gmtime_r);
+weak_alias(__localtime_r, localtime_r);

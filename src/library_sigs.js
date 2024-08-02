@@ -376,7 +376,6 @@ sigs = {
   _emval_typeof__sig: 'pp',
   _gmtime_js__sig: 'vjp',
   _localtime_js__sig: 'vjp',
-  _mktime_js__sig: 'jp',
   _mmap_js__sig: 'ipiiijpp',
   _msync_js__sig: 'ippiiij',
   _munmap_js__sig: 'ippiiij',

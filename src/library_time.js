@@ -7,55 +7,6 @@
 assert(!STANDALONE_WASM, "library_time.js should not be included in standalone mode");
 
 addToLibrary({
-  _mktime_js__i53abi: true,
-  _mktime_js__deps: ['$ydayFromDate'],
-  _mktime_js: (tmPtr) => {
-    var date = new Date({{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_year, 'i32') }}} + 1900,
-                        {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_mon, 'i32') }}},
-                        {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_mday, 'i32') }}},
-                        {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_hour, 'i32') }}},
-                        {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_min, 'i32') }}},
-                        {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_sec, 'i32') }}},
-                        0);
-
-    // There's an ambiguous hour when the time goes back; the tm_isdst field is
-    // used to disambiguate it.  Date() basically guesses, so we fix it up if it
-    // guessed wrong, or fill in tm_isdst with the guess if it's -1.
-    var dst = {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_isdst, 'i32') }}};
-    var guessedOffset = date.getTimezoneOffset();
-    var start = new Date(date.getFullYear(), 0, 1);
-    var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
-    var winterOffset = start.getTimezoneOffset();
-    var dstOffset = Math.min(winterOffset, summerOffset); // DST is in December in South
-    if (dst < 0) {
-      // Attention: some regions don't have DST at all.
-      {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_isdst, 'Number(summerOffset != winterOffset && dstOffset == guessedOffset)', 'i32') }}};
-    } else if ((dst > 0) != (dstOffset == guessedOffset)) {
-      var nonDstOffset = Math.max(winterOffset, summerOffset);
-      var trueOffset = dst > 0 ? dstOffset : nonDstOffset;
-      // Don't try setMinutes(date.getMinutes() + ...) -- it's messed up.
-      date.setTime(date.getTime() + (trueOffset - guessedOffset)*60000);
-    }
-
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_wday, 'date.getDay()', 'i32') }}};
-    var yday = ydayFromDate(date)|0;
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_yday, 'yday', 'i32') }}};
-    // To match expected behavior, update fields from date
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_sec, 'date.getSeconds()', 'i32') }}};
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_min, 'date.getMinutes()', 'i32') }}};
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_hour, 'date.getHours()', 'i32') }}};
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_mday, 'date.getDate()', 'i32') }}};
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_mon, 'date.getMonth()', 'i32') }}};
-    {{{ makeSetValue('tmPtr', C_STRUCTS.tm.tm_year, 'date.getYear()', 'i32') }}};
-
-    var timeMs = date.getTime();
-    if (isNaN(timeMs)) {
-      return -1;
-    }
-    // Return time in microseconds
-    return timeMs / 1000;
-  },
-
   _gmtime_js__i53abi: true,
   _gmtime_js: (time, tmPtr) => {
     var date = new Date(time * 1000);
