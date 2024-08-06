@@ -671,34 +671,32 @@ def generate_js(data_target, data_files, metadata):
       # Data requests - for getting a block of data out of the big archive - have
       # a similar API to XHRs
       code += '''
-      /** @constructor */
-      function DataRequest(start, end, audio) {
-        this.start = start;
-        this.end = end;
-        this.audio = audio;
-      }
-      DataRequest.prototype = {
-        requests: {},
-        open: function(mode, name) {
+      class DataRequest {
+        constructor(start, end, audio) {
+          this.start = start;
+          this.end = end;
+          this.audio = audio;
+        }
+        open(mode, name) {
           this.name = name;
-          this.requests[name] = this;
+          DataRequest.requests[name] = this;
           Module['addRunDependency'](`fp ${this.name}`);
-        },
-        send: function() {},
-        onload: function() {
+        }
+        send() {}
+        onload() {
           var byteArray = this.byteArray.subarray(this.start, this.end);
           this.finish(byteArray);
-        },
-        finish: function(byteArray) {
+        }
+        finish(byteArray) {
           var that = this;
           %s
-          this.requests[this.name] = null;
+          DataRequest.requests[this.name] = null;
         }
-      };
+      }
+      DataRequest.requests = {}
 
-      var files = metadata['files'];
-      for (var i = 0; i < files.length; ++i) {
-        new DataRequest(files[i]['start'], files[i]['end'], files[i]['audio'] || 0).open('GET', files[i]['filename']);
+      for (var file of metadata['files']) {
+        new DataRequest(file['start'], file['end'], file['audio'] || 0).open('GET', file['filename']);
       }\n''' % (create_preloaded if options.use_preload_plugins else create_data)
 
   if options.has_embedded and not options.obj_output:
@@ -736,8 +734,8 @@ def generate_js(data_target, data_files, metadata):
       use_data = '''// Reuse the bytearray from the XHR as the source for file reads.
           DataRequest.prototype.byteArray = byteArray;
           var files = metadata['files'];
-          for (var i = 0; i < files.length; ++i) {
-            DataRequest.prototype.requests[files[i].filename].onload();
+          for (var file of metadata['files']) {
+            DataRequest.requests[file.filename].onload();
           }'''
       use_data += ("          Module['removeRunDependency']('datafile_%s');\n"
                    % js_manipulation.escape_for_js_string(data_target))
@@ -921,8 +919,7 @@ def generate_js(data_target, data_files, metadata):
                   } else {
                     var tempTyped = new Uint8Array(totalSize);
                     var byteOffset = 0;
-                    for (var chunkId in chunks) {
-                      var buffer = chunks[chunkId];
+                    for (var buffer of chunks) {
                       tempTyped.set(new Uint8Array(buffer), byteOffset);
                       byteOffset += buffer.byteLength;
                       buffer = undefined;
@@ -976,8 +973,7 @@ def generate_js(data_target, data_files, metadata):
             var total = 0;
             var loaded = 0;
             var num = 0;
-            for (var download in Module['dataFileDownloads']) {
-            var data = Module['dataFileDownloads'][download];
+            for (var data of Module['dataFileDownloads']) {
               total += data.total;
               loaded += data.loaded;
               num++;
