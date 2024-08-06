@@ -1096,23 +1096,17 @@ def generate_js(data_target, data_files, metadata):
 
   function runMetaWithFS() {
     Module['addRunDependency']('%(metadata_file)s');
-    var REMOTE_METADATA_NAME = Module['locateFile'] ? Module['locateFile']('%(metadata_file)s', '') : '%(metadata_file)s';
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = () => {
-     if (xhr.readyState === 4 && xhr.status === 200) {
-       loadPackage(JSON.parse(xhr.responseText));
-     }
-    }
-    xhr.open('GET', REMOTE_METADATA_NAME, true);
-    xhr.overrideMimeType('application/json');
-    xhr.send(null);
+    var metadataFile = Module['locateFile'] ? Module['locateFile']('%(metadata_file)s', '') : '%(metadata_file)s';
+    fetch(metadataFile)
+      .then((rsp) => rsp.json())
+      .then((json) => loadPackage(json));
   }
 
   if (Module['calledRun']) {
     runMetaWithFS();
   } else {
     if (!Module['preRun']) Module['preRun'] = [];
-    Module["preRun"].push(runMetaWithFS);
+    Module['preRun'].push(runMetaWithFS);
   }\n''' % {'metadata_file': os.path.basename(options.jsoutput + '.metadata')}
 
   else:
