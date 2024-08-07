@@ -988,7 +988,7 @@ function createWasm() {
     updateMemoryViews();
 #endif
 
-#if '$wasmTable' in addedLibraryItems && !RELOCATABLE
+#if '$wasmTable' in addedLibraryItems
     wasmTable = wasmExports['__indirect_function_table'];
     {{{ receivedSymbol('wasmTable') }}}
 #if ASSERTIONS && !PURE_WASI

@@ -206,12 +206,11 @@ def lld_flags_for_executable(external_symbols):
       cmd.append('-pie')
     if not settings.LINKABLE:
       cmd.append('--no-export-dynamic')
-  else:
-    cmd.append('--export-table')
-    if settings.ALLOW_TABLE_GROWTH:
-      cmd.append('--growable-table')
 
   if not settings.SIDE_MODULE:
+    cmd.append('--export-table')
+    cmd.append('--growable-table')
+    cmd.append('--initial-table=%d' % settings.INITIAL_TABLE)
     cmd += ['-z', 'stack-size=%s' % settings.STACK_SIZE]
 
     if settings.ALLOW_MEMORY_GROWTH:

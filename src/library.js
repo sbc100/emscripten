@@ -2389,22 +2389,7 @@ addToLibrary({
   $getNativeTypeSize: {{{ getNativeTypeSize }}},
 
   $wasmTable__docs: '/** @type {WebAssembly.Table} */',
-#if RELOCATABLE
-  // In RELOCATABLE mode we create the table in JS.
-  $wasmTable: `=new WebAssembly.Table({
-  'initial': {{{ toIndexType(INITIAL_TABLE) }}},
-#if !ALLOW_TABLE_GROWTH
-  'maximum': {{{ toIndexType(INITIAL_TABLE) }}},
-#endif
-#if MEMORY64 == 1
-  'index': 'i64',
-#endif
-  'element': 'anyfunc'
-});
-`,
-#else
   $wasmTable: undefined,
-#endif
 
   $noExitRuntime: "{{{ makeModuleReceiveExpr('noExitRuntime', !EXIT_RUNTIME) }}}",
 
