@@ -32,10 +32,8 @@ addToLibrary({
 #endif
   ],
   $FS__postset: function() {
-    // TODO: do we need noFSInit?
     addAtInit(`
-if (!Module['noFSInit'] && !FS.initialized)
-  FS.init();
+FS.init();
 FS.ignorePermissions = false;
 `)
     addAtExit('FS.quit();');
@@ -53,7 +51,6 @@ FS.staticInit();
     nextInode: 1,
     nameTable: null,
     currentPath: '/',
-    initialized: false,
     // Whether we are currently ignoring permissions. Useful when preparing the
     // filesystem and creating files inside read-only folders.
     // This is set to false during `preInit`, allowing you to modify the
@@ -1469,27 +1466,10 @@ FS.staticInit();
 #endif
       };
     },
-    init(input, output, error) {
-#if ASSERTIONS
-      assert(!FS.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
-#endif
-      FS.initialized = true;
-
-      // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
-#if expectToReceiveOnModule('stdin')
-      input ??= Module['stdin'];
-#endif
-#if expectToReceiveOnModule('stdout')
-      output ??= Module['stdout'];
-#endif
-#if expectToReceiveOnModule('stderr')
-      error ??= Module['stderr'];
-#endif
-
-      FS.createStandardStreams(input, output, error);
+    init() {
+      FS.createStandardStreams();
     },
     quit() {
-      FS.initialized = false;
       // force-flush all streams, so we get musl std streams printed out
 #if hasExportedSymbol('fflush')
       _fflush(0);
