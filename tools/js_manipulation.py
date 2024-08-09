@@ -120,8 +120,18 @@ def make_dynCall(sig, args):
     else:
       return 'Module["dynCall_%s"](%s)' % (sig, args)
   else:
-    call_args = ",".join(args[1:])
-    return f'getWasmTableEntry({args[0]})({call_args})'
+    call_args = args[1:]
+    if settings.EMULATE_FUNCTION_POINTER_CASTS:
+      # With EMULATE_FUNCTION_POINTER_CASTS, all functions pointers take 16 i16
+      # arguments.
+      call_args = [f'BigInt({a})' for a in call_args]
+      if len(call_args) < 16:
+        call_args += ['0n'] * (16 - len(call_args))
+    call_args = ",".join(call_args)
+    rtn = f'getWasmTableEntry({args[0]})({call_args})'
+    if settings.EMULATE_FUNCTION_POINTER_CASTS and sig[0] not in ['j', 'v']:
+      rtn = f'Number({rtn})'
+    return rtn
 
 
 def make_invoke(sig):

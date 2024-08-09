@@ -194,9 +194,12 @@ addToLibrary({
                        '$getWasmTableEntry', '$setWasmTableEntry',
                        '$wasmTable'],
   $addFunction: (func, sig) => {
-  #if ASSERTIONS
+#if EMULATE_FUNCTION_POINTER_CASTS
+    sig = 'jjjjjjjjjjjjjjjjj'
+#endif
+#if ASSERTIONS
     assert(typeof func != 'undefined');
-  #endif // ASSERTIONS
+#endif // ASSERTIONS
     // Check if the function is already in the table, to ensure each function
     // gets a unique index.
     var rtn = getFunctionAddress(func);
@@ -206,14 +209,14 @@ addToLibrary({
 
     // It's not in the table, add it now.
 
-  #if ASSERTIONS >= 2
+#if ASSERTIONS >= 2
     // Make sure functionsInTableMap is actually up to date, that is, that this
     // function is not actually in the wasm Table despite not being tracked in
     // functionsInTableMap.
     for (var i = 0; i < wasmTable.length; i++) {
       assert(getWasmTableEntry(i) != func, 'function in Table but not functionsInTableMap');
     }
-  #endif
+#endif
 
     var ret = getEmptyTableSlot();
 
@@ -225,9 +228,9 @@ addToLibrary({
       if (!(err instanceof TypeError)) {
         throw err;
       }
-  #if ASSERTIONS
+#if ASSERTIONS
       assert(typeof sig != 'undefined', 'Missing signature argument to addFunction: ' + func);
-  #endif
+#endif
       var wrapped = convertJsFunctionToWasm(func, sig);
       setWasmTableEntry(ret, wrapped);
     }
