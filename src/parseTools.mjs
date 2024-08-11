@@ -857,18 +857,12 @@ function makeModuleReceiveWithVar(localName, moduleName, defaultValue, noAssert)
   moduleName ||= localName;
   checkReceiving(moduleName);
   let ret = `var ${localName}`;
-  if (!expectToReceiveOnModule(moduleName)) {
-    if (defaultValue) {
-      ret += ` = ${defaultValue}`;
-    }
-    ret += ';';
-  } else {
-    if (defaultValue) {
-      ret += ` = Module['${moduleName}'] || ${defaultValue};`;
-    } else {
-      ret += ` = Module['${moduleName}'];`;
-    }
+  if (defaultValue) {
+    ret += makeModuleReceiveExpr(moduleName, defaultValue);
+  } else if (expectToReceiveOnModule(moduleName))
+    ret += ` = Module['${moduleName}']`
   }
+  ret += ';'
   if (!noAssert) {
     ret += makeRemovedModuleAPIAssert(moduleName, localName);
   }
