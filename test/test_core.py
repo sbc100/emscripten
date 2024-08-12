@@ -2095,7 +2095,7 @@ int main(int argc, char **argv) {
 
     self.set_setting('ALLOW_MEMORY_GROWTH')
     # Force memory growth to fail at runtime
-    self.add_pre_run('growMemory = (size) => false;')
+    self.add_pre_run('growMemory = (size) => -1;')
     self.do_core_test('test_memorygrowth_3.c')
 
   @parameterized({

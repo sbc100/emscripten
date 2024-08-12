@@ -183,33 +183,31 @@ addToLibrary({
 #endif // ABORTING_MALLOC
 
   // Grows the wasm memory to the given byte size, and updates the JS views to
-  // it. Returns 1 on success, 0 on error.
+  // it. Returns the new number of pages success, or -1 on error (i.e. the same
+  // thing that that native `memory.grow` instruction returns.
+  $growMemory__deps: ['_emscripten_memory_grow'],
   $growMemory: (size) => {
-    var b = wasmMemory.buffer;
-    var pages = (size - b.byteLength + {{{ WASM_PAGE_SIZE - 1 }}}) / {{{ WASM_PAGE_SIZE }}};
 #if RUNTIME_DEBUG
-    dbg(`growMemory: ${size} (+${size - b.byteLength} bytes / ${pages} pages)`);
+    dbg(`growMemory: ${size} (+${size - wasmMemory.buffer.byteLength} bytes)`);
 #endif
 #if MEMORYPROFILER
-    var oldHeapSize = b.byteLength;
+    var oldHeapSize = wasmMemory.buffer.byteLength;
 #endif
-    try {
-      // round size grow request up to wasm page size (fixed 64KB per spec)
-      wasmMemory.grow(pages); // .grow() takes a delta compared to the previous size
+    var rtn = __emscripten_memory_grow(size);
+    if (rtn != -1) {
       updateMemoryViews();
 #if MEMORYPROFILER
       if (typeof emscriptenMemoryProfiler != 'undefined') {
         emscriptenMemoryProfiler.onMemoryResize(oldHeapSize, b.byteLength);
       }
 #endif
-      return 1 /*success*/;
-    } catch(e) {
-#if ASSERTIONS
-      err(`growMemory: Attempted to grow heap from ${b.byteLength} bytes to ${size} bytes, but got error: ${e}`);
-#endif
     }
-    // implicit 0 return to save code size (caller will cast "undefined" into 0
-    // anyhow)
+#if ASSERTIONS
+    else {
+      err(`growMemory: Failed to grow heap from ${wasmMemory.buffer.byteLength} bytes to ${size} bytes`);
+    }
+#endif
+    return rtn;
   },
 
   emscripten_resize_heap__deps: [
@@ -305,12 +303,12 @@ addToLibrary({
 #if ASSERTIONS == 2
       var t0 = _emscripten_get_now();
 #endif
-      var replacement = growMemory(newSize);
+      var success = growMemory(newSize) != -1;
 #if ASSERTIONS == 2
       var t1 = _emscripten_get_now();
-      dbg(`Heap resize call from ${oldSize} to ${newSize} took ${(t1 - t0)} msecs. Success: ${!!replacement}`);
+      dbg(`Heap resize call from ${oldSize} to ${newSize} took ${(t1 - t0)} msecs. Success: ${success}`);
 #endif
-      if (replacement) {
+      if (success) {
 #if ASSERTIONS && WASM2JS
         err('Warning: Enlarging memory arrays, this is not fast! ' + [oldSize, newSize]);
 #endif
@@ -2273,7 +2271,7 @@ addToLibrary({
 #if ASSERTIONS
     assert(alignment, "alignment argument is required");
 #endif
-    return Math.ceil(size / alignment) * alignment;
+    return (((size + (alignment - 1)) / alignment) | 0) * alignment;
   },
 
   // Allocate memory for an mmap operation. This allocates space of the right

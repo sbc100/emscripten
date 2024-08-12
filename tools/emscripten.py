@@ -1032,6 +1032,7 @@ def create_pointer_conversion_wrappers(metadata):
     'free': '_p',
     'webidl_free': '_p',
     '_emscripten_stack_restore': '_p',
+    '_emscripten_memory_grow': 'pp',
     'fflush': '_p',
     'emscripten_stack_get_end': 'p',
     'emscripten_stack_get_base': 'p',

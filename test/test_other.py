@@ -6875,7 +6875,7 @@ int main() {
   @also_with_wasm2js
   def test_failing_alloc(self, growth):
     # Force memory growth to fail at runtime
-    self.add_pre_run('growMemory = (size) => false;')
+    self.add_pre_run('growMemory = (size) => -1;')
     for pre_fail, post_fail, opts in [
       ('', '', []),
       ('EM_ASM( Module.temp = _sbrk() );', 'EM_ASM( assert(Module.temp === _sbrk(), "must not adjust brk when an alloc fails!") );', []),
