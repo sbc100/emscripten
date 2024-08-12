@@ -2273,7 +2273,7 @@ addToLibrary({
 #if ASSERTIONS
     assert(alignment, "alignment argument is required");
 #endif
-    return Math.ceil(size / alignment) * alignment;
+    return (((size + (alignment - 1)) / alignment)|0) * alignment;
   },
 
   // Allocate memory for an mmap operation. This allocates space of the right
