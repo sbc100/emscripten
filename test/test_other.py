@@ -13386,7 +13386,7 @@ void foo() {}
 
   @parameterized({
     '': ([],),
-    'pthreads': (['-pthread', '-sPROXY_TO_PTHREAD', '-sEXIT_RUNTIME'],),
+    'pthreads': (['-pthread', '-sPROXY_TO_PTHREAD'],),
   })
   def test_emscripten_main_loop(self, args):
     self.do_runf('test_emscripten_main_loop.c', emcc_args=args)
@@ -13405,7 +13405,6 @@ void foo() {}
     # TODO(https://github.com/emscripten-core/emscripten/issues/15161):
     # Make this work without PROXY_TO_PTHREAD
     self.set_setting('PROXY_TO_PTHREAD')
-    self.set_setting('EXIT_RUNTIME')
     self.emcc_args += ['--profiling-funcs', '-pthread']
     output = self.do_runf('pthread/test_pthread_trap.c', assert_returncode=NON_ZERO)
     self.assertContained('sent an error!', output)
@@ -13447,7 +13446,6 @@ void foo() {}
   @node_pthreads
   def test_pthread_out_err(self):
     self.set_setting('PROXY_TO_PTHREAD')
-    self.set_setting('EXIT_RUNTIME')
     self.emcc_args.append('-pthread')
     self.do_other_test('test_pthread_out_err.c')
 
@@ -13455,7 +13453,6 @@ void foo() {}
   def test_pthread_icu(self):
     self.set_setting('USE_ICU')
     self.set_setting('PROXY_TO_PTHREAD')
-    self.set_setting('EXIT_RUNTIME')
     self.emcc_args.append('-pthread')
     self.do_other_test('test_pthread_icu.cpp')
 

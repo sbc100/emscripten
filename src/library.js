@@ -2196,9 +2196,10 @@ addToLibrary({
     }
     try {
       func();
-      maybeExit();
     } catch (e) {
       handleException(e);
+    } finally {
+      maybeExit();
     }
   },
 

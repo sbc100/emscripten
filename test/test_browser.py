@@ -1804,7 +1804,7 @@ simulateKeyUp(100);
 
   @parameterized({
     '': ([],),
-    'pthreads': (['-pthread', '-sPROXY_TO_PTHREAD', '-sEXIT_RUNTIME'],),
+    'pthreads': (['-pthread', '-sPROXY_TO_PTHREAD'],),
   })
   def test_emscripten_main_loop(self, args):
     self.btest_exit('test_emscripten_main_loop.c', args=args)
