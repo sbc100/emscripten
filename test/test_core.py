@@ -8331,10 +8331,10 @@ Module.onRuntimeInitialized = () => {
     self.emcc_args += ['--profiling-funcs'] # so that we can find the functions for the changes below
     if conditional:
       self.emcc_args += ['-DCONDITIONAL']
-    self.do_core_test('emscripten_lazy_load_code.cpp', args=['0'])
+    self.do_core_test('test_emscripten_lazy_load_code.c', args=['0'])
 
-    first_size = os.path.getsize('emscripten_lazy_load_code.wasm')
-    second_size = os.path.getsize('emscripten_lazy_load_code.wasm.lazy.wasm')
+    first_size = os.path.getsize('test_emscripten_lazy_load_code.wasm')
+    second_size = os.path.getsize('test_emscripten_lazy_load_code.wasm.lazy.wasm')
     print('first wasm size', first_size)
     print('second wasm size', second_size)
 
@@ -8352,8 +8352,8 @@ Module.onRuntimeInitialized = () => {
       # out more than half
       self.assertLess(first_size, 0.6 * second_size)
 
-    wasm1 = read_binary('emscripten_lazy_load_code.wasm')
-    wasm2 = read_binary('emscripten_lazy_load_code.wasm.lazy.wasm')
+    wasm1 = read_binary('test_emscripten_lazy_load_code.wasm')
+    wasm2 = read_binary('test_emscripten_lazy_load_code.wasm.lazy.wasm')
     self.assertNotEqual(wasm1, wasm2)
 
     # attempts to "break" the wasm by adding an unreachable in $foo_end. returns whether we found it.
@@ -8380,34 +8380,34 @@ Module.onRuntimeInitialized = () => {
       return True
 
     def verify_working(args):
-      self.assertContained('foo_end\n', self.run_js('emscripten_lazy_load_code.js', args=args))
+      self.assertContained('foo_end\n', self.run_js('test_emscripten_lazy_load_code.js', args=args))
 
     def verify_broken(args):
-      self.assertNotContained('foo_end\n', self.run_js('emscripten_lazy_load_code.js', args=args, assert_returncode=NON_ZERO))
+      self.assertNotContained('foo_end\n', self.run_js('test_emscripten_lazy_load_code.js', args=args, assert_returncode=NON_ZERO))
 
     # the first-loaded wasm will not reach the second call, since we call it after lazy-loading.
     # verify that by changing the first wasm to throw in that function
-    found_foo_end = break_wasm('emscripten_lazy_load_code.wasm')
+    found_foo_end = break_wasm('test_emscripten_lazy_load_code.wasm')
     if not conditional and is_optimizing:
       self.assertFalse(found_foo_end, 'should have optimized out $foo_end')
     verify_working(['0'])
     # but breaking the second wasm actually breaks us
-    if not break_wasm('emscripten_lazy_load_code.wasm.lazy.wasm'):
+    if not break_wasm('test_emscripten_lazy_load_code.wasm.lazy.wasm'):
       raise Exception('could not break lazy wasm - missing expected code')
     verify_broken(['0'])
 
     # restore
-    shutil.copyfile('emscripten_lazy_load_code.wasm.orig', 'emscripten_lazy_load_code.wasm')
-    shutil.copyfile('emscripten_lazy_load_code.wasm.lazy.wasm.orig', 'emscripten_lazy_load_code.wasm.lazy.wasm')
+    shutil.copyfile('test_emscripten_lazy_load_code.wasm.orig', 'test_emscripten_lazy_load_code.wasm')
+    shutil.copyfile('test_emscripten_lazy_load_code.wasm.lazy.wasm.orig', 'test_emscripten_lazy_load_code.wasm.lazy.wasm')
     verify_working(['0'])
 
     if conditional:
       # if we do not call the lazy load function, then we do not need the lazy wasm,
       # and we do the second call in the first wasm
-      os.remove('emscripten_lazy_load_code.wasm.lazy.wasm')
+      os.remove('test_emscripten_lazy_load_code.wasm.lazy.wasm')
       verify_broken(['0'])
       verify_working(['42'])
-      break_wasm('emscripten_lazy_load_code.wasm')
+      break_wasm('test_emscripten_lazy_load_code.wasm')
       verify_broken(['0'])
 
   # Test basic wasm2js functionality in all core compilation modes.
