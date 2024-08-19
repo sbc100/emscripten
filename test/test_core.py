@@ -8037,9 +8037,6 @@ int main(int argc, char **argv) {
 
   @with_asyncify_and_jspi
   def test_async_hello(self):
-    # needs to flush stdio streams
-    self.set_setting('EXIT_RUNTIME')
-
     create_file('main.c',  r'''
 #include <stdio.h>
 #include <emscripten.h>
