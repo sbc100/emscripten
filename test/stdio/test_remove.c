@@ -5,8 +5,7 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <cstdio>
-#include <iostream>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -40,24 +39,24 @@ void cleanup() {
 
 void test() {
   int err;
-  
-  err = std::remove("dir/file");
+
+  err = remove("dir/file");
   assert(!err);
 
-  err = std::remove("file");
+  err = remove("file");
   assert(!err);
 
   // should fail, folder is not empty
-  err = std::remove("dir");
+  err = remove("dir");
   assert(err);
 
-  err = std::remove("dir/subdir");
+  err = remove("dir/subdir");
   assert(!err);
 
-  err = std::remove("dir");
+  err = remove("dir");
   assert(!err);
 
-  std::cout << "success\n";
+  printf("success\n");
 }
 
 int main() {
