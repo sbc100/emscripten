@@ -52,19 +52,6 @@ addToLibrary({
     return '0x' + ptr.toString(16).padStart(8, '0');
   },
 
-  $zeroMemory: (address, size) => {
-#if LEGACY_VM_SUPPORT
-    if (!HEAPU8.fill) {
-      for (var i = 0; i < size; i++) {
-        HEAPU8[address + i] = 0;
-      }
-      return;
-    }
-#endif
-    HEAPU8.fill(0, address, address + size);
-    return address;
-  },
-
 #if SAFE_HEAP
   // Trivial wrappers around runtime functions that make these symbols available
   // to native code.
@@ -873,12 +860,12 @@ addToLibrary({
     return { family: family, addr: addr, port: port };
   },
   $writeSockaddr__docs: '/** @param {number=} addrlen */',
-  $writeSockaddr__deps: ['$Sockets', '$inetPton4', '$inetPton6', '$zeroMemory', 'htons'],
+  $writeSockaddr__deps: ['$Sockets', '$inetPton4', '$inetPton6', 'bzero', 'htons'],
   $writeSockaddr: (sa, family, addr, port, addrlen) => {
     switch (family) {
       case {{{ cDefs.AF_INET }}}:
         addr = inetPton4(addr);
-        zeroMemory(sa, {{{ C_STRUCTS.sockaddr_in.__size__ }}});
+        _bzero(sa, {{{ C_STRUCTS.sockaddr_in.__size__ }}});
         if (addrlen) {
           {{{ makeSetValue('addrlen', 0, C_STRUCTS.sockaddr_in.__size__, 'i32') }}};
         }
@@ -888,7 +875,7 @@ addToLibrary({
         break;
       case {{{ cDefs.AF_INET6 }}}:
         addr = inetPton6(addr);
-        zeroMemory(sa, {{{ C_STRUCTS.sockaddr_in6.__size__ }}});
+        _bzero(sa, {{{ C_STRUCTS.sockaddr_in6.__size__ }}});
         if (addrlen) {
           {{{ makeSetValue('addrlen', 0, C_STRUCTS.sockaddr_in6.__size__, 'i32') }}};
         }
@@ -2278,13 +2265,13 @@ addToLibrary({
 
   // Allocate memory for an mmap operation. This allocates space of the right
   // page-aligned size, and clears the allocated space.
-  $mmapAlloc__deps: ['$zeroMemory', '$alignMemory'],
+  $mmapAlloc__deps: ['bzero', '$alignMemory'],
   $mmapAlloc: (size) => {
 #if hasExportedSymbol('emscripten_builtin_memalign')
     size = alignMemory(size, {{{ WASM_PAGE_SIZE }}});
     var ptr = _emscripten_builtin_memalign({{{ WASM_PAGE_SIZE }}}, size);
     if (!ptr) return 0;
-    return zeroMemory(ptr, size);
+    return bzero(ptr, size);
 #elif ASSERTIONS
     abort('internal error: mmapAlloc called but `emscripten_builtin_memalign` native symbol not exported');
 #else

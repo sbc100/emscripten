@@ -980,7 +980,6 @@ browsers and shell environments. Specifically:
 - Add polyfilling for Math.clz32, Math.trunc, Math.imul, Math.fround. (-sPOLYFILL_OLD_MATH_FUNCTIONS)
 - Disable WebAssembly. (Must be paired with -sWASM=0)
 - Adjusts MIN_X_VERSION settings to 0 to include support for all browser versions.
-- Avoid TypedArray.fill, if necessary, in zeroMemory utility function.
 
 You can also configure the above options individually.
 

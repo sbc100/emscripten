@@ -8,8 +8,8 @@
 
 addToLibrary({
   // Clear a 'compact' UUID.
-  uuid_clear__deps: ['$zeroMemory'],
-  uuid_clear: (uu) => zeroMemory(uu, 16),
+  uuid_clear__deps: ['bzero'],
+  uuid_clear: (uu) => _bzero(uu, 16),
 
   // Compare whether or not two 'compact' UUIDs are the same.
   // Returns an integer less than, equal to, or greater than zero if uu1  is found, respectively, to be

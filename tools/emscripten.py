@@ -1024,6 +1024,7 @@ def create_pointer_conversion_wrappers(metadata):
     'emscripten_builtin_malloc': 'pp',
     'malloc': 'pp',
     'calloc': 'ppp',
+    'bzero': '_pp',
     'webidl_malloc': 'pp',
     'memalign': 'ppp',
     'memcmp': '_ppp',
