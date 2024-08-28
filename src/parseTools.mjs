@@ -10,6 +10,7 @@
 
 import {
   addToCompileTimeContext,
+  removeFromCompileTimeContext,
   assert,
   error,
   isNumber,
@@ -64,6 +65,7 @@ export function preprocess(filename) {
   const IGNORE_ALL = 2;
   const showStack = [];
   const showCurrentLine = () => showStack.every((x) => x == SHOW);
+  const localContextKeys = [];
 
   const oldFilename = setCurrentFile(filename);
   const fileExt = filename.split('.').pop().toLowerCase();
@@ -118,6 +120,26 @@ export function preprocess(filename) {
             columnOffset: line.indexOf(after),
           });
           showStack.push(truthy ? SHOW : IGNORE);
+        } else if (first === '#define') {
+          if (showCurrentLine()) {
+            const after = trimmed.substring(trimmed.indexOf(' ')).trim()
+            const parts = after.split(' ');
+            var value;
+            if (parts.length == 1) {
+              value = '1';
+            } else if (parts.length == 2) {
+              value = parts[1];
+            } else {
+              error(`${filename}:${i + 1}: malformed #define`);
+              continue;
+            }
+            const name = parts[0];
+            localContextKeys.push(value);
+            const newContext = {};
+            newContext[name] = value;
+            console.error(newContext);
+            addToCompileTimeContext(newContext);
+          }
         } else if (first === '#include') {
           if (showCurrentLine()) {
             let filename = line.substr(line.indexOf(' ') + 1);
@@ -184,6 +206,7 @@ no matching #endif found (${showStack.length$}' unmatched preprocessing directiv
     return ret;
   } finally {
     setCurrentFile(oldFilename);
+    removeFromCompileTimeContext(localContextKeys);
   }
 }
 

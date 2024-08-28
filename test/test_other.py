@@ -4706,6 +4706,20 @@ int main() {
 
     self.assertContained('cannot change built-in settings values with a -jsD directive', self.expect_fail([EMCC, '-jsDWASM=0']))
 
+  def test_js_lib_macro_define(self):
+    create_file('lib.js', r'''
+#define BAR
+
+#if WASM2JS
+#define FOO 1
+#endif
+
+#ifdef FOO
+#error "FOO is set"
+#endif
+''')
+    self.do_runf('hello_world.c', 'hello, world!', emcc_args=['--js-library=lib.js'])
+
   def test_EMCC_BUILD_DIR(self):
     # EMCC_BUILD_DIR env var contains the dir we were building in, when running the js compiler (e.g. when
     # running a js library). We force the cwd to be src/ for technical reasons, so this lets you find out

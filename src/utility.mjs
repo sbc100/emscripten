@@ -314,6 +314,10 @@ export function addToCompileTimeContext(object) {
   Object.assign(compileTimeContext, object);
 }
 
+export function removeFromCompileTimeContext(keys) {
+  keys.forEach((key) => delete compileTimeContext[key]);
+}
+
 export function applySettings(obj) {
   // Make settings available both in the current / global context
   // and also in the macro execution contexted.
@@ -328,6 +332,7 @@ export function loadSettingsFile(f) {
 }
 
 export function runInMacroContext(code, options) {
+  console.error(compileTimeContext['FOO']);
   compileTimeContext['__filename'] = options.filename;
   compileTimeContext['__dirname'] = path.dirname(options.filename);
   return vm.runInContext(code, compileTimeContext, options);
