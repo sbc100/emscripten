@@ -2718,6 +2718,7 @@ def map_to_js_libs(library_name):
     'glfw3': {'USE_GLFW': 3},
     'SDL': {'USE_SDL': 1},
     'SDL2_mixer': {'USE_SDL_MIXER': 2},
+    'noderawfs.js': {'NODERAWFS': 1},
   }
 
   if library_name in settings_map:
