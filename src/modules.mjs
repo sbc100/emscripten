@@ -24,7 +24,7 @@ import {preprocess, processMacros} from './parseTools.mjs';
 // Various namespace-like modules
 
 // List of symbols that were added from the library.
-export const librarySymbols = [];
+export const librarySymbols = {};
 
 export const LibraryManager = {
   library: {},
@@ -345,7 +345,10 @@ function isInternalSymbol(ident) {
 }
 
 function getUnusedLibrarySymbols() {
-  const librarySymbolSet = new Set(librarySymbols);
+  const librarySymbolSet = new Set();
+  for (const syms of Object.values(librarySymbols)) {
+    librarySymbolSet.add(syms);
+  }
   const missingSyms = new Set();
   for (const [ident, value] of Object.entries(LibraryManager.library)) {
     if (typeof value === 'function' || typeof value === 'number') {

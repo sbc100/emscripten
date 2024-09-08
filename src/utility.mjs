@@ -195,6 +195,10 @@ export function mergeInto(obj, other, options = null) {
           error(`Decorator (${key}} has wrong type. Expected '${expected}' not '${type}'`);
         }
       }
+    } else {
+      if (!other[key + '__namespace']) {
+        other[key + '__namespace'] = options?.namespace || 'env';
+      }
     }
   }
 

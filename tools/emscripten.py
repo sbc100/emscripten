@@ -94,7 +94,7 @@ def maybe_disable_filesystem(imports):
     # TODO(sbc): Find a better way to identify wasi syscalls
     syscall_prefixes = ('__syscall_', 'fd_')
     side_module_imports = [shared.demangle_c_symbol_name(s) for s in settings.SIDE_MODULE_IMPORTS]
-    all_imports = set(imports).union(side_module_imports)
+    all_imports = set(i[1] for i in imports).union(side_module_imports)
     syscalls = {d for d in all_imports if d.startswith(syscall_prefixes) or d == 'path_open'}
     # check if the only filesystem syscalls are in: close, ioctl, llseek, write
     # (without open, etc.. nothing substantial can be done, so we can disable
@@ -131,7 +131,7 @@ def update_settings_glue(wasm_file, metadata, base_metadata):
     # we don't need any JS library contents in side modules
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE = []
   else:
-    syms = settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE + metadata.imports
+    syms = settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE + [i[1] for i in metadata.imports]
     syms = set(syms).difference(metadata.all_exports)
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE = sorted(syms)
     if settings.MAIN_MODULE:
@@ -328,7 +328,7 @@ def emscript(in_wasm, out_wasm, outfile_js, js_syms, finalize=True, base_metadat
     metadata = get_metadata(in_wasm, out_wasm, False, [])
 
   if settings.RELOCATABLE and settings.MEMORY64 == 2:
-    metadata.imports += ['__memory_base32']
+    metadata.imports += [('env', '__memory_base32')]
 
   # If the binary has already been finalized the settings have already been
   # updated and we can skip updating them.
@@ -398,7 +398,7 @@ def emscript(in_wasm, out_wasm, outfile_js, js_syms, finalize=True, base_metadat
       settings.INITIAL_TABLE = dylink_sec.table_size + 1
 
     if settings.ASYNCIFY == 1:
-      metadata.imports += ['__asyncify_state', '__asyncify_data']
+      metadata.imports += [('env', '__asyncify_state'), ('env', '__asyncify_data')]
 
   if metadata.invoke_funcs:
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$getWasmTableEntry']
@@ -785,7 +785,7 @@ def create_em_js(metadata):
   return em_js_funcs
 
 
-def add_standard_wasm_imports(send_items_map):
+def add_standard_wasm_imports(env_imports):
   extra_sent_items = []
 
   if settings.SAFE_HEAP:
@@ -795,12 +795,12 @@ def add_standard_wasm_imports(send_items_map):
   # Special case for importing memory and table
   # TODO(sbc): can we make these into normal library symbols?
   if settings.IMPORTED_MEMORY:
-    send_items_map['memory'] = 'wasmMemory'
+    env_imports['memory'] = 'wasmMemory'
 
   if settings.RELOCATABLE:
-    send_items_map['__indirect_function_table'] = 'wasmTable'
+    env_imports['__indirect_function_table'] = 'wasmTable'
     if settings.MEMORY64:
-      send_items_map['__table_base32'] = '___table_base32'
+      env_imports['__table_base32'] = '___table_base32'
 
   if settings.AUTODEBUG:
     extra_sent_items += [
@@ -839,20 +839,25 @@ def add_standard_wasm_imports(send_items_map):
     extra_sent_items.append('__load_secondary_module')
 
   for s in extra_sent_items:
-    send_items_map[s] = s
+    env_imports[s] = s
 
 
 def create_sending(metadata, library_symbols):
   # Map of wasm imports to mangled/external/JS names
+  env_imports = {}
   send_items_map = {name: name for name in metadata.invoke_funcs}
+  send_items_map['env'] = env_imports}
 
-  for name in metadata.imports:
+  for name in metadata.invoke_funcs:
+    env_imports[name] = name
+
+  for module, name in metadata.imports:
     if name in metadata.em_js_funcs:
-      send_items_map[name] = name
+      env_imports[name] = name
     else:
-      send_items_map[name] = asmjs_mangle(name)
+      env_imports[name] = asmjs_mangle(name)
 
-  add_standard_wasm_imports(send_items_map)
+  add_standard_wasm_imports(env_imports)
 
   if settings.MAIN_MODULE:
     # When including dynamic linking support, also add any JS library functions
@@ -867,16 +872,16 @@ def create_sending(metadata, library_symbols):
           demangled = shared.demangle_c_symbol_name(f)
           if demangled in wasm_exports:
             continue
-          send_items_map[demangled] = f
+          env_imports[demangled] = f
     else:
       for f in settings.EXPORTED_FUNCTIONS + settings.SIDE_MODULE_IMPORTS:
         if f in library_symbols and shared.is_c_symbol(f):
           demangled = shared.demangle_c_symbol_name(f)
           if demangled in wasm_exports:
             continue
-          send_items_map[demangled] = f
+          env_imports[demangled] = f
 
-  sorted_items = sorted(send_items_map.items())
+  sorted_items = sorted(env_imports.items())
   prefix = ''
   if settings.MAYBE_CLOSURE_COMPILER:
     # This prevents closure compiler from minifying the field names in this

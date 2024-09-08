@@ -526,7 +526,9 @@ function(${args}) {
         }
       }
 
-      librarySymbols.push(mangled);
+      const namespace = LibraryManager.library[symbol + '__namespace'];
+      librarySymbols[namespace] ||= []
+      librarySymbols[namespace].push(mangled);
 
       const original = LibraryManager.library[symbol];
       let snippet = original;

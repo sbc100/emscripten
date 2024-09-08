@@ -265,9 +265,9 @@ def update_metadata(filename, metadata):
         if i.field.startswith('invoke_'):
           invoke_funcs.append(i.field)
         else:
-          imports.append(i.field)
+          imports.append((i.module, i.field))
       elif i.kind in (webassembly.ExternType.GLOBAL, webassembly.ExternType.TAG):
-        imports.append(i.field)
+        imports.append((i.module, i.field))
 
     metadata.function_exports = get_function_exports(module)
     metadata.all_exports = [utils.removeprefix(e.name, '__em_js__') for e in module.get_exports()]
@@ -300,14 +300,13 @@ class Metadata:
 
 
 def extract_metadata(filename):
-  import_names = []
+  imports = []
   invoke_funcs = []
   em_js_funcs = {}
   em_js_func_types = {}
 
   with webassembly.Module(filename) as module:
     exports = module.get_exports()
-    imports = module.get_imports()
 
     export_map = {e.name: e for e in exports}
     for e in exports:
@@ -317,7 +316,7 @@ def extract_metadata(filename):
         string_address = to_unsigned(get_global_value(globl))
         em_js_funcs[name] = get_string_at(module, string_address)
 
-    for i in imports:
+    for i in module.get_imports():
       if i.kind == webassembly.ExternType.FUNC:
         if i.field.startswith('invoke_'):
           invoke_funcs.append(i.field)
@@ -325,9 +324,9 @@ def extract_metadata(filename):
           if i.field in em_js_funcs:
             types = module.get_types()
             em_js_func_types[i.field] = types[i.type]
-          import_names.append(i.field)
+          imports.append((i.module, i.field))
       elif i.kind in (webassembly.ExternType.GLOBAL, webassembly.ExternType.TAG):
-        import_names.append(i.field)
+        imports.append((i.module, i.field))
 
     features = module.parse_features_section()
     features = ['--enable-' + f[1] for f in features if f[0] == '+']
@@ -338,7 +337,8 @@ def extract_metadata(filename):
     # If main does not read its parameters, it will just be a stub that
     # calls __original_main (which has no parameters).
     metadata = Metadata()
-    metadata.imports = import_names
+    metadata.imports = imports
+    print(metadata.imports)
     metadata.function_exports = get_function_exports(module)
     metadata.all_exports = [utils.removeprefix(e.name, '__em_js__') for e in exports]
     metadata.em_asm_consts = get_section_strings(module, export_map, 'em_asm')

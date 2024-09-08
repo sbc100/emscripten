@@ -623,4 +623,4 @@ for (var x in WasiLibrary) {
   wrapSyscallFunction(x, WasiLibrary, true);
 }
 
-addToLibrary(WasiLibrary);
+addToLibrary(WasiLibrary, {namespace: 'wasi_snapshot_preview1'});

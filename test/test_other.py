@@ -15404,3 +15404,6 @@ addToLibrary({
       with env_modify({'EM_CACHE': os.path.abspath('rodir/foo')}):
         err = self.expect_fail([EMCC, '-c', test_file('hello_world.c')])
         self.assertContained('emcc: error: unable to create cache directory', err)
+
+  def test_import_namespace(self):
+    self.do_other_test('test_import_namespace.c', emcc_args=['--js-library', test_file('other/test_import_namespace.js')])
