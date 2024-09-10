@@ -15404,3 +15404,7 @@ addToLibrary({
       with env_modify({'EM_CACHE': os.path.abspath('rodir/foo')}):
         err = self.expect_fail([EMCC, '-c', test_file('hello_world.c')])
         self.assertContained('emcc: error: unable to create cache directory', err)
+
+  def test_proxy_to_worker_single_file(self):
+    err = self.expect_fail([EMCC, test_file('hello_world.c'), '-sPROXY_TO_WORKER', '-sSINGLE_FILE'])
+    self.assertContained('error: cannot have both PROXY_TO_WORKER and SINGLE_FILE enabled at the same time', err)

@@ -983,6 +983,9 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
   if settings.WASM == 2 and settings.SINGLE_FILE:
     exit_with_error('cannot have both WASM=2 and SINGLE_FILE enabled at the same time')
 
+  if settings.PROXY_TO_WORKER and settings.SINGLE_FILE:
+    exit_with_error('cannot have both PROXY_TO_WORKER and SINGLE_FILE enabled at the same time')
+
   if settings.SEPARATE_DWARF and settings.WASM2JS:
     exit_with_error('cannot have both SEPARATE_DWARF and WASM2JS at the same time (as there is no wasm file)')
 
