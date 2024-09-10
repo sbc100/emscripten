@@ -1873,6 +1873,11 @@ var WASMFS = false;
 // child-src directive to allow blob:. If you aren't using Content Security
 // Policy, or your CSP header doesn't include either script-src or child-src,
 // then you can safely ignore this warning.
+//
+// Current limitations:
+// When combined with html output and PTHREADS and WASM_WORKERS a seprate JS
+// file is still generated, but the wasm binary itself is embedded into the JS
+// file.
 // [link]
 var SINGLE_FILE = false;
 
