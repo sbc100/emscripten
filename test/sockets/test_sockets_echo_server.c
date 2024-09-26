@@ -204,6 +204,8 @@ int main() {
   fcntl(server.fd, F_SETFL, O_NONBLOCK);
 #endif
 
+  printf("listening on port: %d\n", SOCKK);
+
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(SOCKK);

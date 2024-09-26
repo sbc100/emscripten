@@ -208,7 +208,10 @@ addToLibrary({
             var WebSocketConstructor;
 #if ENVIRONMENT_MAY_BE_NODE
             if (ENVIRONMENT_IS_NODE) {
-              WebSocketConstructor = /** @type{(typeof WebSocket)} */(require('ws'));
+              var ws = /** @type{(typeof WebSocket)} */(require('ws'));
+              WebSocketConstructor = function(url, opts) {
+                return new ws(url, opts, {'family': 4})
+              };
             } else
 #endif // ENVIRONMENT_MAY_BE_NODE
             {
