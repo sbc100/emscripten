@@ -158,6 +158,13 @@ export function mergeInto(obj, other, options = null) {
       const decoratorName = key.slice(index);
       const type = typeof other[key];
 
+      const sanitizing = (USE_ASAN || USE_LSAN || UBSAN_RUNTIME);
+      if (decoratorName == '__noleakcheck' && sanitizing) {
+        const decoratedSymbol = key.slice(0, index);
+        console.error(decoratedSymbol);
+        (obj[decoratedSymbol + '__deps'] ??= []).push('$withBuiltinMalloc');
+      }
+
       // Specific type checking for `__deps` which is expected to be an array
       // (not just any old `object`)
       if (decoratorName === '__deps') {

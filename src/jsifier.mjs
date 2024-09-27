@@ -605,7 +605,6 @@ function(${args}) {
             snippet,
             (args, body) => `(${args}) => withBuiltinMalloc(() => {${body}})`,
           );
-          deps.push('$withBuiltinMalloc');
         } else {
           contentText = snippet; // Regular JS function that will be executed in the context of the calling thread.
         }

@@ -1033,6 +1033,7 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
     if settings.MAIN_MODULE == 1:
       settings.INCLUDE_FULL_LIBRARY = 1
     # Called from preamble.js once the main module is instantiated.
+    print("PPPPP")
     settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['$loadDylibs']
 
   if settings.MAIN_MODULE == 1 or settings.SIDE_MODULE == 1:
@@ -1552,19 +1553,6 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
 
   if sanitize:
     settings.USE_OFFSET_CONVERTER = 1
-    # These symbols are needed by `withBuiltinMalloc` which used to implement
-    # the `__noleakcheck` attribute.  However this dependency is not yet represented in the JS
-    # symbol graph generated when we run the compiler with `--symbols-only`.
-    settings.REQUIRED_EXPORTS += [
-      'malloc',
-      'calloc',
-      'memalign',
-      'free',
-      'emscripten_builtin_malloc',
-      'emscripten_builtin_calloc',
-      'emscripten_builtin_memalign',
-      'emscripten_builtin_free',
-    ]
 
   if ('leak' in sanitize or 'address' in sanitize) and not settings.ALLOW_MEMORY_GROWTH:
     # Increase the minimum memory requirements to account for extra memory
@@ -1587,6 +1575,7 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
       settings.UBSAN_RUNTIME = 1
     else:
       settings.UBSAN_RUNTIME = 2
+    print("XXXX")
 
   if 'leak' in sanitize:
     settings.USE_LSAN = 1
@@ -3166,6 +3155,7 @@ def run(linker_inputs, options, state, newargs):
               settings.REQUIRED_EXPORTS += native_deps
 
         for sym in settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE:
+          print(sym)
           add_js_deps(sym)
         for sym in js_info['extraLibraryFuncs']:
           add_js_deps(sym)
