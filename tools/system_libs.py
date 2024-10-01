@@ -949,6 +949,13 @@ class libcompiler_rt(MTLibrary, SjLjLibrary):
     'mulxc3.c',
     'powixf2.c',
     'trunctfxf2.c',
+    # The files don't define any symbols in the wasm build. Excluding
+    # them here mean `llvm-nm` doesn't issue `no symbols` warnings for them.
+    'os_version_check.c',
+    'trampoline_setup.c',
+    'apple_versioning.c',
+    'trunctfhf2.c',
+    'extendhftf2.c',
   ]
   src_files = glob_in_path(src_dir, '*.c', excludes=excludes)
   src_files += files_in_path(
