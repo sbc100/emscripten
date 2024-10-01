@@ -12,9 +12,6 @@ import time
 from subprocess import Popen
 from typing import List
 
-if __name__ == '__main__':
-  raise Exception('do not run this file directly; do something like: test/runner sockets')
-
 import clang_native
 import common
 from common import BrowserCore, no_windows, create_file, test_file, read_file
@@ -36,9 +33,22 @@ def clean_processes(processes):
       time.sleep(1)
       # send a forcible kill immediately afterwards. If the process did not die before, this should clean it.
       try:
-        p.terminate() # SIGKILL
+        p.kill() # SIGKILL
       except OSError:
         pass
+
+
+def run_websockify(listen_port, target_port, run_once):
+  import websockify  # type: ignore
+  print('running websockify on %d, forward to tcp %d' % (listen_port, target_port), file=sys.stderr)
+  # source_is_ipv6=True here signals to websockify that it should prefer ipv6 address when
+  # resolving host names.  This matches what the node `ws` module does and means that `localhost`
+  # resolves to `::1` on IPv6 systems.
+  wsp = websockify.WebSocketProxy(verbose=True, source_is_ipv6=True, listen_port=listen_port, target_host="127.0.0.1",
+                                  target_port=target_port, run_once=run_once)
+  proc = multiprocessing.Process(target=wsp.start_server)
+  proc.start()
+  return proc
 
 
 class WebsockifyServerHarness():
@@ -55,22 +65,15 @@ class WebsockifyServerHarness():
     # NOTE empty filename support is a hack to support
     # the current test_enet
     if self.filename:
-      cmd = [CLANG_CC, test_file(self.filename), '-o', 'server', '-DSOCKK=%d' % self.target_port] + clang_native.get_clang_native_args() + self.args
+      server_name = os.path.splitext(os.path.basename(self.filename))[0]
+      cmd = [CLANG_CC, test_file(self.filename), '-o', server_name, '-DSOCKK=%d' % self.target_port] + clang_native.get_clang_native_args() + self.args
       print(cmd)
       run_process(cmd, env=clang_native.get_clang_native_env())
-      process = Popen([os.path.abspath('server')])
+      process = Popen([os.path.abspath(server_name)])
       self.processes.append(process)
 
-    import websockify  # type: ignore
-
     # start the websocket proxy
-    print('running websockify on %d, forward to tcp %d' % (self.listen_port, self.target_port), file=sys.stderr)
-    # source_is_ipv6=True here signals to websockify that it should prefer ipv6 address when
-    # resolving host names.  This matches what the node `ws` module does and means that `localhost`
-    # resolves to `::1` on IPv6 systems.
-    wsp = websockify.WebSocketProxy(verbose=True, source_is_ipv6=True, listen_port=self.listen_port, target_host="127.0.0.1", target_port=self.target_port, run_once=True)
-    self.websockify = multiprocessing.Process(target=wsp.start_server)
-    self.websockify.start()
+    self.websockify = run_websockify(self.listen_port, self.target_port, run_once=True)
     self.processes.append(self.websockify)
     # Make sure both the actual server and the websocket proxy are running
     for _ in range(10):
@@ -370,3 +373,7 @@ class sockets64(sockets):
     self.set_setting('MEMORY64')
     self.emcc_args.append('-Wno-experimental')
     self.require_wasm64()
+
+
+if __name__ == '__main__':
+  run_websockify(int(sys.argv[1]), int(sys.argv[2]), run_once=False)

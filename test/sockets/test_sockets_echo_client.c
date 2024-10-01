@@ -251,10 +251,10 @@ int main() {
   }
 
 #ifdef __EMSCRIPTEN__
+  emscripten_set_socket_error_callback("error", error_callback);
 #if TEST_ASYNC
   // The first parameter being passed is actually an arbitrary userData pointer
   // for simplicity this test just passes a basic char*
-  emscripten_set_socket_error_callback("error", error_callback);
   emscripten_set_socket_open_callback("open", async_main_loop);
   emscripten_set_socket_message_callback("message", async_main_loop);
 #else
