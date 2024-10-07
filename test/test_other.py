@@ -142,6 +142,20 @@ def also_with_wasmfs_all_backends(f):
   return metafunc
 
 
+def also_with_force_cxx(f):
+  assert callable(f)
+
+  @wraps(f)
+  def metafunc(self, force_cxx, *args, **kwargs):
+    if force_cxx:
+      self.emcc_args += ['-x', 'c++']
+    f(self, *args, **kwargs)
+
+  parameterize(metafunc, {'': (False,),
+                          'cxx': (True,)})
+  return metafunc
+
+
 def requires_ninja(func):
   assert callable(func)
 
@@ -8045,15 +8059,15 @@ int main() {
     src = read_file('a.out.js')
     assert 'use asm' not in src
 
-  def test_EM_ASM_i64(self):
+  @also_with_force_cxx
+  def test_em_asm_i64(self):
     expected = 'Invalid character 106("j") in readEmAsmArgs!'
-    self.do_runf('other/test_em_asm_i64.cpp',
+    self.do_runf('other/test_em_asm_i64.c',
                  expected_output=expected,
                  assert_returncode=NON_ZERO)
 
     self.set_setting('WASM_BIGINT')
-    self.do_other_test('test_em_asm_i64.cpp')
-    self.do_other_test('test_em_asm_i64.cpp', force_c=True)
+    self.do_other_test('test_em_asm_i64.c')
 
   def test_eval_ctor_ordering(self):
     # ensure order of execution remains correct, even with a bad ctor
@@ -9874,7 +9888,7 @@ int main() {
     'closure': (['--closure=1'],), # noqa
     'closure_O3': (['--closure=1', '-O3'],), # noqa
   })
-  def test_EM_ASM_ES6(self, args):
+  def test_em_asm_es6(self, args):
     create_file('src.c', r'''
 #include <emscripten.h>
 int main() {
