@@ -258,3 +258,14 @@ var moduleRtn;
  */
 Navigator.prototype.webkitGetUserMedia = function(
     constraints, successCallback, errorCallback) {};
+
+/**
+ * @constructor
+ */
+var EMClassHandle = function () {};
+EMClassHandle.prototype.$$;
+EMClassHandle.prototype.isAliasOf;
+EMClassHandle.prototype.clone;
+EMClassHandle.prototype.delete;
+EMClassHandle.prototype.deleteLater;
+EMClassHandle.prototype.isDeleted;
