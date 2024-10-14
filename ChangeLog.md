@@ -95,6 +95,9 @@ See docs/process.md for more on how version tagging works.
   to support older browsers you may need to transpile it.  If you use
   `file_packager` via emcc the output will be transpiled as part of the emcc
   output. (#22805)
+- The pthread part of libc now live in a separate libpthread (or
+  libpthread-stub).  This library is automatically included so this change
+  will only effect those building with `-nostdlib` or `-nolibc`. (#22735)
 
 3.1.70 - 10/25/24
 -----------------
