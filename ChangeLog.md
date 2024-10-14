@@ -24,6 +24,9 @@ See docs/process.md for more on how version tagging works.
   passing non-trivially-copyable destrination parameter to `memcpy`,
   `memset` and similar functions for which it is a documented undefined
   behavior (#22798). See https://github.com/llvm/llvm-project/pull/111434
+- The pthread part of libc now live in a separate libpthread (or
+  libpthread-stub).  This library is automatically included so this change
+  will only effect those building with `-nostdlib` or `-nolibc`. (#22735)
 
 3.1.70 - 10/25/24
 -----------------

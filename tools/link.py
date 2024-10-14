@@ -2727,7 +2727,6 @@ def map_to_js_libs(library_name):
     'dl': [],
     'm': [],
     'rt': [],
-    'pthread': [],
     # This is the name of GNU's C++ standard library. We ignore it here
     # for compatibility with GNU toolchains.
     'stdc++': [],
