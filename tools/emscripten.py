@@ -1094,7 +1094,7 @@ def create_pointer_conversion_wrappers(metadata):
     '_emscripten_thread_free_data': '_p',
     '_emscripten_dlsync_self_async': '_p',
     '_emscripten_proxy_dlsync_async': '_pp',
-    '_emscripten_wasm_worker_initialize': '_p_',
+    '_emscripten_wasm_worker_initialize': '__p_',
     '_wasmfs_rmdir': '_p',
     '_wasmfs_unlink': '_p',
     '_wasmfs_mkdir': '_p_',

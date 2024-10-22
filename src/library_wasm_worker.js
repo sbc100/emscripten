@@ -97,8 +97,9 @@ addToLibrary({
     // region between m['sb'] and m['sz'], so we need to fix up the call below.
     ___set_stack_limits(m['sb'] + m['sz'], m['sb']);
 #endif
-    // Run the C side Worker initialization for stack and TLS.
-    __emscripten_wasm_worker_initialize(m['sb'], m['sz']);
+    // Run the C side Worker initialization for worker ID, stack and TLS.
+    __emscripten_wasm_worker_initialize(m['$ww'], m['sb'], m['sz']);
+
 #if PTHREADS
     // Record the pthread configuration, and whether this Wasm Worker supports synchronous blocking in emscripten_futex_wait().
     // (regular Wasm Workers do, AudioWorklets don't)
@@ -243,8 +244,6 @@ if (ENVIRONMENT_IS_WASM_WORKER
     // implicit return 0;
 #endif
   },
-
-  emscripten_wasm_worker_self_id: () => Module['$ww'],
 
   emscripten_wasm_worker_post_function_v: (id, funcPtr) => {
     _wasmWorkers[id].postMessage({'_wsc': funcPtr, 'x': [] }); // "WaSm Call"

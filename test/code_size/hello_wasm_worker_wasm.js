@@ -44,7 +44,7 @@ WebAssembly.instantiate(b.wasm, {
     p = a.g;
     q = a.i;
     h = a.h;
-    c ? (a = b, q(a.sb, a.sz), removeEventListener("message", l), g = g.forEach(k), 
+    c ? (a = b, q(a.$ww, a.sb, a.sz), removeEventListener("message", l), g = g.forEach(k), 
     addEventListener("message", k)) : a.f();
     c || p();
 }));

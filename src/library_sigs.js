@@ -852,7 +852,6 @@ sigs = {
   emscripten_wasm_worker_post_function_vi__sig: 'vipi',
   emscripten_wasm_worker_post_function_vii__sig: 'vipii',
   emscripten_wasm_worker_post_function_viii__sig: 'vipiii',
-  emscripten_wasm_worker_self_id__sig: 'i',
   emscripten_webgl_commit_frame__sig: 'i',
   emscripten_webgl_create_context__sig: 'ppp',
   emscripten_webgl_destroy_context__sig: 'ip',
