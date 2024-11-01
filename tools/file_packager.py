@@ -764,13 +764,6 @@ def generate_js(data_target, data_files, metadata):
     remote_package_size = os.path.getsize(package_name)
     remote_package_name = os.path.basename(package_name)
     ret += '''
-      var PACKAGE_PATH = '';
-      if (typeof window === 'object') {
-        PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/');
-      } else if (typeof process === 'undefined' && typeof location !== 'undefined') {
-        // web worker
-        PACKAGE_PATH = encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf('/')) + '/');
-      }
       var PACKAGE_NAME = '%s';
       var REMOTE_PACKAGE_BASE = '%s';
       var REMOTE_PACKAGE_NAME = Module['locateFile'] ? Module['locateFile'](REMOTE_PACKAGE_BASE, '') : REMOTE_PACKAGE_BASE;\n''' % (js_manipulation.escape_for_js_string(data_target), js_manipulation.escape_for_js_string(remote_package_name))
@@ -1041,16 +1034,25 @@ def generate_js(data_target, data_files, metadata):
           fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
         };
 
+        var PACKAGE_PATH = '';
+        if (typeof window === 'object') {
+          PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/');
+        } else if (typeof process === 'undefined' && typeof location !== 'undefined') {
+          // web worker
+          PACKAGE_PATH = encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf('/')) + '/');
+        }
+        var DB_FILE = PACKAGE_PATH + PACKAGE_NAME;
+
         openDatabase(
-          (db) => checkCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME,
+          (db) => checkCachedPackage(db, DB_FILE,
               (useCached, metadata) => {
                 Module['preloadResults'][PACKAGE_NAME] = {fromCache: useCached};
                 if (useCached) {
-                  fetchCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME, metadata, processPackageData, preloadFallback);
+                  fetchCachedPackage(db, DB_FILE, metadata, processPackageData, preloadFallback);
                 } else {
                   fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE,
                     (packageData) => {
-                      cacheRemotePackage(db, PACKAGE_PATH + PACKAGE_NAME, packageData, {uuid:PACKAGE_UUID}, processPackageData,
+                      cacheRemotePackage(db, DB_FILE, packageData, {uuid:PACKAGE_UUID}, processPackageData,
                         (error) => {
                           console.error(error);
                           processPackageData(packageData);
