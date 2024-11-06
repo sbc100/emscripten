@@ -25,8 +25,7 @@ var Module = moduleArg;
 #elif USE_CLOSURE_COMPILER
 /** @type{Object} */
 var Module;
-// if (!Module)` is crucial for Closure Compiler here as it will otherwise replace every `Module` occurrence with a string
-if (!Module) /** @suppress{checkTypes}*/Module = {"__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__":1};
+Module = typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {ctx:null, canvas:null};
 #elif AUDIO_WORKLET
 var Module = globalThis.Module || (typeof {{{ EXPORT_NAME }}} != 'undefined' ? {{{ EXPORT_NAME }}} : {});
 #else

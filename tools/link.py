@@ -2133,8 +2133,6 @@ def phase_final_emitting(options, state, target, wasm_target):
 
   if settings.MODULARIZE:
     modularize()
-  elif settings.USE_CLOSURE_COMPILER:
-    module_export_name_substitution()
 
   # Run a final optimization pass to clean up items that were not possible to
   # optimize by Closure, or unoptimalities that were left behind by processing
@@ -2536,25 +2534,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
   write_file(final_js, src)
   shared.get_temp_files().note(final_js)
   save_intermediate('modularized')
-
-
-def module_export_name_substitution():
-  assert not settings.MODULARIZE
-  global final_js
-  logger.debug(f'Private module export name substitution with {settings.EXPORT_NAME}')
-  src = read_file(final_js)
-  final_js += '.module_export_name_substitution.js'
-  if settings.MINIMAL_RUNTIME and not settings.ENVIRONMENT_MAY_BE_NODE and not settings.ENVIRONMENT_MAY_BE_SHELL and not settings.AUDIO_WORKLET:
-    # On the web, with MINIMAL_RUNTIME, the Module object is always provided
-    # via the shell html in order to provide the .asm.js/.wasm content.
-    replacement = settings.EXPORT_NAME
-  else:
-    replacement = "typeof %(EXPORT_NAME)s != 'undefined' ? %(EXPORT_NAME)s : {}" % {"EXPORT_NAME": settings.EXPORT_NAME}
-  new_src = re.sub(r'{\s*[\'"]?__EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__[\'"]?:\s*1\s*}', replacement, src)
-  assert new_src != src, 'Unable to find Closure syntax __EMSCRIPTEN_PRIVATE_MODULE_EXPORT_NAME_SUBSTITUTION__ in source!'
-  write_file(final_js, new_src)
-  shared.get_temp_files().note(final_js)
-  save_intermediate('module_export_name_substitution')
 
 
 def generate_traditional_runtime_html(target, options, js_target, target_basename,

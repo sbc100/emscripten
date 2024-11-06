@@ -557,10 +557,10 @@ var LibraryGLUT = {
   glutCreateWindow__deps: ['$Browser'],
   glutCreateWindow: (name) => {
     var contextAttributes = {
-      antialias: ((GLUT.initDisplayMode & 0x0080 /*GLUT_MULTISAMPLE*/) != 0),
-      depth: ((GLUT.initDisplayMode & 0x0010 /*GLUT_DEPTH*/) != 0),
-      stencil: ((GLUT.initDisplayMode & 0x0020 /*GLUT_STENCIL*/) != 0),
-      alpha: ((GLUT.initDisplayMode & 0x0008 /*GLUT_ALPHA*/) != 0)
+      antialias: !!(GLUT.initDisplayMode & 0x0080 /*GLUT_MULTISAMPLE*/),
+      depth: !!(GLUT.initDisplayMode & 0x0010 /*GLUT_DEPTH*/),
+      stencil: !!(GLUT.initDisplayMode & 0x0020 /*GLUT_STENCIL*/),
+      alpha: !!(GLUT.initDisplayMode & 0x0008 /*GLUT_ALPHA*/)
     };
 #if OFFSCREEN_FRAMEBUFFER
     // TODO: Make glutCreateWindow explicitly aware of whether it is being proxied or not, and set these to true only when proxying is being performed.
