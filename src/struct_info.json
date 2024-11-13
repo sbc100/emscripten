@@ -772,6 +772,7 @@
           "SDLK_LCTRL",
           "SDLK_LSHIFT",
           "SDLK_LALT",
+          "SDLK_LGUI",
           "SDLK_RCTRL",
           "SDLK_RSHIFT",
           "SDLK_RALT"

@@ -834,9 +834,10 @@ var LibrarySDL = {
 #if RUNTIME_DEBUG
         if (!code) dbg('unmapped keyCode: ', event.keyCode);
 #endif
-        // If this is one of the modifier keys (224 | 1<<10 - 227 | 1<<10), and the event specifies that it is
-        // a right key, add 4 to get the right key SDL key code.
-        if (event.location === 2 /*KeyboardEvent.DOM_KEY_LOCATION_RIGHT*/ && code >= (224 | 1<<10) && code <= (227 | 1<<10)) {
+        // If this is one of the modifier keys (SDLK_LCTRL - SDLK_LGUI), and the
+        // event specifies that it is a right key, add 4 to get the right key
+        // SDL key code (SDLK_RCTRL - SDLK_RGUI).
+        if (event.location === 2 /*KeyboardEvent.DOM_KEY_LOCATION_RIGHT*/ && code >= {{{ cDefs.SDLK_LCTRL }}} && code <= {{{ cDefs.SDLK_LGUI }}}) {
           code += 4;
         }
       }
