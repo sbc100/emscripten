@@ -33,7 +33,7 @@
       }
       function doTest() {
         var firstImage = Module.canvas.toDataURL();
-        simulateKeyDown(0x25 /* DOM_VK_LEFT */);
+        simulateKeyDown('ArrowLeft');
         setTimeout(function() {
           var secondImage = Module.canvas.toDataURL();
           reportResult(firstImage != secondImage);

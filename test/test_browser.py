@@ -990,13 +990,13 @@ If manually bisecting:
       html = html.replace('</body>', '''
 <script src='fake_events.js'></script>
 <script>
-simulateKeyDown(18);simulateKeyDown(38);simulateKeyUp(38);simulateKeyUp(18); // alt, up
-simulateKeyDown(17);simulateKeyDown(16);simulateKeyDown(40);simulateKeyUp(40);simulateKeyUp(16);simulateKeyUp(17); // ctrl, shift, down
-simulateKeyDown(37);simulateKeyUp(37); // left
-simulateKeyDown(39);simulateKeyUp(39); // right
-simulateKeyDown(65);simulateKeyUp(65); // a
-simulateKeyDown(66);simulateKeyUp(66); // b
-simulateKeyDown(100);simulateKeyUp(100); // trigger the end
+simulateKeyDown('AltLeft');simulateKeyDownUp('ArrowUp');simulateKeyUp('AltLeft');
+simulateKeyDown('CtrlLeft');simulateKeyDown('ShiftLeft');simulateKeyDownUp('ArrowDown');simulateKeyUp('ShiftLeft');simulateKeyUp('CtrlLeft');
+simulateKeyDown('ArrowLeft');simulateKeyUp('ArrowLeft');
+simulateKeyDown('ArrowRight');simulateKeyUp('ArrowRight');
+simulateKeyDown('KeyA');simulateKeyUp('KeyA');
+simulateKeyDown('KeyB');simulateKeyUp('KeyB');
+simulateKeyDown('Numpad4');simulateKeyUp('Numpad4'); // trigger the end
 </script>
 </body>''')
       create_file('test.html', html)
@@ -1013,15 +1013,15 @@ simulateKeyDown(100);simulateKeyUp(100); // trigger the end
 <script src='fake_events.js'></script>
 <script>
 // Send 'A'.  The corresonding keypress event will not be prevented.
-simulateKeyDown(65, 'a', 'KeyA');
-simulateKeyUp(65, 'a', 'KeyA');
+simulateKeyDown('KeyA');
+simulateKeyUp('KeyA');
 
 // Send backspace.  The corresonding keypress event *will* be prevented due to proxyClient.js.
-simulateKeyDown(8, 'Backspace', 'Backspace');
-simulateKeyUp(8, 'Backspace', 'Backspace');
+simulateKeyDown('Backspace');
+simulateKeyUp('Backspace');
 
-simulateKeyDown(100, undefined, 'Numpad4');
-simulateKeyUp(100, undefined, 'Numpad4');
+simulateKeyDown('Numpad4');
+simulateKeyUp('Numpad4');
 </script>
 </body>''')
 

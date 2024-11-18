@@ -62,13 +62,13 @@ int main(int argc, char **argv) {
 
   SDL_StartTextInput();
 
-  emscripten_run_script("simulateKeyDownUp(38,  'ArrowUp')");
-  emscripten_run_script("simulateKeyDownUp(40,  'ArrowDown')");
-  emscripten_run_script("simulateKeyDownUp(37,  'ArrowLeft')");
-  emscripten_run_script("simulateKeyDownUp(39,  'ArrowRight')");
-  emscripten_run_script("simulateKeyDownUp(65,  'KeyA')");
-  emscripten_run_script("simulateKeyDownUp(66,  'KeyB')");
-  emscripten_run_script("simulateKeyDownUp(100, 'Numpad4')"); // trigger the end
+  emscripten_run_script("simulateKeyDownUp('ArrowUp')");
+  emscripten_run_script("simulateKeyDownUp('ArrowDown')");
+  emscripten_run_script("simulateKeyDownUp('ArrowLeft')");
+  emscripten_run_script("simulateKeyDownUp('ArrowRight')");
+  emscripten_run_script("simulateKeyDownUp('KeyA')");
+  emscripten_run_script("simulateKeyDownUp('KeyB')");
+  emscripten_run_script("simulateKeyDownUp('Numpad4')"); // trigger the end
 
   emscripten_set_main_loop(pump_events, 3, 0);
   return 99;
