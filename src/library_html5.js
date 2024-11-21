@@ -335,6 +335,9 @@ var LibraryHTML5 = {
   // Find a DOM element with the given ID, or null if none is found.
   $findEventTarget__deps: ['$maybeCStringToJsString', '$specialHTMLTargets'],
   $findEventTarget: (target) => {
+#if ASSERTIONS
+    assert(typeof target == 'number', 'findEventTarget expects a number/ptr');
+#endif
     target = maybeCStringToJsString(target);
 #if ENVIRONMENT_MAY_BE_WORKER || ENVIRONMENT_MAY_BE_NODE
     var domElement = specialHTMLTargets[target] || (typeof document != 'undefined' ? document.querySelector(target) : null);
@@ -347,6 +350,9 @@ var LibraryHTML5 = {
 #if OFFSCREENCANVAS_SUPPORT
   $findCanvasEventTarget__deps: ['$GL', '$maybeCStringToJsString'],
   $findCanvasEventTarget: (target) => {
+#if ASSERTIONS
+    assert(typeof target == 'number', 'findCanvasEventTarget expects a number/ptr');
+#endif
     target = maybeCStringToJsString(target);
 
     // When compiling with OffscreenCanvas support and looking up a canvas to target,
@@ -381,12 +387,14 @@ var LibraryHTML5 = {
   $findEventTarget: (target) => {
 #if ASSERTIONS
     warnOnce('Rules for selecting event targets in HTML5 API are changing: instead of using document.getElementById() that only can refer to elements by their DOM ID, new event target selection mechanism uses the more flexible function document.querySelector() that can look up element names, classes, and complex CSS selectors. Build with -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR to change to the new lookup rules. See https://github.com/emscripten-core/emscripten/pull/7977 for more details.');
+    assert(typeof target == 'number', 'findEventTarget expects a number/ptr');
 #endif
     // The sensible "default" target varies between events, but use window as the default
     // since DOM events mostly can default to that. Specific callback registrations
     // override their own defaults.
     if (!target) return window;
-    if (typeof target == "number") target = specialHTMLTargets[target] || UTF8ToString(target);
+    // Convert target pointer in either a DOM element or a string.
+    target = specialHTMLTargets[target] || UTF8ToString(target);
     if (target === '#window') return window;
     else if (target === '#document') return document;
     else if (target === '#screen') return screen;
@@ -403,7 +411,10 @@ var LibraryHTML5 = {
   // Like findEventTarget, but looks for OffscreenCanvas elements first
   $findCanvasEventTarget__deps: ['$findEventTarget'],
   $findCanvasEventTarget: (target) => {
-    if (typeof target == 'number') target = UTF8ToString(target);
+#if ASSERTIONS
+    assert(typeof target == 'number', 'findCanvasEventTarget expects a number/ptr');
+#endif
+    target = UTF8ToString(target);
     if (!target || target === '#canvas') {
       if (typeof GL != 'undefined' && GL.offscreenCanvases['canvas']) return GL.offscreenCanvases['canvas']; // TODO: Remove this line, target '#canvas' should refer only to Module['canvas'], not to GL.offscreenCanvases['canvas'] - but need stricter tests to be able to remove this line.
       return Module['canvas'];
