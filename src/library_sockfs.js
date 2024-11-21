@@ -580,6 +580,10 @@ addToLibrary({
         return { addr, port };
       },
       sendmsg(sock, buffer, offset, length, addr, port) {
+#if ASSERTIONS
+        // The data buffer should be a typed array view
+        assert(ArrayBuffer.isView(buffer));
+#endif
         if (sock.type === {{{ cDefs.SOCK_DGRAM }}}) {
           // connection-less sockets will honor the message address,
           // and otherwise fall back to the bound destination address
@@ -614,12 +618,7 @@ addToLibrary({
         // create a copy of the incoming data to send, as the WebSocket API
         // doesn't work entirely with an ArrayBufferView, it'll just send
         // the entire underlying buffer
-        if (ArrayBuffer.isView(buffer)) {
-          offset += buffer.byteOffset;
-          buffer = buffer.buffer;
-        }
-
-        var data = buffer.slice(offset, offset + length);
+        var data = buffer.slice(offset, offset + length).buffer;
 #if PTHREADS
         // WebSockets .send() does not allow passing a SharedArrayBuffer, so
         // clone the the SharedArrayBuffer as regular ArrayBuffer before
