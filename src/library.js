@@ -65,10 +65,17 @@ addToLibrary({
   },
 
 #if SAFE_HEAP
-  // Trivial wrappers around runtime functions that make these symbols available
-  // to native code.
-  segfault: '=segfault',
-  alignfault: '=alignfault',
+  segfault: () => {
+    abort('segmentation fault');
+  },
+
+  alignfault: () => {
+#if SAFE_HEAP == 1
+    abort('alignment fault');
+#else
+    warnOnce('alignment fault');
+#endif
+  },
 #endif
 
   // ==========================================================================

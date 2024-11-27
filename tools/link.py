@@ -652,6 +652,9 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
   if not shared.SKIP_SUBPROCS:
     shared.check_llvm_version()
 
+  if settings.SAFE_HEAP:
+    settings.DEFAULT_LIBRARY_FUNCS_TO_INCLUDE += ['segfault', 'alignfault']
+
   autoconf = os.environ.get('EMMAKEN_JUST_CONFIGURE') or 'conftest.c' in state.orig_args or 'conftest.cpp' in state.orig_args
   if autoconf:
     # configure tests want a more shell-like style, where we emit return codes on exit()

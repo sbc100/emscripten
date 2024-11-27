@@ -94,14 +94,3 @@ function SAFE_FT_MASK(value, mask) {
   }
   return ret;
 }
-
-function segfault() {
-  abort('segmentation fault');
-}
-function alignfault() {
-#if SAFE_HEAP == 1
-  abort('alignment fault');
-#else
-  warnOnce('alignment fault');
-#endif
-}
