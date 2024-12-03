@@ -1191,7 +1191,8 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
     settings.TRANSPILE = (settings.MIN_FIREFOX_VERSION < 79 or
                           settings.MIN_CHROME_VERSION < 85 or
                           settings.MIN_SAFARI_VERSION < 140000 or
-                          settings.MIN_NODE_VERSION < 160000)
+                          settings.MIN_NODE_VERSION < 160000 or
+                          settings.SOURCE_PHASE_IMPORTS)
 
   # https://caniuse.com/class: FF:45 CHROME:49 SAFARI:9
   supports_es6_classes = (settings.MIN_FIREFOX_VERSION >= 45 and
