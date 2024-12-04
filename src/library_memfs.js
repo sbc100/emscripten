@@ -76,7 +76,7 @@ addToLibrary({
       if (FS.isDir(node.mode)) {
         node.node_ops = MEMFS.ops_table.dir.node;
         node.stream_ops = MEMFS.ops_table.dir.stream;
-        node.contents = {};
+        node.entries = new Map();
       } else if (FS.isFile(node.mode)) {
         node.node_ops = MEMFS.ops_table.file.node;
         node.stream_ops = MEMFS.ops_table.file.stream;
@@ -84,7 +84,7 @@ addToLibrary({
         // When the byte data of the file is populated, this will point to either a typed array, or a normal JS array. Typed arrays are preferred
         // for performance, and used by default. However, typed arrays are not resizable like normal JS arrays are, so there is a small disk size
         // penalty involved for appending file writes that continuously grow a file similar to std::vector capacity vs used -scheme.
-        node.contents = null; 
+        node.contents = null;
       } else if (FS.isLink(node.mode)) {
         node.node_ops = MEMFS.ops_table.link.node;
         node.stream_ops = MEMFS.ops_table.link.stream;
@@ -95,7 +95,7 @@ addToLibrary({
       node.atime = node.mtime = node.ctime = Date.now();
       // add the new node to the parent
       if (parent) {
-        parent.contents[name] = node;
+        parent.entries.set(name, node);
         parent.atime = parent.mtime = parent.ctime = node.atime;
       }
       return node;
@@ -122,7 +122,7 @@ addToLibrary({
       if (prevCapacity != 0) newCapacity = Math.max(newCapacity, 256); // At minimum allocate 256b for each file when expanding.
       var oldContents = node.contents;
       node.contents = new Uint8Array(newCapacity); // Allocate new storage.
-      if (node.usedBytes > 0) node.contents.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
+      if (node.usedBytes > 0) node.entries.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
     },
 
     // Performs an exact resize of the backing file storage to the given size, if the size is not exactly this, the storage is fully reallocated.
@@ -135,7 +135,7 @@ addToLibrary({
         var oldContents = node.contents;
         node.contents = new Uint8Array(newSize); // Allocate new storage.
         if (oldContents) {
-          node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          node.entries.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
         }
         node.usedBytes = newSize;
       }
@@ -196,34 +196,32 @@ addToLibrary({
           new_node = FS.lookupNode(new_dir, new_name);
         } catch (e) {}
         if (new_node) {
-          if (FS.isDir(old_node.mode)) {
+          if (FS.isDir(old_node.mode) && new_node.entries.size) {
             // if we're overwriting a directory at new_name, make sure it's empty.
-            for (var i in new_node.contents) {
-              throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
-            }
+            throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
           }
           FS.hashRemoveNode(new_node);
         }
         // do the internal rewiring
-        delete old_node.parent.contents[old_node.name];
-        new_dir.contents[new_name] = old_node;
+        old_node.parent.entries.delete(old_node.name);
+        new_dir.entries.set(new_name, old_node);
         old_node.name = new_name;
         new_dir.ctime = new_dir.mtime = old_node.parent.ctime = old_node.parent.mtime = Date.now();
       },
       unlink(parent, name) {
-        delete parent.contents[name];
+        parent.entries.delete(name);
         parent.ctime = parent.mtime = Date.now();
       },
       rmdir(parent, name) {
         var node = FS.lookupNode(parent, name);
-        for (var i in node.contents) {
+        if (node.contents.size) {
           throw new FS.ErrnoError({{{ cDefs.ENOTEMPTY }}});
         }
-        delete parent.contents[name];
+        parent.entries.delete(name);
         parent.ctime = parent.mtime = Date.now();
       },
       readdir(node) {
-        return ['.', '..', ...Object.keys(node.contents)];
+        return ['.', '..', ...node.entries.keys()];
       },
       symlink(parent, newname, oldpath) {
         var node = MEMFS.createNode(parent, newname, 0o777 | {{{ cDefs.S_IFLNK }}}, 0);
@@ -291,7 +289,7 @@ addToLibrary({
             node.usedBytes = length;
             return length;
           } else if (position + length <= node.usedBytes) { // Writing to an already allocated and used subrange of the file?
-            node.contents.set(buffer.subarray(offset, offset + length), position);
+            node.entries.set(buffer.subarray(offset, offset + length), position);
             return length;
           }
         }
@@ -300,7 +298,7 @@ addToLibrary({
         MEMFS.expandFileStorage(node, position+length);
         if (node.contents.subarray && buffer.subarray) {
           // Use typed array write which is available.
-          node.contents.set(buffer.subarray(offset, offset + length), position);
+          node.entries.set(buffer.subarray(offset, offset + length), position);
         } else {
           for (var i = 0; i < length; i++) {
            node.contents[position + i] = buffer[offset + i]; // Or fall back to manual write if not.

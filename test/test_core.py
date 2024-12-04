@@ -6739,7 +6739,7 @@ void* operator new(size_t size) {
       FS.createDataFile('/', 'paper.pdf', readBinary('paper.pdf'), true, false, false);
     };
     Module.postRun = () => {
-      var FileData = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents['filename-1.ppm']));
+      var FileData = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents.get('filename-1.ppm')));
       out("Data: " + JSON.stringify(FileData.map(function(x) { return unSign(x, 8) })));
     };
     ''')

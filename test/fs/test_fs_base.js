@@ -23,10 +23,10 @@ function explore(path) {
   out('  error: ' + ret.error);
   out('  path: ' + ret.path);
   out('  name: ' + ret.name);
-  out('  object.contents: ' + (ret.object && JSON.stringify(Object.keys(ret.object.contents || {}))));
+  out('  object.entries: ' + (ret.object && JSON.stringify(Array.from(ret.object.entries?.keys() || []))));
   out('  parentExists: ' + ret.parentExists);
   out('  parentPath: ' + ret.parentPath);
-  out('  parentObject.contents: ' + (ret.parentObject && JSON.stringify(Object.keys(ret.parentObject.contents))));
+  out('  parentObject.entries: ' + (ret.parentObject && JSON.stringify(Array.from(ret.parentObject.entries.keys()))));
   out('');
 }
 

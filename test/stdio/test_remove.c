@@ -33,19 +33,24 @@ void test() {
   int err;
 
   err = remove("dir/file");
+  if (err) perror("remove");
   assert(!err);
 
   err = remove("file");
+  if (err) perror("remove");
   assert(!err);
 
   // should fail, folder is not empty
   err = remove("dir");
+  if (err) perror("remove");
   assert(err);
 
   err = remove("dir/subdir");
+  if (err) perror("remove");
   assert(!err);
 
   err = remove("dir");
+  if (err) perror("remove");
   assert(!err);
 
   printf("success\n");

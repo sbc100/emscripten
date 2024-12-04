@@ -152,7 +152,7 @@ int main() {
       FS.mkdir('/files');
       LZ4.loadPackage({ 'metadata': meta, 'data': data });
 
-      Module['compressedData'] = FS.root.contents['file1.txt'].contents.compressedData;
+      Module['compressedData'] = FS.root.entries.get('file1.txt').contents.compressedData;
       var compressedSize = Module['compressedData']['data'].length;
       var low = COMPLETE_SIZE/3;
       var high = COMPLETE_SIZE/2;

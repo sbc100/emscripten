@@ -1089,7 +1089,7 @@ class benchmark(common.RunnerCore):
         Module['arguments'] = ['-scale-to', '1024', 'input.pdf',  '-f', '1', '-l', '' + benchmarkArgumentToPageCount[benchmarkArgument]];
         Module['postRun'] = function() {
           var files = [];
-          for (var x in FS.root.contents) {
+          for (var x of FS.root.contents.keys()) {
             if (x.startsWith('filename-')) {
               files.push(x);
             }
@@ -1098,7 +1098,7 @@ class benchmark(common.RunnerCore):
           var hash = 5381;
           var totalSize = 0;
           files.forEach(function(file) {
-            var data = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents[file]));
+            var data = Array.from(MEMFS.getFileDataAsTypedArray(FS.root.contents.get(file)));
             for (var i = 0; i < data.length; i++) {
               hash = ((hash << 5) + hash) ^ (data[i] & 0xff);
             }
