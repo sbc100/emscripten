@@ -7969,32 +7969,37 @@ extraLibraryFuncs.push('jsfunc');
     out = self.run_js('a.out.js', assert_returncode=NON_ZERO)
     self.assertContained('native code called abort()', out)
 
-  def test_mallocs(self):
-    def run(opts):
-      print(opts)
-      sizes = {}
-      for malloc, name in (
-        ('dlmalloc', 'dlmalloc'),
-        (None, 'default'),
-        ('emmalloc', 'emmalloc'),
-        ('mimalloc', 'mimalloc'),
-      ):
-        print(malloc, name)
-        args = opts[:]
-        if malloc:
-          args += ['-sMALLOC=%s' % malloc]
-        print(args)
-        self.emcc(test_file('hello_libcxx.cpp'), args=args)
-        sizes[name] = os.path.getsize('a.out.wasm')
-      print(sizes)
-      # dlmalloc is the default
-      self.assertEqual(sizes['dlmalloc'], sizes['default'])
-      # emmalloc is much smaller
-      self.assertLess(sizes['emmalloc'], sizes['dlmalloc'] - 5000)
-      # mimalloc is much larger
-      self.assertGreater(sizes['mimalloc'], sizes['dlmalloc'] - 25000)
-    run([])
-    run(['-O2'])
+  @parameterized({
+    '': ([],),
+    'O2': (['-O2'],)
+  })
+  def test_mallocs(self, opts):
+    sizes = {}
+    for malloc, name in (
+      ('dlmalloc', 'dlmalloc'),
+      (None, 'default'),
+      ('emmalloc', 'emmalloc'),
+      ('mimalloc', 'mimalloc'),
+    ):
+      print(malloc, name)
+      if malloc:
+        args = opts + ['-sMALLOC=%s' % malloc]
+      else:
+        args = opts
+      print(args)
+      self.emcc(test_file('hello_libcxx.cpp'), args=args)
+      sizes[name] = os.path.getsize('a.out.wasm')
+    print(sizes)
+    # dlmalloc is the default
+    self.assertEqual(sizes['dlmalloc'], sizes['default'])
+    # emmalloc is much smaller
+    self.assertLess(sizes['emmalloc'], sizes['dlmalloc'] - 5000)
+    # mimalloc is much larger
+    self.assertGreater(sizes['mimalloc'], sizes['dlmalloc'] - 25000)
+
+  def test_invalid_malloc(self):
+    err = self.expect_fail([EMCC, test_file('hello_world.c'), '-sMALLOC=bad'])
+    self.assertContained('emcc: error: malloc must be one of', err)
 
   def test_emmalloc_2GB(self):
     def test(args, text=None):
