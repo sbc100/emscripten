@@ -205,10 +205,7 @@ function preRun() {
   callRuntimeCallbacks(__ATPRERUN__);
 }
 
-function initRuntime() {
-#if RUNTIME_DEBUG
-  dbg('initRuntime');
-#endif
+function doInitRuntime() {
 #if ASSERTIONS
   assert(!runtimeInitialized);
 #endif
@@ -235,6 +232,16 @@ function initRuntime() {
 #endif
   <<< ATINITS >>>
   callRuntimeCallbacks(__ATINIT__);
+}
+
+function initRuntime() {
+#if RUNTIME_DEBUG
+  dbg('initRuntime');
+#endif
+  doInitRuntime();
+#if MODULARIZE
+  readyPromiseResolve(Module);
+#endif
 }
 
 #if HAS_MAIN
@@ -473,11 +480,13 @@ function abort(what) {
   var e = new WebAssembly.RuntimeError(what);
 
 #if MODULARIZE
-  readyPromiseReject(e);
+  if (!runtimeInitialized) {
+    // If the runtime has not yet been initializated then reject the
+    // ready promise instead of thowing the error;
+    readyPromiseReject(e);
+    return;
+  }
 #endif
-  // Throw the error whether or not MODULARIZE is set because abort is used
-  // in code paths apart from instantiation where an exception is expected
-  // to be thrown when abort is called.
   throw e;
 }
 
