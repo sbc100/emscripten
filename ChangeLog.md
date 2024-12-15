@@ -47,6 +47,10 @@ See docs/process.md for more on how version tagging works.
   `--post-js` files will now be delayed until after module creation and after
   `main` runs.  This matches the existing behaviour when using sync instantation
   (`-sWASM_ASYNC_COMPILATION=0`) but is an observable difference. (#23157)
+- The `USE_ES6_IMPORT_META` settings was removed.  This setting was always
+  on by default, but now it cannot be disabled.  This setting was originally
+  added in 2019 as a temporary measure while engines and bundlers learned to
+  deal with `import meta`. (#23171)
 
 3.1.74 - 12/14/24
 -----------------
