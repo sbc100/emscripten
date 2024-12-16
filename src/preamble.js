@@ -18,8 +18,6 @@
 {{{ makeModuleReceiveWithVar('dynamicLibraries', undefined, '[]', true) }}}
 #endif
 
-{{{ makeModuleReceiveWithVar('wasmBinary') }}}
-
 #if WASM != 2 && MAYBE_WASM2JS
 #if !WASM2JS
 if (Module['doWasm2JS']) {
@@ -30,12 +28,15 @@ if (Module['doWasm2JS']) {
 #endif
 #endif
 
+#if expectToReceiveOnModule('wasmBinary')
+{{{ makeModuleReceiveWithVar('wasmBinary') }}}
 #if MAYBE_WASM2JS
 if (WebAssembly.isWasm2js) {
   // We don't need to actually download a wasm binary, mark it as present but
   // empty.
   wasmBinary = [];
 }
+#endif
 #endif
 
 #if ASSERTIONS && WASM == 1
@@ -632,9 +633,11 @@ function findWasmBinary() {
 #endif
 
 function getBinarySync(file) {
+#if expectToReceiveOnModule('wasmBinary')
   if (file == wasmBinaryFile && wasmBinary) {
     return new Uint8Array(wasmBinary);
   }
+#endif
 #if SUPPORT_BASE64_EMBEDDING
   var binary = tryParseAsDataURI(file);
   if (binary) {
@@ -653,13 +656,18 @@ function getBinarySync(file) {
 
 async function getWasmBinary(binaryFile) {
 #if !SINGLE_FILE
-  // If we don't have the binary yet, load it asynchronously using readAsync.
-  if (!wasmBinary
-#if SUPPORT_BASE64_EMBEDDING
-      || isDataURI(binaryFile)
+  var tryAsync = () => {
+#if expectToReceiveOnModule('wasmBinary')
+    // If `wasmBinary` was passed in as an argument, don't try asynchronously
+    // loading it.
+    if (wasmBinary) return false;
 #endif
-      ) {
-    // Fetch the binary using readAsync
+#if SUPPORT_BASE64_EMBEDDING
+    if (isDataURI(binaryFile)) return false;
+#endif
+    return true;
+  };
+  if (tryAsync()) {
     try {
       var response = await readAsync(binaryFile);
       return new Uint8Array(response);
@@ -818,11 +826,14 @@ async function instantiateArrayBuffer(binaryFile, imports) {
   }
 }
 
-async function instantiateAsync(binary, binaryFile, imports) {
+async function instantiateAsync(binaryFile, imports) {
 #if !SINGLE_FILE
-  if (!binary &&
-      typeof WebAssembly.instantiateStreaming == 'function' &&
-      !isDataURI(binaryFile)
+  if (typeof WebAssembly.instantiateStreaming == 'function'
+#if expectToReceiveOnModule('wasmBinary')
+      // Skip the fetch if wasmBinary was passed in as an argument.
+      && !(binaryFile == wasmBinaryFile && wasmBinary)
+#endif
+      && !isDataURI(binaryFile)
 #if ENVIRONMENT_MAY_BE_WEBVIEW
       // Don't use streaming for file:// delivered objects in a webview, fetch them synchronously.
       && !isFileURI(binaryFile)
@@ -1093,7 +1104,7 @@ function getWasmImports() {
 #if MODULARIZE
   try {
 #endif
-    var result = await instantiateAsync(wasmBinary, wasmBinaryFile, info);
+    var result = await instantiateAsync(wasmBinaryFile, info);
     var exports = receiveInstantiationResult(result);
 #if LOAD_SOURCE_MAP
     receiveSourceMapJSON(await getSourceMapAsync());
