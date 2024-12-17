@@ -2074,7 +2074,7 @@ def phase_source_transforms(options):
 # both main code and libraries.
 # See also: `preprocess` in parseTools.js.
 def fix_es6_import_statements(js_file):
-  if not settings.EXPORT_ES6 or not settings.USE_ES6_IMPORT_META:
+  if not settings.EXPORT_ES6:
     return
 
   src = read_file(js_file)
