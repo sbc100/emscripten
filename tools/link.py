@@ -2084,27 +2084,11 @@ def phase_source_transforms(options):
   save_intermediate('transformed')
 
 
-# Unmangle previously mangled `import.meta` and `await import` references in
-# both main code and libraries.
-# See also: `preprocess` in parseTools.js.
-def fix_es6_import_statements(js_file):
-  if not settings.EXPORT_ES6 or not settings.USE_ES6_IMPORT_META:
-    return
-
-  src = read_file(js_file)
-  write_file(js_file, src
-             .replace('EMSCRIPTEN$IMPORT$META', 'import.meta')
-             .replace('EMSCRIPTEN$AWAIT$IMPORT', 'await import'))
-  save_intermediate('es6-module')
-
-
 def create_worker_file(input_file, target_dir, output_file, options):
   output_file = os.path.join(target_dir, output_file)
   input_file = utils.path_from_root(input_file)
   contents = shared.read_and_preprocess(input_file, expand_macros=True)
   write_file(output_file, contents)
-
-  fix_es6_import_statements(output_file)
 
   # Minify the worker JS file, if JS minification is enabled.
   if settings.MINIFY_WHITESPACE:
@@ -2153,8 +2137,6 @@ def phase_final_emitting(options, state, target, wasm_target):
     # unused things that closure compiler leaves behind (e.g `new Float64Array(x)`).
     shared.run_js_tool(utils.path_from_root('tools/unsafe_optimizations.mjs'), [final_js, '-o', final_js], cwd=utils.path_from_root('.'))
     save_intermediate('unsafe-optimizations2')
-
-  fix_es6_import_statements(final_js)
 
   # Apply pre and postjs files
   if options.extern_pre_js or options.extern_post_js:

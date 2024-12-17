@@ -18,6 +18,7 @@ import {
   addToCompileTimeContext,
   runInMacroContext,
   mergeInto,
+  applyESModuleSubstitutions,
 } from './utility.mjs';
 import {preprocess, processMacros} from './parseTools.mjs';
 
@@ -245,6 +246,7 @@ export const LibraryManager = {
       const oldFile = setCurrentFile(filename);
       try {
         processed = processMacros(preprocess(filename), filename);
+        processed = applyESModuleSubstitutions(processed);
         runInMacroContext(processed, {filename: filename.replace(/\.\w+$/, '.preprocessed$&')});
       } catch (e) {
         error(`failure to execute js library "${filename}":`);

@@ -330,7 +330,25 @@ export function loadSettingsFile(f) {
 export function runInMacroContext(code, options) {
   compileTimeContext['__filename'] = options.filename;
   compileTimeContext['__dirname'] = path.dirname(options.filename);
-  return vm.runInContext(code, compileTimeContext, options);
+  var result = vm.runInContext(code, compileTimeContext, options);
+  return result;
+}
+
+export function applyESModuleSubstitutions(text) {
+  // `eval` done not support module syntax `await import` or `import.meta`
+  // since it doesn't run in ES module mode. To allow it, we need to
+  // temporarily replace `import.meta` and `await import` usages with
+  // placeholders during preprocess phase, and back after all the other ops.
+  // See also: `phase_final_emitting` in emcc.py.
+  return text
+    .replace(/\bimport\.meta\b/g, 'EMSCRIPTEN$IMPORT$META')
+    .replace(/\bawait import\b/g, 'EMSCRIPTEN$AWAIT$IMPORT');
+}
+
+export function undoESModuleSubstitutions(text) {
+  return text
+    .replace(/EMSCRIPTEN\$IMPORT\$META/g, 'import.meta')
+    .replace(/EMSCRIPTEN\$AWAIT\$IMPORT/g, 'await import');
 }
 
 addToCompileTimeContext({

@@ -33,6 +33,7 @@ import {
   warn,
   warnOnce,
   warningOccured,
+  undoESModuleSubstitutions,
 } from './utility.mjs';
 import {LibraryManager, librarySymbols} from './modules.mjs';
 
@@ -560,6 +561,10 @@ function(${args}) {
         isFunction = true;
         snippet = processLibraryFunction(snippet, symbol, mangled, deps, isStub);
         addImplicitDeps(snippet, deps);
+      }
+
+      if (typeof snippet == 'string') {
+        snippet = undoESModuleSubstitutions(snippet)
       }
 
       const postsetId = symbol + '__postset';
