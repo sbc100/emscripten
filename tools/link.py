@@ -2427,23 +2427,18 @@ export default %(maybe_async)s function init(moduleArg = {}) {
       'generated_js': generated_js
     }
 
-  if settings.MINIMAL_RUNTIME and not settings.PTHREADS:
-    # Single threaded MINIMAL_RUNTIME programs do not need access to
-    # document.currentScript, so a simple export declaration is enough.
-    src = f'var {settings.EXPORT_NAME} = {wrapper_function};'
+  if (settings.EXPORT_ES6 and settings.USE_ES6_IMPORT_META) or (settings.MINIMAL_RUNTIME and not settings.PTHREADS):
+    if settings.MODULARIZE != 'instance':
+      # Single threaded MINIMAL_RUNTIME programs do not need access to
+      # document.currentScript, so a simple export declaration is enough.
+      src = f'var {settings.EXPORT_NAME} = {wrapper_function};'
   else:
     script_url_node = ''
-    # When MODULARIZE this JS may be executed later,
-    # after document.currentScript is gone, so we save it.
-    # In EXPORT_ES6 + PTHREADS the 'thread' is actually an ES6 module
-    # webworker running in strict mode, so doesn't have access to 'document'.
-    # In this case use 'import.meta' instead.
-    if settings.EXPORT_ES6 and settings.USE_ES6_IMPORT_META:
-      script_url = 'import.meta.url'
-    else:
-      script_url = "typeof document != 'undefined' ? document.currentScript?.src : undefined"
-      if settings.ENVIRONMENT_MAY_BE_NODE:
-        script_url_node = "if (typeof __filename != 'undefined') _scriptName = _scriptName || __filename;"
+    # When MODULARIZE this JS may be executed later, after document.currentScript is gone,
+    # so we save it.
+    script_url = "typeof document != 'undefined' ? document.currentScript?.src : undefined"
+    if settings.ENVIRONMENT_MAY_BE_NODE:
+      script_url_node = "if (typeof __filename != 'undefined') _scriptName = _scriptName || __filename;"
     if settings.MODULARIZE == 'instance':
       src = '''\
   var _scriptName = %(script_url)s;
