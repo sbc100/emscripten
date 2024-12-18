@@ -172,6 +172,8 @@ def ignore_symbol(s, cxx):
     return True
   if s.startswith('emscripten_gl') or s.startswith('emscripten_alc'):
     return True
+  if (s.endswith('_calling_thread') or s.endswith('_main_thread')) and not s.startswith('emscripten_asm_const'):
+    return True
   if s.startswith('gl') and any(s.endswith(x) for x in ('NV', 'EXT', 'WEBGL', 'ARB', 'ANGLE')):
     return True
   if s in {'__stack_base', '__memory_base', '__table_base', '__global_base', '__heap_base',
@@ -293,6 +295,7 @@ def extract_sig_info(sig_info, extra_settings=None, extra_cflags=None, cxx=False
     # Enable as many settings as we can here to ensure the maximum number
     # of JS symbols are included.
     'STACK_OVERFLOW_CHECK': 1,
+    'OFFSCREENCANVAS_SUPPORT': 1,
     'USE_SDL': 1,
     'USE_GLFW': 0,
     'FETCH': 1,

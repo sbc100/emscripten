@@ -139,18 +139,16 @@ var quit_ = (status, toThrow) => {
   throw toThrow;
 };
 
-#if !MODULARIZE
+#if EXPORT_ES6 && USE_ES6_IMPORT_META
+var _scriptName = import.meta.url;
+#else if !MODULARIZE
 // In MODULARIZE mode, _scriptName is captured already in the outer scope
 // In non-MODULARIZE mode, we simply calculate it here.
 var _scriptName = (typeof document != 'undefined') ? document.currentScript?.src : undefined;
 
 #if ENVIRONMENT_MAY_BE_NODE
 if (ENVIRONMENT_IS_NODE) {
-#if EXPORT_ES6
-  _scriptName = typeof __filename != 'undefined' ? __filename : import.meta.url
-#else
   _scriptName = __filename;
-#endif
 } else
 #endif // ENVIRONMENT_MAY_BE_NODE
 if (ENVIRONMENT_IS_WORKER) {
