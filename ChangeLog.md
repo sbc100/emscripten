@@ -18,8 +18,8 @@ to browse the changes between the tags.
 
 See docs/process.md for more on how version tagging works.
 
-3.1.75 (in development)
------------------------
+4.0.0 (in development)
+----------------------
 - The Wasm nontrapping-fptoint feature has been enabled by default. clang will
   generate nontrapping (saturating) float-to-int conversion instructions for
   C typecasts. This should have no effect on programs that do not have
