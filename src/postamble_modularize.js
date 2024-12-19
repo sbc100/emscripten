@@ -6,10 +6,8 @@
 
 #if WASM_ASYNC_COMPILATION
 
-#if USE_READY_PROMISE
+#if !MINIMAL_RUNTIME
 moduleRtn = readyPromise;
-#else
-moduleRtn = {};
 #endif
 
 #else  // WASM_ASYNC_COMPILATION

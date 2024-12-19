@@ -1147,12 +1147,6 @@ def phase_linker_setup(options, state, newargs):  # noqa: C901, PLR0912, PLR0915
   if settings.MODULARIZE:
     if settings.PROXY_TO_WORKER:
       exit_with_error('-sMODULARIZE is not compatible with --proxy-to-worker (if you want to run in a worker with -sMODULARIZE, you likely want to do the worker side setup manually)')
-    # in MINIMAL_RUNTIME we may not need to emit the Promise code, as the
-    # HTML output creates a singleton instance, and it does so without the
-    # Promise. However, in Pthreads mode the Promise is used for worker
-    # creation.
-    if settings.MINIMAL_RUNTIME and options.oformat == OFormat.HTML and not settings.PTHREADS:
-      settings.USE_READY_PROMISE = 0
 
   if settings.WASM2JS and settings.LEGACY_VM_SUPPORT:
     settings.POLYFILL_OLD_MATH_FUNCTIONS = 1
