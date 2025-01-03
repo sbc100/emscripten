@@ -1711,8 +1711,8 @@ var LibraryWebGPU = {
         return undefined;
       }
 
-      var depthSlice = {{{ makeGetValue('caPtr', C_STRUCTS.WGPURenderPassColorAttachment.depthSlice, 'i32') }}};
-      {{{ gpu.convertSentinelToUndefined('depthSlice') }}}
+      var depthSlice = {{{ makeGetValue('caPtr', C_STRUCTS.WGPURenderPassColorAttachment.depthSlice, 'u32') }}};
+      if (depthSlice == 0xFFFFFFFF) depthSlice = undefined;
 
       var loadOpInt = {{{ gpu.makeGetU32('caPtr', C_STRUCTS.WGPURenderPassColorAttachment.loadOp) }}};
       #if ASSERTIONS
@@ -2001,7 +2001,9 @@ var LibraryWebGPU = {
     var bufferWrapper = WebGPU.mgrBuffer.objects[bufferId];
     {{{ gpu.makeCheckDefined('bufferWrapper') }}}
 
+#if ASSERTIONS
     if (size === 0) warnOnce('getMappedRange size=0 no longer means WGPU_WHOLE_MAP_SIZE');
+#endif
 
     {{{ gpu.convertSentinelToUndefined('size') }}}
 
@@ -2033,7 +2035,9 @@ var LibraryWebGPU = {
     var bufferWrapper = WebGPU.mgrBuffer.objects[bufferId];
     {{{ gpu.makeCheckDefined('bufferWrapper') }}}
 
+#if ASSERTIONS
     if (size === 0) warnOnce('getMappedRange size=0 no longer means WGPU_WHOLE_MAP_SIZE');
+#endif
 
     {{{ gpu.convertSentinelToUndefined('size') }}}
 
