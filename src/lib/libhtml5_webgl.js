@@ -333,6 +333,11 @@ var LibraryHtml5WebGL = {
   emscripten_webgl_destroy_context__proxy: 'sync_on_webgl_context_handle_thread',
   emscripten_webgl_destroy_context: (contextHandle) => {
     if (GL.currentContext == contextHandle) GL.currentContext = 0;
+    if (typeof JSEvents != 'undefined') {
+      // Release all JS event handlers on the DOM element that the GL context is
+      // associated with since the context is now deleted.
+      JSEvents.removeAllHandlersOnTarget(GL.contexts[contextHandle].GLctx.canvas);
+    }
     GL.deleteContext(contextHandle);
   },
 
