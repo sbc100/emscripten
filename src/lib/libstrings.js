@@ -12,8 +12,10 @@ addToLibrary({
   // TextDecoder constructor defaults to UTF-8
 #if TEXTDECODER == 2
   $UTF8Decoder: "new TextDecoder()",
+  $UTF8Encoder: "new TextEncoder()",
 #else
   $UTF8Decoder: "typeof TextDecoder != 'undefined' ? new TextDecoder() : undefined",
+  $UTF8Encoder: "typeof TextEncoder != 'undefined' ? new TextEncoder() : undefined",
 #endif
 
   $findStringEnd: (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
@@ -147,9 +149,12 @@ addToLibrary({
    *                                   terminator.
    * @return {number} The number of bytes written, EXCLUDING the null terminator.
    */
+  $stringToUTF8Array__deps: [
+    '$UTF8Encoder',
 #if ASSERTIONS
-  $stringToUTF8Array__deps: ['$warnOnce'],
+    '$warnOnce',
 #endif
+  ],
   $stringToUTF8Array: (str, heap, outIdx, maxBytesToWrite) => {
 #if CAN_ADDRESS_2GB
     outIdx >>>= 0;
@@ -159,11 +164,24 @@ addToLibrary({
 #endif
     // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
     // undefined and false each don't write out any bytes.
-    if (!(maxBytesToWrite > 0))
+    if (!(maxBytesToWrite > 0)) {
       return 0;
+    }
+
+    var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
+
+#if TEXTDECODER == 2
+    var written = UTF8Encoder.encodeInto(str, heap.subarray(outIdx, endIdx)).written;
+    heap[outIdx + written] = 0;
+    return written + 1;
+#else
+    if (UTF8Encoder && heap.subarray) {
+      var written = UTF8Encoder.encodeInto(str, heap.subarray(outIdx, endIdx)).written;
+      heap[outIdx + written] = 0;
+      return written + 1;
+    }
 
     var startIdx = outIdx;
-    var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
     for (var i = 0; i < str.length; ++i) {
       // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
       // and https://www.ietf.org/rfc/rfc2279.txt
@@ -198,6 +216,7 @@ addToLibrary({
     // Null-terminate the pointer to the buffer.
     heap[outIdx] = 0;
     return outIdx - startIdx;
+#endif
   },
 
   /**
