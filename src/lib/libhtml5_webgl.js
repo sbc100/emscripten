@@ -606,7 +606,7 @@ function handleWebGLProxying(funcs) {
       funcArgs.push(funcBody);
       funcs[i] = new (Function.prototype.bind.call(Function, Function, ...funcArgs));
     } else if (targetingOffscreenFramebuffer) {
-      // When targeting only OFFSCREEN_FRAMEBUFFER, unconditionally proxy all GL calls to
+      // When targetinaag only OFFSCREEN_FRAMEBUFFER, unconditionally proxy all GL calls to
       // main thread.
       funcs[i + '__proxy'] = 'sync';
     } else {
