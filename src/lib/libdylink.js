@@ -287,7 +287,6 @@ var LibraryDylink = {
       relocated[e] = value;
     }
     updateGOT(relocated, replace);
-    return relocated;
   },
 
   $reportUndefinedSymbols__internal: true,
@@ -768,9 +767,11 @@ var LibraryDylink = {
 #endif
         // add new entries to functionsInTableMap
         updateTableMap(tableBase, metadata.tableSize);
-        moduleExports = relocateExports(instance.exports, memoryBase);
+        relocateExports(instance.exports, memoryBase);
 #if ASYNCIFY
-        moduleExports = Asyncify.instrumentWasmExports(moduleExports);
+        var moduleExports = Asyncify.instrumentWasmExports(moduleExports);
+#else
+        var moduleExports = instance.exports;
 #endif
         if (!flags.allowUndefined) {
           reportUndefinedSymbols();

@@ -682,7 +682,7 @@ function getWasmImports() {
     wasmExports = instance.exports;
 
 #if RELOCATABLE
-    wasmExports = relocateExports(wasmExports, {{{ GLOBAL_BASE }}});
+    relocateExports(wasmExports, {{{ GLOBAL_BASE }}});
 #endif
 
 #if ASYNCIFY
