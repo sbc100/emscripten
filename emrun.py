@@ -38,7 +38,7 @@ import time
 from operator import itemgetter
 
 if sys.version_info.major == 2:
-  import SocketServer as socketserver
+  import SocketServer as socketserver # noqa: I001
   from BaseHTTPServer import HTTPServer
   from SimpleHTTPServer import SimpleHTTPRequestHandler
   from urllib import unquote

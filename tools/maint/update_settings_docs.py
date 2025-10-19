@@ -17,16 +17,16 @@ settings.js.  For example [compile] and [link].
 """
 
 import os
-import sys
 import subprocess
+import sys
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(script_dir))
 
 sys.path.insert(0, root_dir)
 
+from tools.settings import DEPRECATED_SETTINGS, LEGACY_SETTINGS
 from tools.utils import path_from_root, read_file, safe_ensure_dirs
-from tools.settings import LEGACY_SETTINGS, DEPRECATED_SETTINGS
 
 header = '''\
 .. _settings-reference:
