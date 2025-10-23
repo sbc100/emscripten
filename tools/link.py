@@ -522,14 +522,9 @@ def get_worker_js_suffix():
 
 
 def setup_pthreads():
+  # pthreads + dynamic linking has certain limitations
   if settings.RELOCATABLE:
-    # pthreads + dynamic linking has certain limitations
-    if settings.SIDE_MODULE:
-      diagnostics.warning('experimental', '-sSIDE_MODULE + pthreads is experimental')
-    elif settings.MAIN_MODULE:
-      diagnostics.warning('experimental', '-sMAIN_MODULE + pthreads is experimental')
-    elif settings.LINKABLE:
-      diagnostics.warning('experimental', '-sLINKABLE + pthreads is experimental')
+    diagnostics.warning('experimental', 'dynamic linking + pthreads is experimental')
   if settings.ALLOW_MEMORY_GROWTH and not settings.GROWABLE_ARRAYBUFFERS:
     diagnostics.warning('pthreads-mem-growth', '-pthread + ALLOW_MEMORY_GROWTH may run non-wasm code slowly, see https://github.com/WebAssembly/design/issues/1271')
 
