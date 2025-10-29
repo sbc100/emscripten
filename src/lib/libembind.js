@@ -452,7 +452,7 @@ var LibraryEmbind = {
         return str;
       },
       toWireType(destructors, value) {
-        if (value instanceof ArrayBuffer) {
+        if (!ArrayBuffer.isView(value)) {
           value = new Uint8Array(value);
         }
 

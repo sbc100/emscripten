@@ -1051,7 +1051,7 @@ function getUnsharedTextDecoderView(heap, start, end) {
   // a SAB, or can use .subarray() otherwise.  Note: We compare with
   // `ArrayBuffer` here to avoid referencing `SharedArrayBuffer` which could be
   // undefined.
-  return `${heap}.buffer instanceof ArrayBuffer ? ${unshared} : ${shared}`;
+  return `ArrayBuffer.isView(${heap}) ? ${unshared} : ${shared}`;
 }
 
 function getEntryFunction() {
