@@ -645,6 +645,7 @@ LLVM_PROFDATA = llvm_tool_path('llvm-profdata')
 LLVM_COV = llvm_tool_path('llvm-cov')
 
 EMCC = bat_suffix(path_from_root('emcc'))
+EMLD = bat_suffix(path_from_root('emld'))
 EMXX = bat_suffix(path_from_root('em++'))
 EMAR = bat_suffix(path_from_root('emar'))
 EMRANLIB = bat_suffix(path_from_root('emranlib'))

@@ -439,7 +439,7 @@ def main():  # noqa: C901, PLR0912, PLR0915
         data_files.append(DataFile(srcpath=srcpath, dstpath=dstpath, mode=mode,
                                    explicit_dst_path=uses_at_notation))
       else:
-        diagnostics.error(f'${arg} does not exist')
+        diagnostics.error(f'{arg} does not exist')
     elif leading == 'exclude':
       excluded_patterns.append(arg)
     else:
@@ -847,7 +847,7 @@ def generate_preload_js(data_target, data_files, metadata):
         async function checkCachedPackage(db, packageName) {
           var transaction = db.transaction([METADATA_STORE_NAME], IDB_RO);
           var metadata = transaction.objectStore(METADATA_STORE_NAME);
-          var getRequest = metadata.get(`metadata/${packageName}`);
+          var getRequest = metadata.get(`metadata/$${packageName}`);
           return new Promise((resolve, reject) => {
             getRequest.onsuccess = (event) => {
               var result = event.target.result;

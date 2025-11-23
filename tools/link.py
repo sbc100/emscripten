@@ -27,7 +27,6 @@ from . import (
   feature_matrix,
   filelock,
   js_manipulation,
-  ports,
   shared,
   system_libs,
   utils,
@@ -941,22 +940,17 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
     settings.GENERATE_SOURCE_MAP = 0
 
   # options.output_file is the user-specified one, target is what we will generate
-  if options.output_file:
-    target = options.output_file
-    # check for the existence of the output directory now, to avoid having
-    # to do so repeatedly when each of the various output files (.mem, .wasm,
-    # etc) are written. This gives a more useful error message than the
-    # IOError and python backtrace that users would otherwise see.
-    dirname = os.path.dirname(target)
-    if dirname and not os.path.isdir(dirname):
-      exit_with_error("specified output file (%s) is in a directory that does not exist" % target)
-  elif autoconf:
-    # Autoconf expects the executable output file to be called `a.out`
-    target = 'a.out'
-  elif settings.SIDE_MODULE:
-    target = 'a.out.wasm'
-  else:
-    target = 'a.out.js'
+  target = options.output_file
+  if not target:
+    exit_with_error('no output file specified')
+
+  # check for the existence of the output directory now, to avoid having
+  # to do so repeatedly when each of the various output files (.mem, .wasm,
+  # etc) are written. This gives a more useful error message than the
+  # IOError and python backtrace that users would otherwise see.
+  dirname = os.path.dirname(target)
+  if dirname and not os.path.isdir(dirname):
+    exit_with_error("specified output file (%s) is in a directory that does not exist" % target)
 
   final_suffix = get_file_suffix(target)
 
@@ -1116,6 +1110,7 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
     #    is specified (see above).
     if 'EXPORTED_FUNCTIONS' in user_settings:
       if '_main' in settings.USER_EXPORTS:
+        print(settings.EXPORTED_FUNCTIONS)
         settings.EXPORTED_FUNCTIONS.remove('_main')
         settings.EXPORT_IF_DEFINED.append('main')
       else:
@@ -1945,17 +1940,6 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
   return target, wasm_target
 
 
-@ToolchainProfiler.profile_block('calculate system libraries')
-def phase_calculate_system_libraries(options):
-  extra_files_to_link = []
-  # Link in ports and system libraries, if necessary
-  if not settings.SIDE_MODULE:
-    # Ports are always linked into the main module, never the side module.
-    extra_files_to_link += ports.get_libs(settings)
-  extra_files_to_link += system_libs.calculate(options)
-  return extra_files_to_link
-
-
 @ToolchainProfiler.profile_block('link')
 def phase_link(linker_args, wasm_target, js_syms):
   logger.debug(f'linking: {linker_args}')
@@ -2764,10 +2748,6 @@ def process_libraries(options, flags):
   system_libs_map = system_libs.Library.get_usable_variations()
 
   for flag in flags:
-    if flag.startswith('--js-library='):
-      js_lib = flag.split('=', 1)[1]
-      settings.JS_LIBRARIES.append(js_lib)
-      continue
     if not flag.startswith('-l'):
       new_flags.append(flag)
       continue
@@ -3187,16 +3167,6 @@ def run(options, linker_args):
     building.link_to_object(linker_args, target)
     logger.debug('stopping after linking to object file')
     return 0
-
-  system_libs = phase_calculate_system_libraries(options)
-  # Only add system libraries that have not already been specified.
-  # This avoids issues where the user explictly includes, for example, `-lGL`.
-  # This is not normally a problem except in the case of -sMAIN_MODULE=1 where
-  # the duplicate library would result in duplicate symbols.
-  for s in system_libs:
-    if s.startswith('-l') and s in linker_args:
-      continue
-    linker_args.append(s)
 
   js_syms = {}
   if (not settings.SIDE_MODULE or settings.ASYNCIFY) and not shared.SKIP_SUBPROCS:

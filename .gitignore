@@ -42,6 +42,7 @@ coverage.xml
 # Shell scripts (created by ./tools/maint/create_entry_points.py)
 em-config
 emar
+emld
 embuilder
 emcmake
 emconfigure
@@ -64,6 +65,7 @@ tools/webidl_binder
 # Windows .bat files (created by ./tools/maint/create_entry_points.py)
 em-config.bat
 emar.bat
+emld.bat
 embuilder.bat
 emcmake.bat
 emconfigure.bat

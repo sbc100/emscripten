@@ -120,7 +120,7 @@ DEPRECATED_SETTINGS = {
 
 # Settings that don't need to be externalized when serializing to json because they
 # are not used by the JS compiler.
-INTERNAL_SETTINGS = {
+NO_EXTERNALIZE_SETTINGS = {
     'SIDE_MODULE_IMPORTS',
 }
 
@@ -336,12 +336,14 @@ class SettingsManager:
   def dict(self):
     return self.attrs
 
-  def external_dict(self, skip_keys={}): # noqa
+  def external_dict(self, skip_keys={}, legacy=True, external_only=False): # noqa
     external_settings = {}
     for key, value in self.dict().items():
-      if value != self.defaults.get(key) and key not in INTERNAL_SETTINGS and key not in skip_keys:
+      if external_only and key in self.internal_settings:
+        continue
+      if value != self.defaults.get(key) and key not in NO_EXTERNALIZE_SETTINGS and key not in skip_keys:
         external_settings[key] = value # noqa: PERF403
-    if not self.attrs['STRICT']:
+    if legacy and not self.attrs['STRICT']:
       # When not running in strict mode we also externalize all legacy settings
       # (Since the external tools do process LEGACY_SETTINGS themselves)
       for key in self.legacy_settings:
