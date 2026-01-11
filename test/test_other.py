@@ -15283,8 +15283,9 @@ console.log('OK');'''
     write_file('test.js', read_file(path_from_root('src/binaryDecode.js')) + '\nvar src = ' + binary_encoded + ';\n' + test_js)
     self.assertContained('OK', self.run_js('test.js'))
 
+  @crossplatform
   @no_windows('depends on UNIX shbang feature')
-  def test_executable(self):
+  def test_executable_output(self):
     # First test without -sEXECUTABLE
     self.run_process([EMCC, test_file('hello_world.c')])
     self.assertNotContained('#!/usr/bin/env node', read_file('a.out.js'))
@@ -15293,4 +15294,18 @@ console.log('OK');'''
     self.run_process([EMCC, test_file('hello_world.c'), '-sEXECUTABLE'])
     self.assertContained('#!/usr/bin/env node', read_file('a.out.js'))
     output = self.run_process([os.path.abspath('a.out.js')], stdout=PIPE).stdout
+    self.assertContained('hello, world!', output)
+
+  @crossplatform
+  def test_executable_output_implicit(self):
+    # Verify that -sEXECUTABLE is implied when the output file has not extension.
+    self.run_process([EMCC, test_file('hello_world.c'), '-o', 'foo'])
+    self.assertContained('#!/usr/bin/env node', read_file('foo'))
+    output = self.run_process([os.path.abspath('foo')], stdout=PIPE).stdout
+    self.assertContained('hello, world!', output)
+
+    # Or when the extension is `.out`, as in `a.out`
+    self.run_process([EMCC, test_file('hello_world.c'), '-o', 'a.out'])
+    self.assertContained('#!/usr/bin/env node', read_file('a.out'))
+    output = self.run_process([os.path.abspath('a.out')], stdout=PIPE).stdout
     self.assertContained('hello, world!', output)
