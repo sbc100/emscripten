@@ -237,9 +237,9 @@ class sanity(RunnerCore):
 
     # The guessed config should be ok
     # XXX This depends on your local system! it is possible `which` guesses wrong
-    # delete_file('a.out.js')
+    # delete_file('a.out')
     # output = self.run_process([EMCC, test_file('hello_world.c')], stdout=PIPE, stderr=PIPE).output
-    # self.assertContained('hello, world!', self.run_js('a.out.js'), output)
+    # self.assertContained('hello, world!', self.run_js('a.out'), output)
 
     # Second run, with bad EM_CONFIG
     for settings in ('blah', 'LLVM_ROOT="blarg"; JS_ENGINES=[]; NODE_JS=[]; SPIDERMONKEY_ENGINE=[]'):
@@ -394,7 +394,7 @@ fi
     wipe()
     expected = 'error: inline EM_CONFIG data no longer supported.  Please use a config file.'
     with env_modify({'EM_CONFIG': get_basic_config()}):
-      self.assert_fail([EMCC, 'main.cpp', '-Wno-deprecated', '-o', 'a.out.js'], expected)
+      self.assert_fail([EMCC, 'main.cpp', '-Wno-deprecated'], expected)
 
   def clear_cache(self):
     self.run_process([EMCC, '--clear-cache'])
@@ -427,7 +427,7 @@ fi
       # -O0 and -O1 will each build a version of libc++.a, but higher level will re-use the
       # one built at -O1.
       self.assertContainedIf(BUILDING_MESSAGE % libname, output, i < 2)
-      self.assertContained('hello, world!', self.run_js('a.out.js'))
+      self.assertContained('hello, world!', self.run_js('a.out'))
       self.assertExists(cache.cachedir)
       self.assertExists(os.path.join(cache.cachedir, libname))
 
@@ -546,10 +546,10 @@ fi
 
     # Test both relative and absolute paths to the config
     self.run_process([EMCC, '--em-config', os.path.abspath('custom_config')] + MINIMAL_HELLO_WORLD)
-    self.assertContained('hello, world!', self.run_js('a.out.js'))
+    self.assertContained('hello, world!', self.run_js('a.out'))
 
     self.run_process([EMCC, '--em-config', 'custom_config'] + MINIMAL_HELLO_WORLD)
-    self.assertContained('hello, world!', self.run_js('a.out.js'))
+    self.assertContained('hello, world!', self.run_js('a.out'))
 
   def test_emcc_ports(self):
     restore_and_set_up()
@@ -646,7 +646,7 @@ fi
       return self.check_working([EMCC] + MINIMAL_HELLO_WORLD, '')
 
     def test():
-      self.assertContained('hello, world!', self.run_js('a.out.js'))
+      self.assertContained('hello, world!', self.run_js('a.out'))
 
     print('normal build')
     with env_modify({'EMCC_FORCE_STDLIBS': None}):

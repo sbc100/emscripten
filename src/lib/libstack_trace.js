@@ -287,10 +287,10 @@ var LibraryStackTrace = {
     if (!source) {
       var frame = UNWIND_CACHE[pc];
       if (!frame) return null;
-      // Example: at callMain (a.out.js:6335:22)
+      // Example: at callMain (out.js:6335:22)
       if (match = /\((.*):(\d+):(\d+)\)$/.exec(frame)) {
         source = {file: match[1], line: match[2], column: match[3]};
-      // Example: main@a.out.js:1337:42
+      // Example: main@out.js:1337:42
       } else if (match = /@(.*):(\d+):(\d+)/.exec(frame)) {
         source = {file: match[1], line: match[2], column: match[3]};
       }

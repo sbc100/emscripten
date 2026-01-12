@@ -83,14 +83,8 @@ You can check which tools are already present using the following commands:
   # Check for Python
   python --version
 
-  # Check for node.js on Linux
-  nodejs --version
-
-  # Check for node.js on Windows
+  # Check for node.js
   node --version
-
-  # Check for node.js on macOS
-  node -v
 
   # Check for git
   git --version
@@ -104,4 +98,3 @@ You can check which tools are already present using the following commands:
 
   # Check for cmake
   cmake
-

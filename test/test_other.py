@@ -15297,6 +15297,7 @@ console.log('OK');'''
     self.assertContained('hello, world!', output)
 
   @crossplatform
+  @no_windows('depends on UNIX shbang feature')
   def test_executable_output_implicit(self):
     # Verify that -sEXECUTABLE is implied when the output file has not extension.
     self.run_process([EMCC, test_file('hello_world.c'), '-o', 'foo'])

@@ -46,8 +46,8 @@ Without UBSan you get an error when the program exits:
 
 .. code-block:: console
 
-  $ emcc null-assign.c
-  $ node a.out.js
+  $ emcc null-assign.c -o out.js
+  $ node out.js
   Runtime error: The application has corrupted its heap memory area (address zero)!
 
 With UBSan, you get the exact line number where this happened:
@@ -55,7 +55,7 @@ With UBSan, you get the exact line number where this happened:
 .. code-block:: console
 
   $ emcc -fsanitize=undefined null-assign.c
-  $ node a.out.js
+  $ node out.js
   null-assign.c:3:5: runtime error: store to null pointer of type 'int'
   Runtime error: The application has corrupted its heap memory area (address zero)!
 
@@ -72,16 +72,16 @@ Without UBSan there is no feedback:
 
 .. code-block:: console
 
-  $ emcc null-read.c
-  $ node a.out.js
+  $ emcc null-read.c -o out.js
+  $ node out.js
   $
 
 With UBSan, you get the exact line number where this happened:
 
 .. code-block:: console
 
-  $ emcc -fsanitize=undefined null-assign.c
-  $ node a.out.js
+  $ emcc -fsanitize=undefined null-assign.c -o out.js
+  $ node out.js
   null-read.c:3:9: runtime error: load of null pointer of type 'int'
 
 Minimal Runtime
@@ -96,11 +96,11 @@ The minimal runtime is supported by Emscripten. To use it, pass the flag
 
 .. code-block:: console
 
-  $ emcc -fsanitize=null -fsanitize-minimal-runtime null-read.c
-  $ node a.out.js
+  $ emcc -fsanitize=null -fsanitize-minimal-runtime null-read.c -o out.js
+  $ node out.js
   ubsan: type-mismatch
-  $ emcc -fsanitize=null -fsanitize-minimal-runtime null-assign.c
-  $ node a.out.js
+  $ emcc -fsanitize=null -fsanitize-minimal-runtime null-assign.c -o out.js
+  $ node out.js
   ubsan: type-mismatch
   Runtime error: The application has corrupted its heap memory area (address zero)!
 
@@ -154,19 +154,19 @@ Consider ``buffer_overflow.c``:
 
 .. code-block:: console
 
-  $ emcc -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH buffer_overflow.c
-  $ node a.out.js
+  $ emcc -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH buffer_overflow.c -o out.js
+  $ node out.js
   =================================================================
   ==42==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x02965e5a at pc 0x000015f0 bp 0x02965a30 sp 0x02965a30
   WRITE of size 11 at 0x02965e5a thread T0
       #0 0x15f0 in __asan_memset+0x15f0 (a.out.wasm+0x15f0)
       #1 0xc46 in __original_main stack_buffer_overflow.c:5:3
       #2 0xcbc in main+0xcbc (a.out.wasm+0xcbc)
-      #3 0x800019bc in Object.Module._main a.out.js:6588:32
-      #4 0x80001aeb in Object.callMain a.out.js:6891:30
-      #5 0x80001b25 in doRun a.out.js:6949:60
-      #6 0x80001b33 in run a.out.js:6963:5
-      #7 0x80001ad6 in runCaller a.out.js:6870:29
+      #3 0x800019bc in Object.Module._main out.js:6588:32
+      #4 0x80001aeb in Object.callMain out.js:6891:30
+      #5 0x80001b25 in doRun out.js:6949:60
+      #6 0x80001b33 in run out.js:6963:5
+      #7 0x80001ad6 in runCaller out.js:6870:29
 
   Address 0x02965e5a is located in stack of thread T0 at offset 26 in frame
       #0 0x11  (a.out.wasm+0x11)
@@ -193,8 +193,8 @@ Consider ``use_after_free.cpp``:
 
 .. code-block:: console
 
-  $ em++ -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH use_after_free.cpp
-  $ node a.out.js
+  $ em++ -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH use_after_free.cpp -o out.js
+  $ node out.js
   =================================================================
   ==42==ERROR: AddressSanitizer: heap-use-after-free on address 0x03203e40 at pc 0x00000c1b bp 0x02965e70 sp 0x02965e7c
   READ of size 4 at 0x03203e40 thread T0
@@ -206,21 +206,21 @@ Consider ``use_after_free.cpp``:
       #0 0x5fe8 in operator delete[](void*)+0x5fe8 (a.out.wasm+0x5fe8)
       #1 0xb76 in __original_main use_after_free.cpp:3:3
       #2 0xc48 in main+0xc48 (a.out.wasm+0xc48)
-      #3 0x800019b5 in Object.Module._main a.out.js:6581:32
-      #4 0x80001ade in Object.callMain a.out.js:6878:30
-      #5 0x80001b18 in doRun a.out.js:6936:60
-      #6 0x80001b26 in run a.out.js:6950:5
-      #7 0x80001ac9 in runCaller a.out.js:6857:29
+      #3 0x800019b5 in Object.Module._main out.js:6581:32
+      #4 0x80001ade in Object.callMain out.js:6878:30
+      #5 0x80001b18 in doRun out.js:6936:60
+      #6 0x80001b26 in run out.js:6950:5
+      #7 0x80001ac9 in runCaller out.js:6857:29
 
   previously allocated by thread T0 here:
       #0 0x5db4 in operator new[](unsigned long)+0x5db4 (a.out.wasm+0x5db4)
       #1 0xb41 in __original_main use_after_free.cpp:2:16
       #2 0xc48 in main+0xc48 (a.out.wasm+0xc48)
-      #3 0x800019b5 in Object.Module._main a.out.js:6581:32
-      #4 0x80001ade in Object.callMain a.out.js:6878:30
-      #5 0x80001b18 in doRun a.out.js:6936:60
-      #6 0x80001b26 in run a.out.js:6950:5
-      #7 0x80001ac9 in runCaller a.out.js:6857:29
+      #3 0x800019b5 in Object.Module._main out.js:6581:32
+      #4 0x80001ade in Object.callMain out.js:6878:30
+      #5 0x80001b18 in doRun out.js:6936:60
+      #6 0x80001b26 in run out.js:6950:5
+      #7 0x80001ac9 in runCaller out.js:6857:29
 
   SUMMARY: AddressSanitizer: heap-use-after-free (a.out.wasm+0xc1a)
   ...
@@ -238,8 +238,8 @@ Consider ``leak.cpp``:
 
 .. code-block:: console
 
-  $ em++ -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH -sEXIT_RUNTIME leak.cpp
-  $ node a.out.js
+  $ em++ -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH -sEXIT_RUNTIME leak.cpp -o out.js
+  $ node out.js
 
   =================================================================
   ==42==ERROR: LeakSanitizer: detected memory leaks
@@ -248,11 +248,11 @@ Consider ``leak.cpp``:
       #0 0x5ce5 in operator new[](unsigned long)+0x5ce5 (a.out.wasm+0x5ce5)
       #1 0xb24 in __original_main leak.cpp:2:3
       #2 0xb3a in main+0xb3a (a.out.wasm+0xb3a)
-      #3 0x800019b8 in Object.Module._main a.out.js:6584:32
-      #4 0x80001ae1 in Object.callMain a.out.js:6881:30
-      #5 0x80001b1b in doRun a.out.js:6939:60
-      #6 0x80001b29 in run a.out.js:6953:5
-      #7 0x80001acc in runCaller a.out.js:6860:29
+      #3 0x800019b8 in Object.Module._main out.js:6584:32
+      #4 0x80001ae1 in Object.callMain out.js:6881:30
+      #5 0x80001b1b in doRun out.js:6939:60
+      #6 0x80001b29 in run out.js:6953:5
+      #7 0x80001acc in runCaller out.js:6860:29
 
   SUMMARY: AddressSanitizer: 40 byte(s) leaked in 1 allocation(s).
 
@@ -317,8 +317,8 @@ can cause traps. Hence, it is not enabled by default.
 
 .. code-block:: console
 
-  $ emcc -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH use_after_return.c
-  $ node a.out.js
+  $ emcc -gsource-map -fsanitize=address -sALLOW_MEMORY_GROWTH use_after_return.c -o out.js
+  $ node out.js
   =================================================================
   ==42==ERROR: AddressSanitizer: stack-use-after-return on address 0x02a95010 at pc 0x00000d90 bp 0x02965f70 sp 0x02965f7c
   WRITE of size 4 at 0x02a95010 thread T0

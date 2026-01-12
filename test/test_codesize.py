@@ -229,7 +229,7 @@ class codesize(RunnerCore):
     expected_basename = test_file('codesize', self.id().split('.')[-1])
 
     # Run once without closure and parse output to find wasmImports
-    build_cmd = [compiler_for(filename), filename, '--output-eol=linux', '--emit-minification-map=minify.map'] + cflags + self.get_cflags()
+    build_cmd = [compiler_for(filename), filename, '-o', 'a.out.js', '--output-eol=linux', '--emit-minification-map=minify.map'] + cflags + self.get_cflags()
     self.run_process(build_cmd + ['-g2'])
     # find the imports we send from JS
     # TODO(sbc): Find a way to do that that doesn't depend on internal details of
@@ -411,15 +411,15 @@ class codesize(RunnerCore):
     self.run_codesize_test('hello_world.c', cflags=['-sSTRICT', '-O3', '--preload-file=somefile.txt'], check_full_js=True)
 
   def test_small_js_flags(self):
-    self.emcc('browser_test_hello_world.c', ['-O3', '--closure=1', '-sINCOMING_MODULE_JS_API=[]', '-sENVIRONMENT=web', '--output-eol=linux'])
+    self.emcc('browser_test_hello_world.c', ['-O3', '--closure=1', '-sINCOMING_MODULE_JS_API=[]', '-sENVIRONMENT=web', '--output-eol=linux', '-o', 'a.out.js'])
     self.check_output_sizes('a.out.js')
 
   # This test verifies that gzipped binary-encoded a SINGLE_FILE build results in a smaller size
   # than gzipped base64-encoded version.
   def test_binary_encode_is_smaller_than_base64_encode(self):
-    self.emcc('hello_world.c', ['-O2', '-sSINGLE_FILE', '-sSINGLE_FILE_BINARY_ENCODE'])
+    self.emcc('hello_world.c', ['-o', 'a.out.js', '-O2', '-sSINGLE_FILE', '-sSINGLE_FILE_BINARY_ENCODE'])
     size_binary_encode = len(gzip.compress(read_binary('a.out.js')))
-    self.emcc('hello_world.c', ['-O2', '-sSINGLE_FILE', '-sSINGLE_FILE_BINARY_ENCODE=0'])
+    self.emcc('hello_world.c', ['-o', 'a.out.js', '-O2', '-sSINGLE_FILE', '-sSINGLE_FILE_BINARY_ENCODE=0'])
     size_base64 = len(gzip.compress(read_binary('a.out.js')))
     print(f'Binary encoded file size: {size_binary_encode}, base64 encoded file size: {size_base64}')
     self.assertLess(size_binary_encode, size_base64)

@@ -74,7 +74,7 @@ You can compile that using either `-sASYNCIFY` or `-sJSPI`
 
 ::
 
-    emcc -O3 example.cpp -s<ASYNCIFY or JSPI>
+    emcc -o out.js -O3 example.cpp -s<ASYNCIFY or JSPI>
 
 .. note:: It's very important to optimize (``-O3`` here) when using Asyncify, as
           unoptimized builds are very large.
@@ -83,13 +83,13 @@ And you can run it with
 
 ::
 
-    nodejs a.out.js
+    node out.js
 
 Or with JSPI
 
 ::
 
-    nodejs --experimental-wasm-stack-switching a.out.js
+    node --experimental-wasm-stack-switching out.js
 
 You should then see something like this:
 

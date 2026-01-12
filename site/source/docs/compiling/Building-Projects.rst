@@ -344,8 +344,8 @@ The :ref:`Tutorial` showed how :ref:`emcc <emccdoc>` can be used to compile sing
 
 ::
 
-  # Generate a.out.js from C++. Can also take .ll (LLVM assembly) or .bc (LLVM bitcode) as input
-  emcc src.cpp
+  # Generate out.js from C++. Can also take .ll (LLVM assembly) or .bc (LLVM bitcode) as input
+  emcc -o out.js src.cpp
 
   # Generate an object file called src.o.
   emcc src.cpp -c
@@ -356,14 +356,14 @@ The :ref:`Tutorial` showed how :ref:`emcc <emccdoc>` can be used to compile sing
   # Generate an object file called result.o
   emcc src.cpp -c -o result.o
 
-  # Generate a.out.js from two C++ sources.
-  emcc src1.cpp src2.cpp
+  # Generate out.js from two C++ sources.
+  emcc -o out.js src1.cpp src2.cpp
 
   # Generate object files src1.o and src2.o
   emcc src1.cpp src2.cpp -c
 
-  # Combine two object files into a.out.js
-  emcc src1.o src2.o
+  # Combine two object files into out.js
+  emcc -o out.js src1.o src2.o
 
   # Combine two object files into another object file (not normally needed)
   emcc src1.o src2.o -r -o combined.o

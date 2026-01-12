@@ -3342,10 +3342,10 @@ Module["preRun"] = () => {
   })
   def test_modularize(self, args, code, opts):
     # this test is synchronous, so avoid async startup due to wasm features
-    self.compile_btest('browser_test_hello_world.c', ['-sMODULARIZE', '-sSINGLE_FILE'] + args + opts)
+    self.compile_btest('browser_test_hello_world.c', ['-o', 'out.js', '-sMODULARIZE', '-sSINGLE_FILE'] + args + opts)
     create_file('a.html', '''
       <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head><body>
-      <script src="a.out.js"></script>
+      <script src="out.js"></script>
       <script>
         %s
       </script>
@@ -3366,11 +3366,11 @@ Module["preRun"] = () => {
     self.run_browser('a.html', '/report_result?0')
 
   def test_modularize_network_error(self):
-    self.compile_btest('browser_test_hello_world.c', ['-sMODULARIZE', '-sEXPORT_NAME=createModule'], reporting=Reporting.NONE)
+    self.compile_btest('browser_test_hello_world.c', ['-o', 'out.js', '-sMODULARIZE', '-sEXPORT_NAME=createModule'], reporting=Reporting.NONE)
     self.add_browser_reporting()
     create_file('a.html', '''
       <script src="browser_reporting.js"></script>
-      <script src="a.out.js"></script>
+      <script src="out.js"></script>
       <script>
         createModule()
           .then(() => {
@@ -3386,11 +3386,11 @@ Module["preRun"] = () => {
     self.run_browser('a.html', '/report_result?Aborted(both async and sync fetching of the wasm failed)')
 
   def test_modularize_init_error(self):
-    self.compile_btest('browser/test_modularize_init_error.cpp', ['-sMODULARIZE', '-sEXPORT_NAME=createModule'], reporting=Reporting.NONE)
+    self.compile_btest('browser/test_modularize_init_error.cpp', ['-o', 'out.js', '-sMODULARIZE', '-sEXPORT_NAME=createModule'], reporting=Reporting.NONE)
     self.add_browser_reporting()
     create_file('a.html', '''
       <script src="browser_reporting.js"></script>
-      <script src="a.out.js"></script>
+      <script src="out.js"></script>
       <script>
         createModule()
           .then(() => {

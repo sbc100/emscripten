@@ -889,13 +889,8 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
     dirname = os.path.dirname(target)
     if dirname and not os.path.isdir(dirname):
       exit_with_error("specified output file (%s) is in a directory that does not exist" % target)
-  elif autoconf:
-    # Autoconf expects the executable output file to be called `a.out`
-    target = 'a.out'
-  elif settings.SIDE_MODULE:
-    target = 'a.out.wasm'
   else:
-    target = 'a.out.js'
+    target = 'a.out'
 
   final_suffix = get_file_suffix(target)
 
@@ -2920,8 +2915,11 @@ def get_secondary_target(target, ext):
   # .js and the .wasm file when creating html output.
   # This function names the secondary output files, while ensuring they
   # never collide with the primary one.
+  target_suffix = get_file_suffix(target)
+  if target_suffix in ('', '.out'):
+    return target + ext
   base = unsuffixed(target)
-  if get_file_suffix(target) == ext:
+  if target_suffix == ext:
     base += '_'
   return base + ext
 
