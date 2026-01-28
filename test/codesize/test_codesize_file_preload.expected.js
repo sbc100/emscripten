@@ -1631,7 +1631,7 @@ var FS = {
     }
     return perms;
   },
-  nodePermissions(node, perms) {
+  checkPermissions(node, perms) {
     if (FS.ignorePermissions) {
       return 0;
     }
@@ -1647,7 +1647,7 @@ var FS = {
   },
   mayLookup(dir) {
     if (!FS.isDir(dir.mode)) return 54;
-    var errCode = FS.nodePermissions(dir, "x");
+    var errCode = FS.checkPermissions(dir, "x");
     if (errCode) return errCode;
     if (!dir.node_ops.lookup) return 2;
     return 0;
@@ -1660,7 +1660,7 @@ var FS = {
       var node = FS.lookupNode(dir, name);
       return 20;
     } catch (e) {}
-    return FS.nodePermissions(dir, "wx");
+    return FS.checkPermissions(dir, "wx");
   },
   mayDelete(dir, name, isdir) {
     var node;
@@ -1669,7 +1669,7 @@ var FS = {
     } catch (e) {
       return e.errno;
     }
-    var errCode = FS.nodePermissions(dir, "wx");
+    var errCode = FS.checkPermissions(dir, "wx");
     if (errCode) {
       return errCode;
     }
@@ -1699,7 +1699,7 @@ var FS = {
         return 31;
       }
     }
-    return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
+    return FS.checkPermissions(node, FS.flagsToPermissionString(flags));
   },
   checkOpExists(op, err) {
     if (!op) {
@@ -2055,7 +2055,7 @@ var FS = {
     }
     // if we are going to change the parent, check write permissions
     if (new_dir !== old_dir) {
-      errCode = FS.nodePermissions(old_dir, "w");
+      errCode = FS.checkPermissions(old_dir, "w");
       if (errCode) {
         throw new FS.ErrnoError(errCode);
       }
@@ -2219,7 +2219,7 @@ var FS = {
     if (!FS.isFile(node.mode)) {
       throw new FS.ErrnoError(28);
     }
-    var errCode = FS.nodePermissions(node, "w");
+    var errCode = FS.checkPermissions(node, "w");
     if (errCode) {
       throw new FS.ErrnoError(errCode);
     }
@@ -2518,7 +2518,7 @@ var FS = {
     if (!FS.isDir(lookup.node.mode)) {
       throw new FS.ErrnoError(54);
     }
-    var errCode = FS.nodePermissions(lookup.node, "x");
+    var errCode = FS.checkPermissions(lookup.node, "x");
     if (errCode) {
       throw new FS.ErrnoError(errCode);
     }

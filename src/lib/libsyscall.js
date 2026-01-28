@@ -943,7 +943,7 @@ var SyscallsLibrary = {
     if (amode & {{{ cDefs.R_OK }}}) perms += 'r';
     if (amode & {{{ cDefs.W_OK }}}) perms += 'w';
     if (amode & {{{ cDefs.X_OK }}}) perms += 'x';
-    if (perms /* otherwise, they've just passed F_OK */ && FS.nodePermissions(node, perms)) {
+    if (perms /* otherwise, they've just passed F_OK */ && FS.checkPermissions(node, perms)) {
       return -{{{ cDefs.EACCES }}};
     }
     return 0;

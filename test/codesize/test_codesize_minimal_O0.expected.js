@@ -1162,7 +1162,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'FS_isFIFO',
   'FS_isSocket',
   'FS_flagsToPermissionString',
-  'FS_nodePermissions',
+  'FS_checkPermissions',
   'FS_mayLookup',
   'FS_mayCreate',
   'FS_mayDelete',

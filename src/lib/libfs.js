@@ -361,7 +361,7 @@ FS.staticInit();`;
     //
     // permissions
     //
-    // convert O_* bitmask to a string for nodePermissions
+    // convert O_* bitmask to a string for checkPermissions
     flagsToPermissionString(flag) {
       var perms = ['r', 'w', 'rw'][flag & 3];
       if ((flag & {{{ cDefs.O_TRUNC }}})) {
@@ -369,7 +369,7 @@ FS.staticInit();`;
       }
       return perms;
     },
-    nodePermissions(node, perms) {
+    checkPermissions(node, perms) {
       if (FS.ignorePermissions) {
         return 0;
       }
@@ -385,7 +385,7 @@ FS.staticInit();`;
     },
     mayLookup(dir) {
       if (!FS.isDir(dir.mode)) return {{{ cDefs.ENOTDIR }}};
-      var errCode = FS.nodePermissions(dir, 'x');
+      var errCode = FS.checkPermissions(dir, 'x');
       if (errCode) return errCode;
       if (!dir.node_ops.lookup) return {{{ cDefs.EACCES }}};
       return 0;
@@ -399,7 +399,7 @@ FS.staticInit();`;
         return {{{ cDefs.EEXIST }}};
       } catch (e) {
       }
-      return FS.nodePermissions(dir, 'wx');
+      return FS.checkPermissions(dir, 'wx');
     },
     mayDelete(dir, name, isdir) {
       var node;
@@ -408,7 +408,7 @@ FS.staticInit();`;
       } catch (e) {
         return e.errno;
       }
-      var errCode = FS.nodePermissions(dir, 'wx');
+      var errCode = FS.checkPermissions(dir, 'wx');
       if (errCode) {
         return errCode;
       }
@@ -438,7 +438,7 @@ FS.staticInit();`;
           return {{{ cDefs.EISDIR }}};
         }
       }
-      return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
+      return FS.checkPermissions(node, FS.flagsToPermissionString(flags));
     },
     checkOpExists(op, err) {
       if (!op) {
@@ -857,7 +857,7 @@ FS.staticInit();`;
       }
       // if we are going to change the parent, check write permissions
       if (new_dir !== old_dir) {
-        errCode = FS.nodePermissions(old_dir, 'w');
+        errCode = FS.checkPermissions(old_dir, 'w');
         if (errCode) {
           throw new FS.ErrnoError(errCode);
         }
@@ -1028,7 +1028,7 @@ FS.staticInit();`;
       if (!FS.isFile(node.mode)) {
         throw new FS.ErrnoError({{{ cDefs.EINVAL }}});
       }
-      var errCode = FS.nodePermissions(node, 'w');
+      var errCode = FS.checkPermissions(node, 'w');
       if (errCode) {
         throw new FS.ErrnoError(errCode);
       }
@@ -1371,7 +1371,7 @@ FS.staticInit();`;
       if (!FS.isDir(lookup.node.mode)) {
         throw new FS.ErrnoError({{{ cDefs.ENOTDIR }}});
       }
-      var errCode = FS.nodePermissions(lookup.node, 'x');
+      var errCode = FS.checkPermissions(lookup.node, 'x');
       if (errCode) {
         throw new FS.ErrnoError(errCode);
       }
