@@ -20,6 +20,8 @@ See docs/process.md for more on how version tagging works.
 
 5.0.1 (in development)
 ----------------------
+- `logReadFiles` was removed from `INCOMING_MODULE_JS_API` by default.  To use
+  this feature you now need to explictly add this to `INCOMING_MODULE_JS_API`
 
 5.0.0 - 01/24/26
 ----------------
