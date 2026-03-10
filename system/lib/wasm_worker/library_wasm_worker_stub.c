@@ -19,6 +19,7 @@ emscripten_wasm_worker_t emscripten_malloc_wasm_worker(size_t stackSize) {
 void emscripten_wasm_worker_sleep(int64_t nsecs) {
 }
 
+#if !defined(__EMSCRIPTEN_PTHREADS__) && !defined(__EMSCRIPTEN_WASM_WORKERS__)
 void emscripten_lock_init(emscripten_lock_t *lock) {
 }
 
@@ -86,3 +87,4 @@ ATOMICS_WAIT_TOKEN_T emscripten_condvar_wait_async(emscripten_condvar_t *condvar
 
 void emscripten_condvar_signal(emscripten_condvar_t *condvar, int64_t numWaitersToSignal) {
 }
+#endif

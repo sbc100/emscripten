@@ -1290,6 +1290,7 @@ class libc(MuslInternalLibrary,
           'emscripten_thread_state.S',
           'emscripten_futex_wait.c',
           'emscripten_futex_wake.c',
+          'emscripten_sync.c',
         ])
 
     # These files are in libc directories, but only built in libc_optz.

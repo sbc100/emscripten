@@ -5189,6 +5189,26 @@ Module["preRun"] = () => {
   def test_wasm_worker_lock_busyspin_waitinf(self):
     self.btest('wasm_worker/lock_busyspin_waitinf_acquire.c', expected='1', cflags=['-sWASM_WORKERS'])
 
+  # Tests C++ std::call_once() under WASM Workers.
+  @also_with_minimal_runtime
+  def test_wasm_worker_call_once(self):
+    self.btest('wasm_worker/call_once.cpp', expected='Success!', cflags=['-sWASM_WORKERS'])
+
+  # Tests C11 call_once() under WASM Workers.
+  @also_with_minimal_runtime
+  def test_wasm_worker_call_once_c(self):
+    self.btest('wasm_worker/call_once_c.c', expected='Success!', cflags=['-sWASM_WORKERS'])
+
+  # Tests emscripten_lock under pthreads.
+  @also_with_minimal_runtime
+  def test_pthread_emscripten_lock(self):
+    self.btest('pthread/emscripten_lock.c', expected='Success!', cflags=['-pthread'])
+
+  # Tests std::call_once under pthreads.
+  @also_with_minimal_runtime
+  def test_pthread_call_once(self):
+    self.btest('pthread/call_once.cpp', expected='Success!', cflags=['-pthread'])
+
   # Tests that proxied JS functions cannot be called from Wasm Workers
   @also_with_minimal_runtime
   def test_wasm_worker_no_proxied_js_functions(self):

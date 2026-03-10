@@ -99,6 +99,8 @@ int emscripten_pthread_attr_gettransferredcanvases(const pthread_attr_t *a __att
 // The special value "#canvas" denotes the element stored in Module.canvas.
 int emscripten_pthread_attr_settransferredcanvases(pthread_attr_t *a __attribute__((nonnull)), const char *str __attribute__((nonnull)));
 
+#include <emscripten/sync.h>
+
 // Called when blocking on the main thread. This will error if main thread
 // blocking is not enabled, see ALLOW_BLOCKING_ON_MAIN_THREAD.
 void emscripten_check_blocking_allowed(void);
