@@ -11,6 +11,8 @@
 
 #include "emscripten_internal.h"
 
+#include <math.h> // For INFINITY
+
 void emscripten_lock_init(emscripten_lock_t *lock) {
   emscripten_atomic_store_u32((void*)lock, EMSCRIPTEN_LOCK_T_STATIC_INITIALIZER);
 }
@@ -18,12 +20,13 @@ void emscripten_lock_init(emscripten_lock_t *lock) {
 bool emscripten_lock_wait_acquire(emscripten_lock_t *lock, int64_t maxWaitNanoseconds) {
   emscripten_lock_t val = emscripten_atomic_cas_u32((void*)lock, 0, 1);
   if (!val) return true;
-  int64_t waitEnd = (int64_t)(emscripten_performance_now() * 1e6) + maxWaitNanoseconds;
-  while (maxWaitNanoseconds > 0) {
-    emscripten_atomic_wait_u32((void*)lock, val, maxWaitNanoseconds);
+  double maxWaitMilliseconds = maxWaitNanoseconds / 1000000;
+  double waitEnd = emscripten_performance_now() + maxWaitMilliseconds;
+  while (maxWaitMilliseconds > 0) {
+    emscripten_futex_wait(lock, 1, maxWaitMilliseconds);
     val = emscripten_atomic_cas_u32((void*)lock, 0, 1);
     if (!val) return true;
-    maxWaitNanoseconds = waitEnd - (int64_t)(emscripten_performance_now() * 1e6);
+    maxWaitMilliseconds = waitEnd - emscripten_performance_now();
   }
   return false;
 }
@@ -33,7 +36,7 @@ void emscripten_lock_waitinf_acquire(emscripten_lock_t *lock) {
   do {
     val = emscripten_atomic_cas_u32((void*)lock, 0, 1);
     if (val) {
-      emscripten_atomic_wait_u32((void*)lock, val, ATOMICS_WAIT_DURATION_INFINITE);
+      emscripten_futex_wait(lock, 1, INFINITY);
     }
   } while (val);
 }
@@ -68,7 +71,7 @@ bool emscripten_lock_try_acquire(emscripten_lock_t *lock) {
 
 void emscripten_lock_release(emscripten_lock_t *lock) {
   emscripten_atomic_store_u32((void*)lock, 0);
-  emscripten_atomic_notify((void*)lock, 1);
+  emscripten_futex_wake(lock, 1);
 }
 
 void emscripten_semaphore_init(emscripten_semaphore_t *sem, int num) {

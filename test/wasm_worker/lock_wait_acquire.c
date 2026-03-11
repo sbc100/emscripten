@@ -13,7 +13,7 @@
 
 emscripten_lock_t lock = EMSCRIPTEN_LOCK_T_STATIC_INITIALIZER;
 
-void worker_main() {
+void run_test() {
   // Expect no contention on free lock.
   bool success = emscripten_lock_wait_acquire(&lock, 0);
   assert(success == true);
@@ -45,6 +45,11 @@ void worker_main() {
   success = emscripten_lock_try_acquire(&lock);
   assert(success);
 
+  emscripten_lock_release(&lock);
+}
+
+void worker_main() {
+  run_test();
 #ifdef REPORT_RESULT
   REPORT_RESULT(0);
 #endif
@@ -52,7 +57,7 @@ void worker_main() {
 
 #ifdef __EMSCRIPTEN_PTHREADS__
 void* thread_main(void* arg) {
-  worker_main();
+  run_test();
   return NULL;
 }
 #else
@@ -60,6 +65,10 @@ char stack[4096];
 #endif
 
 int main() {
+  // Run the test first on the main thread and then on a background thread.
+  run_test();
+  printf("main thread test done\n");
+
 #ifdef __EMSCRIPTEN_PTHREADS__
   pthread_t t;
   pthread_create(&t, NULL, thread_main, NULL);
@@ -69,5 +78,6 @@ int main() {
   emscripten_wasm_worker_t worker = emscripten_create_wasm_worker(stack, sizeof(stack));
   emscripten_wasm_worker_post_function_v(worker, worker_main);
 #endif
+
   return 0;
 }
