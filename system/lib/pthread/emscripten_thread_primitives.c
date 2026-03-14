@@ -9,9 +9,11 @@
  */
 #include <emscripten/threading.h>
 
-#include "emscripten_internal.h"
-
+#include <errno.h>
+#include <limits.h>
 #include <math.h> // For INFINITY
+
+#include "emscripten_internal.h"
 
 void emscripten_lock_init(emscripten_lock_t *lock) {
   emscripten_atomic_store_u32((void*)lock, EMSCRIPTEN_LOCK_T_STATIC_INITIALIZER);
@@ -20,7 +22,7 @@ void emscripten_lock_init(emscripten_lock_t *lock) {
 bool emscripten_lock_wait_acquire(emscripten_lock_t *lock, int64_t maxWaitNanoseconds) {
   emscripten_lock_t val = emscripten_atomic_cas_u32((void*)lock, 0, 1);
   if (!val) return true;
-  double maxWaitMilliseconds = maxWaitNanoseconds / 1000000;
+  double maxWaitMilliseconds = maxWaitNanoseconds / 1000000.0;
   double waitEnd = emscripten_performance_now() + maxWaitMilliseconds;
   while (maxWaitMilliseconds > 0) {
     emscripten_futex_wait(lock, 1, maxWaitMilliseconds);
@@ -89,16 +91,16 @@ int emscripten_semaphore_try_acquire(emscripten_semaphore_t *sem, int num) {
 }
 
 int emscripten_semaphore_wait_acquire(emscripten_semaphore_t *sem, int num, int64_t maxWaitNanoseconds) {
-  int val = emscripten_atomic_load_u32((void*)sem);
-  int64_t waitEnd = 0;
+  double maxWaitMilliseconds = maxWaitNanoseconds / 1000000.0;
+  double waitEnd = 0;
   for (;;) {
-    while (val < num && maxWaitNanoseconds > 0) {
+    while (val < num && maxWaitMilliseconds > 0) {
       // Deley initialization of waitEnd until we know we are going to need to
       // wait (since emscripten_performance_now is not cheap).
-      if (!waitEnd) waitEnd = (int64_t)(emscripten_performance_now() * 1e6) + maxWaitNanoseconds;
-      emscripten_atomic_wait_u32((void*)sem, val, maxWaitNanoseconds);
+      if (!waitEnd) waitEnd = emscripten_performance_now() + maxWaitMilliseconds;
+      emscripten_futex_wait(sem, val, maxWaitMilliseconds);
       val = emscripten_atomic_load_u32((void*)sem);
-      maxWaitNanoseconds = waitEnd - (int64_t)(emscripten_performance_now() * 1e6);
+      maxWaitMilliseconds = waitEnd - emscripten_performance_now();
     }
     // If we exited the loop and still don't have enough, it means we timed out.
     if (val < num) return -1;
@@ -112,7 +114,7 @@ int emscripten_semaphore_waitinf_acquire(emscripten_semaphore_t *sem, int num) {
   int val = emscripten_atomic_load_u32((void*)sem);
   for (;;) {
     while (val < num) {
-      emscripten_atomic_wait_u32((void*)sem, val, ATOMICS_WAIT_DURATION_INFINITE);
+      emscripten_futex_wait(sem, val, INFINITY);
       val = emscripten_atomic_load_u32((void*)sem);
     }
     int ret = (int)emscripten_atomic_cas_u32((void*)sem, val, val - num);
@@ -123,7 +125,7 @@ int emscripten_semaphore_waitinf_acquire(emscripten_semaphore_t *sem, int num) {
 
 uint32_t emscripten_semaphore_release(emscripten_semaphore_t *sem, int num) {
   uint32_t ret = emscripten_atomic_add_u32((void*)sem, num);
-  emscripten_atomic_notify((void*)sem, num);
+  emscripten_futex_wake(sem, num);
   return ret;
 }
 
@@ -134,7 +136,7 @@ void emscripten_condvar_init(emscripten_condvar_t *condvar) {
 void emscripten_condvar_waitinf(emscripten_condvar_t *condvar, emscripten_lock_t *lock) {
   int val = emscripten_atomic_load_u32((void*)condvar);
   emscripten_lock_release(lock);
-  emscripten_atomic_wait_u32((void*)condvar, val, ATOMICS_WAIT_DURATION_INFINITE);
+  emscripten_futex_wait(condvar, val, INFINITY);
   emscripten_lock_waitinf_acquire(lock);
 }
 
@@ -143,8 +145,9 @@ bool emscripten_condvar_wait(emscripten_condvar_t* condvar,
                              int64_t maxWaitNanoseconds) {
   int val = emscripten_atomic_load_u32((void*)condvar);
   emscripten_lock_release(lock);
-  int waitValue = emscripten_atomic_wait_u32((void*)condvar, val, maxWaitNanoseconds);
-  if (waitValue == ATOMICS_WAIT_TIMED_OUT) {
+  double maxWaitMilliseconds = maxWaitNanoseconds / 1000000.0;
+  int waitValue = emscripten_futex_wait(condvar, val, maxWaitMilliseconds);
+  if (waitValue == -ETIMEDOUT) {
     return false;
   }
 
@@ -163,5 +166,6 @@ ATOMICS_WAIT_TOKEN_T emscripten_condvar_wait_async(emscripten_condvar_t *condvar
 
 void emscripten_condvar_signal(emscripten_condvar_t *condvar, uint32_t numWaitersToSignal) {
   emscripten_atomic_add_u32((void*)condvar, 1);
-  emscripten_atomic_notify((void*)condvar, numWaitersToSignal);
+  int count = numWaitersToSignal < 0 || numWaitersToSignal > INT_MAX ? INT_MAX : (int)numWaitersToSignal;
+  emscripten_futex_wake(condvar, count);
 }
