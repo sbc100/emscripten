@@ -52,7 +52,7 @@ void __wasm_init_tls(void *memory);
 
 __attribute__((constructor(48)))
 static void emscripten_wasm_worker_main_thread_initialize() {
-  uintptr_t* sbrk_ptr = emscripten_get_sbrk_ptr();
+  _Atomic uintptr_t* sbrk_ptr = emscripten_get_sbrk_ptr();
   assert((*sbrk_ptr % STACK_ALIGN) == 0);
   if (__builtin_wasm_tls_align() > STACK_ALIGN) {
     *sbrk_ptr = ROUND_UP(*sbrk_ptr, __builtin_wasm_tls_align());

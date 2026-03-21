@@ -25,7 +25,7 @@ extern "C" {
 // Returns a pointer to a memory location that contains the current sbrk
 // location (which marks the end of the dynamic memory region used for malloc,
 // etc).
-uintptr_t *emscripten_get_sbrk_ptr(void);
+_Atomic uintptr_t *emscripten_get_sbrk_ptr(void);
 
 // Attempts to geometrically or linearly increase the size of the WebAssembly
 // memory (referred to as heap for legacy reason) so that its new size is at

@@ -27,9 +27,9 @@
 
 extern size_t __heap_base;
 
-static uintptr_t sbrk_val = (uintptr_t)&__heap_base;
+static _Atomic uintptr_t sbrk_val = (uintptr_t)&__heap_base;
 
-uintptr_t* emscripten_get_sbrk_ptr() {
+_Atomic uintptr_t* emscripten_get_sbrk_ptr() {
 #ifdef __PIC__
   // In relocatable code we may call emscripten_get_sbrk_ptr() during startup,
   // potentially *before* the setup of the dynamically-linked __heap_base, when
@@ -53,7 +53,7 @@ void *_sbrk64(int64_t increment) {
     increment = -(-increment & ~((int64_t)SBRK_ALIGNMENT-1));
   }
 
-  _Atomic uintptr_t *sbrk_ptr = (_Atomic uintptr_t *)emscripten_get_sbrk_ptr();
+  _Atomic uintptr_t *sbrk_ptr = emscripten_get_sbrk_ptr();
 
   // To make sbrk thread-safe, implement a CAS loop to update the
   // value of sbrk_ptr.
