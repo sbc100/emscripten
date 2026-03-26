@@ -1977,6 +1977,18 @@ addToLibrary({
 
   emscripten_throw_string: (str) => { throw UTF8ToString(str); },
 
+#if !SHARED_MEMORY
+  // In shared memory builds (both WASM_WORKERS and pthread) this function
+  // is defined in emscripten_thread_state.S.
+  emscripten_is_main_browser_thread: () =>
+#if MINIMAL_RUNTIME
+    typeof WorkerGlobalScope == 'undefined'
+#else
+    !ENVIRONMENT_IS_WORKER
+#endif
+  ,
+#endif
+
 #if !MINIMAL_RUNTIME
 #if STACK_OVERFLOW_CHECK
   $handleException__deps: ['emscripten_stack_get_current'],

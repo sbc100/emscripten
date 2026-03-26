@@ -1583,7 +1583,6 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
   else:
     if settings.PROXY_TO_PTHREAD:
       exit_with_error('-sPROXY_TO_PTHREAD requires -pthread to work!')
-    add_system_js_lib('libpthread_stub.js')
 
   if settings.MEMORY64:
     # Any "pointers" passed to JS will now be i64's, in both modes.
