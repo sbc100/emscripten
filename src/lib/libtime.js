@@ -18,7 +18,7 @@ addToLibrary({
                         {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_sec, 'i32') }}},
                         0);
     if (isNaN(date.getTime())) {
-      return -1;
+      return Number.MAX_SAFE_INTEGER;
     }
 
     // There's an ambiguous hour when the time goes back; the tm_isdst field is
@@ -87,6 +87,9 @@ addToLibrary({
                         {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_min, 'i32') }}},
                         {{{ makeGetValue('tmPtr', C_STRUCTS.tm.tm_sec, 'i32') }}},
                         0);
+    if (isNaN(time)) {
+      return Number.MAX_SAFE_INTEGER;
+    }
     var date = new Date(time);
     if (isNaN(date.getTime())) {
       return -1;

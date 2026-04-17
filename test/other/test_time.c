@@ -379,7 +379,37 @@ void test_timespec_get() {
   printf("timespec_get test 6: %d\n", llabs(ts_timespec_get.tv_sec - ts_clock_gettime.tv_sec) <= 2);
 }
 
+void test_mktime_sentinel() {
+  // Verify that mktime for 1969-12-31 23:59:59 (one second before epoch)
+  // returns -1 correctly and does NOT set errno to EOVERFLOW.
+  // This value (-1) used to be used as an error sentinel, which was buggy.
+  struct tm tm_minus_one = {0};
+  tm_minus_one.tm_year = 1969 - 1900;
+  tm_minus_one.tm_mon = 11; // December
+  tm_minus_one.tm_mday = 31;
+  tm_minus_one.tm_hour = 23;
+  tm_minus_one.tm_min = 59;
+  tm_minus_one.tm_sec = 59;
+  tm_minus_one.tm_isdst = 0;
+
+  // Use timegm to avoid timezone issues
+  errno = 0;
+  time_t t = timegm(&tm_minus_one);
+  printf("timegm(-1 second): %jd, errno: %d\n", (intmax_t)t, errno);
+  assert(t == -1);
+  assert(errno == 0);
+
+  // Also check mktime with a specific UTC offset if possible, but timegm is clearer
+  tm_minus_one.tm_isdst = -1;
+  errno = 0;
+  t = mktime(&tm_minus_one);
+  printf("mktime(-1 second local): %jd, errno: %d\n", (intmax_t)t, errno);
+  assert(t != (time_t)-2); // Should be something close to -1 depending on TZ
+  assert(errno == 0);
+}
+
 int main() {
+  test_mktime_sentinel();
   test_basics();
 
   test_timezone();

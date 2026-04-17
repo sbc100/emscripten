@@ -11,14 +11,20 @@
 
 weak time_t timegm(struct tm *tm) {
   tzset();
-  return _timegm_js(tm);
+  time_t t = _timegm_js(tm);
+  if (t == MKTIME_JS_ERROR) {
+    errno = EOVERFLOW;
+    return -1;
+  }
+  return t;
 }
 
 weak time_t mktime(struct tm *tm) {
   tzset();
   time_t t = _mktime_js(tm);
-  if (t == -1) {
+  if (t == MKTIME_JS_ERROR) {
     errno = EOVERFLOW;
+    return -1;
   }
   return t;
 }

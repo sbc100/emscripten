@@ -45,6 +45,13 @@ void* _emscripten_memset_bulkmem(void* ptr, char value, size_t n);
 
 void emscripten_notify_memory_growth(size_t memory_index);
 
+// The sentinel value used by _mktime_js and _timegm_js to signal that the
+// input cannot be represented by the JS Date object.
+// We use Number.MAX_SAFE_INTEGER (2^53-1) because it is well outside the
+// valid range of JS Date (which is +/- 100,000,000 days or +/- 8.64e12 seconds)
+// and it is exactly representable in both JS and C.
+#define MKTIME_JS_ERROR 9007199254740991LL
+
 time_t _timegm_js(struct tm* tm);
 time_t _mktime_js(struct tm* tm);
 int _localtime_js(time_t t, struct tm* __restrict__ tm);
