@@ -25,20 +25,22 @@ int __pthread_mutex_trylock_owner(pthread_mutex_t *m)
 	if (own == 0x3fffffff) return ENOTRECOVERABLE;
 	if (own || (old && !(type & 4))) return EBUSY;
 
+#ifndef __EMSCRIPTEN__ // XXX Emscripten does not support process-shared locks.
 	if (type & 128) {
 		if (!self->robust_list.off) {
 			self->robust_list.off = (char*)&m->_m_lock-(char *)&m->_m_next;
-#ifndef __EMSCRIPTEN__ // XXX Emscripten does not have a concept of multiple processes or kernel space, so robust mutex lists don't need to register to kernel.
 			__syscall(SYS_set_robust_list, &self->robust_list, 3*sizeof(long));
-#endif
 		}
 		if (m->_m_waiters) tid |= 0x80000000;
 		self->robust_list.pending = &m->_m_next;
 	}
+#endif
 	tid |= old & 0x40000000;
 
 	if (a_cas(&m->_m_lock, old, tid) != old) {
+#ifndef __EMSCRIPTEN__ // XXX Emscripten does not support process-shared locks.
 		self->robust_list.pending = 0;
+#endif
 		if ((type&12)==12 && m->_m_waiters) return ENOTRECOVERABLE;
 		return EBUSY;
 	}
@@ -65,7 +67,9 @@ success:
 	if (next != &self->robust_list.head) *(volatile void *volatile *)
 		((char *)next - sizeof(void *)) = &m->_m_next;
 	self->robust_list.head = &m->_m_next;
+#ifndef __EMSCRIPTEN__ // XXX Emscripten does not support process-shared locks.
 	self->robust_list.pending = 0;
+#endif
 
 	if (old) {
 		m->_m_count = 0;

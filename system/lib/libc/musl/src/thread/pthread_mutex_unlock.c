@@ -6,7 +6,11 @@ int __pthread_mutex_unlock(pthread_mutex_t *m)
 	int waiters = m->_m_waiters;
 	int cont;
 	int type = m->_m_type & 15;
+#ifdef __EMSCRIPTEN__
+	int priv = 1;
+#else
 	int priv = (m->_m_type & 128) ^ 128;
+#endif
 	int new = 0;
 	int old;
 
@@ -20,10 +24,12 @@ int __pthread_mutex_unlock(pthread_mutex_t *m)
 			return m->_m_count--, 0;
 		if ((type&4) && (old&0x40000000))
 			new = 0x7fffffff;
+#ifndef __EMSCRIPTEN__
 		if (!priv) {
 			self->robust_list.pending = &m->_m_next;
 			__vm_lock();
 		}
+#endif
 		volatile void *prev = m->_m_prev;
 		volatile void *next = m->_m_next;
 		*(volatile void *volatile *)prev = next;
@@ -43,11 +49,11 @@ int __pthread_mutex_unlock(pthread_mutex_t *m)
 	} else {
 		cont = a_swap(&m->_m_lock, new);
 	}
-#endif
 	if (type != PTHREAD_MUTEX_NORMAL && !priv) {
 		self->robust_list.pending = 0;
 		__vm_unlock();
 	}
+#endif
 	if (waiters || cont<0)
 		__wake(&m->_m_lock, 1, priv);
 	return 0;

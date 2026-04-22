@@ -69,7 +69,11 @@ int __pthread_mutex_timedlock(pthread_mutex_t *restrict m, const struct timespec
 #endif
 
 	int type = m->_m_type;
+#ifdef __EMSCRIPTEN__
+	int r, t, priv = 1;
+#else
 	int r, t, priv = (type & 128) ^ 128;
+#endif
 
 	r = __pthread_mutex_trylock(m);
 	if (r != EBUSY) return r;

@@ -344,13 +344,12 @@ void _emscripten_thread_exit(void* result) {
     pthread_mutex_t *m = (void *)((char *)rp
       - offsetof(pthread_mutex_t, _m_next));
     int waiters = m->_m_waiters;
-    int priv = (m->_m_type & 128) ^ 128;
     self->robust_list.pending = rp;
     self->robust_list.head = *rp;
     int cont = a_swap(&m->_m_lock, 0x40000000);
     self->robust_list.pending = 0;
     if (cont < 0 || waiters)
-      __wake(&m->_m_lock, 1, priv);
+      __wake(&m->_m_lock, 1, 1);
   }
   __vm_unlock();
 
