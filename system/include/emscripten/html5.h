@@ -205,6 +205,9 @@ EMSCRIPTEN_RESULT emscripten_get_deviceorientation_status(EmscriptenDeviceOrient
 #define EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ACCELERATION                   0x01
 #define EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ACCELERATION_INCLUDING_GRAVITY 0x02
 #define EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ROTATION_RATE                  0x04
+#pragma clang deprecated(EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ACCELERATION, "always available in modern browsers")
+#pragma clang deprecated(EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ACCELERATION_INCLUDING_GRAVITY, "always available in modern browsers")
+#pragma clang deprecated(EMSCRIPTEN_DEVICE_MOTION_EVENT_SUPPORTS_ROTATION_RATE, "always available in modern browsers")
 
 typedef struct EmscriptenDeviceMotionEvent {
   double accelerationX;
