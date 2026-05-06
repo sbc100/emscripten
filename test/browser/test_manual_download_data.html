@@ -148,8 +148,9 @@
         };
       };
 
-      function download(url) {
-        return fetch(url).then((rsp) => rsp.arrayBuffer());
+      async function download(url) {
+        const rsp = await fetch(url);
+        return rsp.arrayBuffer();
       }
 
       function addScriptToDom(scriptCode) {
@@ -174,15 +175,15 @@
         });
       }
 
-      var dataDownload = download('/test/test_manual_download_data.data').then((data) => {
+      (async () => {
+        const data = await download('/test/test_manual_download_data.data');
         console.log('downloaded data file');
         Module['downloadedData'] = data;
-        var jsDownload = download('/test/test_manual_download_data.js').then((data) => {
-          console.log('downloaded js file');
-          Module['mainScriptUrlOrBlob'] = new Blob([data], { type: 'application/javascript' });
-          addScriptToDom(data);
-        });
-      });
+        var jsData = await download('/test/test_manual_download_data.js');
+        console.log('downloaded js file');
+        Module['mainScriptUrlOrBlob'] = new Blob([jsData], { type: 'application/javascript' });
+        await addScriptToDom(jsData);
+      })();
     </script>
   </body>
 </html>

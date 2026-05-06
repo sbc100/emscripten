@@ -12,6 +12,5 @@ var params = {
 params.print("testing..");
 
 import Module from './hello.mjs';
-Module(params).then((instance) => {
-  console.log('loaded');
-});
+const instance = await Module(params);
+console.log('loaded');

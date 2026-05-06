@@ -10475,9 +10475,8 @@ T6:(else) !ASSERTIONS""", output)
       ext = '.mjs'
       create_file('moduleLoader.mjs', '''
         import test_module from "./subdir/module.mjs";
-        test_module().then((test_module_instance) => {
-          console.log("done");
-        });
+        const test_module_instance = await test_module();
+        console.log("done");
         ''')
     else:
       ext = '.js'

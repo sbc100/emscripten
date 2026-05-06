@@ -8426,17 +8426,14 @@ double floatf() {
 }
 ''')
     create_file('pre.js', r'''
-Module.onRuntimeInitialized = () => {
+Module.onRuntimeInitialized = async () => {
   runtimeKeepalivePush();
-  ccall('stringf', 'string', ['string'], ['first\n'], { async: true })
-    .then(function(val) {
-      out(val);
-      ccall('floatf', 'number', null, null, { async: true }).then(function(arg) {
-        out(arg);
-        runtimeKeepalivePop();
-        maybeExit();
-      });
-    });
+  const val = await ccall('stringf', 'string', ['string'], ['first\n'], { async: true })
+  out(val);
+  const arg = await ccall('floatf', 'number', null, null, { async: true });
+  out(arg);
+  runtimeKeepalivePop();
+  maybeExit();
 };
 ''')
     self.cflags += ['--pre-js', 'pre.js', '-sINCOMING_MODULE_JS_API=onRuntimeInitialized']

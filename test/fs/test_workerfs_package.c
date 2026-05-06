@@ -40,18 +40,23 @@ void EMSCRIPTEN_KEEPALIVE finish() {
 }
 
 int main() {
-  // Load the metadata and data of our file package. When they arrive, load the contents of the package into our filesystem.
-  // The data arrives as a Blob, which could in other cases arrive from any other way a Blob can arrive:
-  //   * Local file the user selected
-  //   * Data loaded from IndexedDB
-  // In all cases, including the one here of a network request, Blobs allow the browser to optimize them so that
-  // a large file is not necessarily all in memory at once.
-  EM_ASM((
-    var meta, blob;
-    function maybeReady() {
-      if (!(meta && blob)) return;
+  EM_ASM({
+    // Async IIFE so we can use `await` in EM_ASM code
+    (async () => {
+      // Load the metadata and data of our file package. When they arrive, load the contents of the package into our filesystem.
+      // The data arrives as a Blob, which could in other cases arrive from any other way a Blob can arrive:
+      //   * Local file the user selected
+      //   * Data loaded from IndexedDB
+      // In all cases, including the one here of a network request, Blobs allow the browser to optimize them so that
+      // a large file is not necessarily all in memory at once.
+      const rsp = await fetch("files.js.metadata");
+      const json = await rsp.text();
+      const meta = JSON.parse(json);
+      out('got metadata');
 
-      meta = JSON.parse(meta);
+      const rspData = await fetch("files.data");
+      const blob = await rspData.blob();
+      out('got data');
 
       out('loading into filesystem');
       FS.mkdir('/files');
@@ -60,26 +65,10 @@ int main() {
       }, '/files');
 
       ccall('finish');
-    }
-
-    fetch("files.js.metadata")
-      .then((rsp) => rsp.text())
-      .then((text) => {
-        out('got metadata');
-        meta = text;
-        maybeReady();
-      });
-
-    fetch("files.data")
-      .then((rsp) => rsp.blob())
-      .then((data) => {
-        blob = data;
-        maybeReady();
-      });
-  ));
+    })();
+  });
 
   emscripten_exit_with_live_runtime();
-
   return 99;
 }
 

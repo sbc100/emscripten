@@ -144,9 +144,14 @@ int main() {
   EM_ASM((
     var COMPLETE_SIZE = 10*1024*128*3;
 
-    var meta, data;
-    function maybeReady() {
-      if (!(meta && data)) return;
+    (async () => {
+      let rsp = await fetch("files.js.metadata");
+      let meta = await rsp.text();
+      out('got meatadata');
+
+      rsp = await fetch("files.data");
+      const data = await rsp.arrayBuffer();
+      out('got data');
 
       meta = JSON.parse(meta);
 
@@ -162,22 +167,8 @@ int main() {
       assert(compressedSize > low && compressedSize < high); // more than 1/3, because 1/3 is uncompressible, but still, less than 1/2
 
       ccall('finish');
-    }
+    })();
 
-    fetch("files.js.metadata")
-      .then((rsp) => rsp.text())
-      .then((text) => {
-        meta = text;
-        maybeReady();
-      });
-
-    fetch("files.data")
-      .then((rsp) => rsp.arrayBuffer())
-      .then((buf) => {
-        out('got data');
-        data = buf;
-        maybeReady();
-      });
   ));
 
   emscripten_exit_with_live_runtime();

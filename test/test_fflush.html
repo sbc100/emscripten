@@ -78,8 +78,9 @@
         gotStderr: false,
         gotStdCerr: false,
 
-        reportSuccess: function() {
-          fetch('/report_result?0').then(() => window.close());
+        reportSuccess: async function() {
+          await fetch('/report_result?0');
+          window.close());
         },
 
         print: (function() {
