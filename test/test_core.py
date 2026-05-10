@@ -9925,13 +9925,22 @@ int main() {
 
     self.assertContained('main\nfoo\nbar\n', self.run_js('runner.mjs'))
 
-  @disabled('https://github.com/emscripten-core/emscripten/issues/27223')
+  @crossplatform
   @no_esm_integration('fcoverage is not compatible with WASM_ESM_INTEGRATION')
   @no_wasm2js('wasm binary required to produce code coverage results with llvm-cov')
   def test_fcoverage_mapping(self):
-    expected = '''\
+    self.set_setting('NODERAWFS') # Without this the profile data only exists in MEMFS
+    self.set_setting('EXIT_RUNTIME')
+    copy_asset('core/test_fcoverage_mapping.c')
+    self.do_runf('test_fcoverage_mapping.c', cflags=['-fprofile-instr-generate', '-fcoverage-mcdc', '-fcoverage-mapping', '-g', '-fcoverage-compilation-dir=.'])
+    self.assertExists('default.profraw')
+    self.run_process([LLVM_PROFDATA, 'merge', '-sparse', 'default.profraw', '-o', 'out.profdata'])
+    self.assertExists('out.profdata')
+
+    # Test the output of `llvm-cov show`
+    expected_show = '''\
     1|       |/*
-    2|       | * Copyright 2016 The Emscripten Authors.  All rights reserved.
+    2|       | * Copyright 2026 The Emscripten Authors.  All rights reserved.
     3|       | * Emscripten is available under two separate licenses, the MIT license and the
     4|       | * University of Illinois/NCSA Open Source License.  Both these licenses can be
     5|       | * found in the LICENSE file.
@@ -9939,19 +9948,39 @@ int main() {
     7|       |
     8|       |#include <stdio.h>
     9|       |
-   10|      1|int main() {
-   11|      1|  printf("Hello, world!\\n");
-   12|      1|  return 0;
-   13|      1|}
+   10|      1|int main(int argc, char* argv[0]) {
+   11|      1|  if (argc > 2) {
+   12|      0|    printf("conditional!\\n");
+   13|      0|  }
+   14|      1|  printf("Hello, world!\\n");
+   15|      1|  return 0;
+   16|      1|}
 
 '''
-    self.set_setting('NODERAWFS')
-    self.set_setting('EXIT_RUNTIME')
-    self.do_core_test('test_hello_world.c', cflags=['-fprofile-instr-generate', '-fcoverage-mapping', '-g'])
-    self.assertExists('default.profraw')
-    self.run_process([LLVM_PROFDATA, 'merge', '-sparse', 'default.profraw', '-o', 'out.profdata'])
-    self.assertExists('out.profdata')
-    self.assertEqual(expected, self.run_process([LLVM_COV, 'show', 'test_hello_world.wasm', '-instr-profile=out.profdata'], stdout=PIPE).stdout)
+    show = self.run_process([LLVM_COV, 'show', '-show-mcdc-summary', 'test_fcoverage_mapping.wasm', '-instr-profile=out.profdata'], stdout=PIPE).stdout
+    self.assertTextDataIdentical(expected_show, show)
+
+    # Test the output of `llvm-cov report`
+    expected_report = '''\
+Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_fcoverage_mapping.c            3                 1    66.67%           1                 0   100.00%           7                 2    71.43%           2                 1    50.00%
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                               3                 1    66.67%           1                 0   100.00%           7                 2    71.43%           2                 1    50.00%
+'''
+    report = self.run_process([LLVM_COV, 'report', 'test_fcoverage_mapping.wasm', '-instr-profile=out.profdata'], stdout=PIPE).stdout
+    self.assertTextDataIdentical(expected_report, report)
+
+    # Same again but with mcdc info
+    expected_report_mcdc = '''\
+Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover    MC/DC Conditions    Missed Conditions     Cover
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_fcoverage_mapping.c            3                 1    66.67%           1                 0   100.00%           7                 2    71.43%           2                 1    50.00%                   0                    0         -
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                               3                 1    66.67%           1                 0   100.00%           7                 2    71.43%           2                 1    50.00%                   0                    0         -
+'''
+    report = self.run_process([LLVM_COV, 'report', '-show-mcdc-summary', 'test_fcoverage_mapping.wasm', '-instr-profile=out.profdata'], stdout=PIPE).stdout
+    self.assertTextDataIdentical(expected_report_mcdc, report)
 
 # Generate tests for everything
 def make_run(name, cflags=None, settings=None, env=None, # noqa
