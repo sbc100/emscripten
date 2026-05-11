@@ -462,6 +462,7 @@ jobs:
       - checkout
       - pip-install
       - run: ruff check
+      - run: ty check
   vulture:
     executor: ubuntu-lts
     steps:

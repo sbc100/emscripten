@@ -2,6 +2,14 @@
 name = "emscripten"
 requires-python = ">=3.10"
 
+[tool.ty.src]
+exclude = [
+ "tools/toolchain_profiler.py"
+]
+
+[tool.ty.environment]
+extra-paths = ["./third_party"]
+
 [tool.ruff]
 preview = true
 line-length = 100

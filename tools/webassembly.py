@@ -196,7 +196,6 @@ class Module:
   """
 
   def __init__(self, filename):
-    self.buf = None # Set this before FS calls below in case they throw.
     self.filename = filename
     self.size = os.path.getsize(filename)
     self.buf = open(filename, 'rb')

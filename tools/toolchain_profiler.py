@@ -111,11 +111,11 @@ if EMPROFILE == 1:
       ToolchainProfiler.record_subprocess_finish(self.pid, self.returncode)
       return output
 
-  sys.exit = profiled_sys_exit
-  subprocess.call = profiled_call
-  subprocess.check_call = profiled_check_call
-  subprocess.check_output = profiled_check_output
-  subprocess.Popen = ProfiledPopen
+  sys.exit = profiled_sys_exit  # ty: ignore[assignment]
+  subprocess.call = profiled_call  # ty: ignore[assignment]
+  subprocess.check_call = profiled_check_call  # ty: ignore[assignment]
+  subprocess.check_output = profiled_check_output  # ty: ignore[assignment]
+  subprocess.Popen = ProfiledPopen  # ty: ignore[assignment]
 
   class ToolchainProfiler:
     # Provide a running counter towards negative numbers for PIDs for which we
@@ -243,7 +243,7 @@ if EMPROFILE == 1:
       def __enter__(self):
         ToolchainProfiler.enter_block(self.name)
 
-      def __exit__(self, type, value, traceback):
+      def __exit__(self, exc_type, value, traceback):
         ToolchainProfiler.exit_block(self.name)
 
     @staticmethod

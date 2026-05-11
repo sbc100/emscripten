@@ -237,6 +237,11 @@ def get_num_cores():
 
 memoize = functools.cache
 
+EMSCRIPTEN_VERSION = None
+EMSCRIPTEN_VERSION_MAJOR = None
+EMSCRIPTEN_VERSION_MINOR = None
+EMSCRIPTEN_VERSION_TINY = None
+
 
 # TODO: Move this back to shared.py once importing that file becoming side effect free (i.e. it no longer requires a config).
 def set_version_globals():

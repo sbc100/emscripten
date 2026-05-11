@@ -555,7 +555,7 @@ class Library:
       run_build_commands(commands, num_inputs=len(objects))
     return objects
 
-  def customize_build_cmd(self, cmd, _filename):
+  def customize_build_cmd(self, cmd, filename):
     """Return a build command specialized for the given filename.
 
     This allows libraries to customize the build command used on per-file basis.

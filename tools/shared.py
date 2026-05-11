@@ -651,6 +651,7 @@ FILE_PACKAGER = exe_path_from_root('tools/file_packager')
 # Windows .dll suffix is not included in this list, since those are never
 # linked to directly on the command line.
 DYLIB_EXTENSIONS = ['.dylib', '.so']
+CANONICAL_TEMP_DIR = None
 
 run_via_emxx = False
 
