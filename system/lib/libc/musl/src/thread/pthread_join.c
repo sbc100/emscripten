@@ -2,10 +2,35 @@
 #include "pthread_impl.h"
 #include <sys/mman.h>
 
+#define ASYNCIFY
+
 static void dummy1(pthread_t t)
 {
 }
 weak_alias(dummy1, __tl_sync);
+
+#if defined(__EMSCRIPTEN__) && defined(ASYNCIFY)
+static int __timedwait_asyncify(volatile int * addr, int val, const struct timespec *at) {
+	// Duplicated cdoe from __timedwait_cp
+	// TODO(move this code into __timedwait_cp itself so all blocking can be
+	// asyncified.
+	struct timespec to, *top=0;
+
+	if (at) {
+		if (at->tv_nsec >= 1000000000UL) return EINVAL;
+		if (__clock_gettime(CLOCK_REALTIME, &to)) return EINVAL;
+		to.tv_sec = at->tv_sec - to.tv_sec;
+		if ((to.tv_nsec = at->tv_nsec - to.tv_nsec) < 0) {
+			to.tv_sec--;
+			to.tv_nsec += 1000000000;
+		}
+		if (to.tv_sec < 0) return ETIMEDOUT;
+		top = &to;
+	}
+	double msecs_to_sleep = top ? (top->tv_sec * 1000 + top->tv_nsec / 1000000.0) : EMSCRIPTEN_WAIT_ASYNC_INFINITY;
+	return emscripten_atomic_wait_suspending(addr, val, msecs_to_sleep);
+}
+#endif
 
 static int __pthread_timedjoin_np(pthread_t t, void **res, const struct timespec *at)
 {
@@ -37,7 +62,11 @@ static int __pthread_timedjoin_np(pthread_t t, void **res, const struct timespec
 #else
 		if (state >= DT_DETACHED) a_crash();
 #endif
+#if defined(__EMSCRIPTEN__) && defined(ASYNCIFY)
+		r = __timedwait_asyncify(&t->detach_state, state, at);
+#else
 		r = __timedwait_cp(&t->detach_state, state, CLOCK_REALTIME, at, 1);
+#endif
 	}
 	__pthread_setcancelstate(cs, 0);
 	if (r == ETIMEDOUT || r == EINVAL) return r;
