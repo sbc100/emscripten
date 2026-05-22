@@ -92,7 +92,6 @@ var LibraryPThread = {
                    '$removeRunDependency',
 #endif
                    '$spawnThread',
-                   '_emscripten_thread_free_data',
                    'exit',
                    'pthread_self',
                    '__set_thread_state',
@@ -227,8 +226,7 @@ var LibraryPThread = {
       // queued pthread_create which looks at the global data structures we are
       // modifying). To achieve that, defer the free() until the very end, when
       // we are all done.
-      var pthread_ptr = worker.pthread_ptr;
-      delete PThread.pthreads[pthread_ptr];
+      delete PThread.pthreads[worker.pthread_ptr];
       // Note: worker is intentionally not terminated so the pool can
       // dynamically grow.
       PThread.unusedWorkers.push(worker);
@@ -246,10 +244,6 @@ var LibraryPThread = {
         worker.unref();
       }
 #endif
-
-      // Finally, free the underlying (and now-unused) pthread structure in
-      // linear memory.
-      __emscripten_thread_free_data(pthread_ptr);
     },
 #if OFFSCREENCANVAS_SUPPORT
     receiveOffscreenCanvases(data) {
@@ -637,6 +631,7 @@ var LibraryPThread = {
 #endif
   },
 
+  $cleanupThread__deps: ['_emscripten_thread_free_data'],
   $cleanupThread: (pthread_ptr) => {
 #if PTHREADS_DEBUG
     dbg(`cleanupThread: ${ptrToString(pthread_ptr)}`)
@@ -656,6 +651,10 @@ var LibraryPThread = {
     assert(worker);
 #endif
     PThread.returnWorkerToPool(worker);
+
+    // Finally, free the underlying (and now-unused) pthread structure in
+    // linear memory.
+    __emscripten_thread_free_data(pthread_ptr);
   },
 
 #if MAIN_MODULE
