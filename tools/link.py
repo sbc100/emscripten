@@ -495,6 +495,11 @@ def setup_pthreads():
 
   default_setting('DEFAULT_PTHREAD_STACK_SIZE', settings.STACK_SIZE)
 
+  if settings.PTHREAD_MANAGER:
+    # When we are using a worker manager we never need to warn about pool
+    # exhaustion.
+    settings.PTHREAD_POOL_SIZE_STRICT = 0
+
   # Functions needs by runtime_pthread.js
   settings.REQUIRED_EXPORTS += [
     '_emscripten_thread_free_data',

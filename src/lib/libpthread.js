@@ -40,6 +40,11 @@ const CMD_CLEANUP_THREAD = 6;
 const CMD_MARK_AS_FINISHED = 7;
 const CMD_UNCAUGHT_EXN = 8;
 const CMD_CALL_HANDLER = 9;
+#if PTHREAD_MANAGER
+const CMD_MAKE_MANAGER = 10;
+const CMD_TERMINATE = 11;
+const CMD_RECYCLE_WORKER = 12;
+#endif
 
 #if WASM_ESM_INTEGRATION
 const pthreadWorkerScript = TARGET_BASENAME + '.pthread.mjs';
@@ -133,7 +138,27 @@ var LibraryPThread = {
       }
     },
     initMainThread() {
+#if ENVIRONMENT_MAY_BE_NODE
+      if (ENVIRONMENT_IS_NODE) return;
+#endif
+#if PTHREAD_MANAGER
+#if ASSERTIONS
+      dbg('PThread: initializing manager worker');
+#endif
+      PThread.allocateUnusedWorker();
+      PThread.managerWorker = PThread.unusedWorkers.pop();
+      addOnPreRun(async () => {
+        var managerReady = PThread.loadWasmModuleToWorker(PThread.managerWorker);
+        addRunDependency('manager-worker');
+        await managerReady;
+        PThread.managerWorker.postMessage({ cmd: {{{ CMD_MAKE_MANAGER }}} });
+        removeRunDependency('manager-worker');
+      });
+#endif // PTHREAD_MANAGER
 #if PTHREAD_POOL_SIZE
+#if ASSERTIONS
+      dbg('PThread: initializing worker pool');
+#endif
       var pthreadPoolSize = {{{ PTHREAD_POOL_SIZE }}};
       // Start loading up the Worker pool, if requested.
       while (pthreadPoolSize--) {
@@ -227,13 +252,21 @@ var LibraryPThread = {
       // modifying). To achieve that, defer the free() until the very end, when
       // we are all done.
       delete PThread.pthreads[worker.pthread_ptr];
-      // Note: worker is intentionally not terminated so the pool can
-      // dynamically grow.
-      PThread.unusedWorkers.push(worker);
+#if PTHREAD_MANAGER
+      if (PThread.managerWorker) {
+        // For PTHREAD_MANAGER, the main thread's worker is a stub.
+        // We don't pool stubs. Just delete it, tell the manager to pool the real worker
+        PThread.managerWorker.postMessage({ cmd: {{{ CMD_RECYCLE_WORKER }}}, thread: worker.pthread_ptr });
+        return
+      }
+#endif
       // Not a running Worker anymore
       // Detach the worker from the pthread object, and return it to the
       // worker pool as an unused worker.
       worker.pthread_ptr = 0;
+      // Note: worker is intentionally not terminated so the pool can
+      // dynamically grow.
+      PThread.unusedWorkers.push(worker);
 
 #if ENVIRONMENT_MAY_BE_NODE && PROXY_TO_PTHREAD
       if (ENVIRONMENT_IS_NODE) {
@@ -701,6 +734,27 @@ var LibraryPThread = {
 #if ASSERTIONS
     assert(!ENVIRONMENT_IS_PTHREAD, 'spawnThread() should only be called from the main thread');
     assert(threadParams.pthread_ptr, 'spawnThread called with null pthread ptr');
+#endif
+
+#if PTHREAD_MANAGER
+    if (PThread.managerWorker) {
+#if RUNTIME_DEBUG
+      dbg('creating pthread using managerWorker');
+#endif
+      var workerStub = {
+        pthread_ptr: threadParams.pthread_ptr,
+        postMessage: (msg, transfer) => {
+          msg.targetThread = threadParams.pthread_ptr;
+          PThread.managerWorker.postMessage(msg, transfer);
+        },
+        terminate: () => {
+          PThread.managerWorker.postMessage({ cmd: {{{ CMD_TERMINATE }}}, thread: threadParams.pthread_ptr });
+        }
+      };
+      PThread.pthreads[threadParams.pthread_ptr] = workerStub;
+      PThread.managerWorker.postMessage({ cmd: {{{ CMD_SPAWN_THREAD }}}, threadParams }, threadParams.transferList);
+      return 0;
+    }
 #endif
 
     var worker = PThread.getNewWorker();

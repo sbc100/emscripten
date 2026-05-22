@@ -129,6 +129,8 @@ INTERNAL_SETTINGS = {
 # List of incompatible settings, of the form (SETTINGS_A, SETTING_B, OPTIONAL_REASON_FOR_INCOMPAT)
 INCOMPATIBLE_SETTINGS = [
     ('MINIMAL_RUNTIME', 'MAIN_MODULE', None),
+    ('PTHREAD_POOL_SIZE', 'PTHREAD_MANAGER', None),
+    ('PTHREAD_POOL_SIZE_STRICT', 'PTHREAD_MANAGER', None),
     ('WASM_WORKERS', 'MAIN_MODULE', 'dynamic linking is not supported with -sWASM_WORKERS'),
     ('WASM2JS', 'MAIN_MODULE', 'wasm2js does not support dynamic linking'),
     ('WASM2JS', 'SIDE_MODULE', 'wasm2js does not support dynamic linking'),
