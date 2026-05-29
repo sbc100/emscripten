@@ -739,10 +739,12 @@ def generate_preload_js(data_target, data_files, metadata, js_file):
       meta = shared.run_js_tool(utils.path_from_root('tools/lz4-compress.mjs'),
                                 [temp, data_target], stdout=PIPE)
       os.unlink(temp)
-      use_data = '''var compressedData = %s;
+      use_data = '''\
+            var compressedData = %s;
             compressedData['data'] = byteArray;
             assert(typeof Module['LZ4'] === 'object', 'LZ4 not present - was your app build with -sLZ4?');
-            await Module['LZ4'].loadPackage({ 'metadata': metadata, 'compressedData': compressedData }, %s);''' % (meta, "true" if options.use_preload_plugins else "false")
+            await Module['LZ4'].loadPackage({ 'metadata': metadata, 'compressedData': compressedData }, %s);
+            ''' % (meta, "true" if options.use_preload_plugins else "false")
 
     if options.export_es6:
       use_data += '\nloadDataResolve();'

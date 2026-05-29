@@ -145,14 +145,14 @@ int main() {
     var COMPLETE_SIZE = 10*1024*128*3;
 
     var meta, data;
-    function maybeReady() {
+    async function maybeReady() {
       if (!(meta && data)) return;
 
       meta = JSON.parse(meta);
 
       out('loading into filesystem');
       FS.mkdir('/files');
-      LZ4.loadPackage({ 'metadata': meta, 'data': data });
+      await LZ4.loadPackage({ 'metadata': meta, 'data': data });
 
       Module['compressedData'] = FS.root.contents['file1.txt'].contents.compressedData;
       var compressedSize = Module['compressedData']['data'].length;
