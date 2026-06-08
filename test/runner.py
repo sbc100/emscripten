@@ -23,6 +23,7 @@ import atexit
 import datetime
 import fnmatch
 import glob
+import itertools
 import logging
 import math
 import operator
@@ -158,7 +159,7 @@ def get_and_import_modules():
 def get_all_tests(modules):
   # Create a list of all known tests so that we can choose from them based on a wildcard search
   all_tests = []
-  suites = passing_core_test_modes + misc_test_modes
+  suites = itertools.chain(passing_core_test_modes, misc_test_modes)
   for m in modules:
     for s in suites:
       if hasattr(m, s):
@@ -247,7 +248,7 @@ def get_random_test_parameters(arg):
   relevant_modes = passing_core_test_modes
   if len(arg):
     num_str = arg
-    for mode in passing_core_test_modes + misc_test_modes:
+    for mode in itertools.chain(passing_core_test_modes, misc_test_modes):
       if arg.startswith(mode):
         base_module = mode
         relevant_modes = [mode]

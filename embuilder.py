@@ -14,6 +14,7 @@ running multiple build commands in parallel, confusion can occur).
 
 import argparse
 import fnmatch
+import itertools
 import logging
 import os
 import sys
@@ -134,7 +135,7 @@ MINIMAL_PIC_TASKS = [
     'sdl3',
 ]
 
-PORTS = sorted(list(ports.ports_by_name.keys()) + list(ports.port_variants.keys()))
+PORTS = sorted(itertools.chain(ports.ports_by_name.keys(), ports.port_variants.keys()))
 
 temp_files = shared.get_temp_files()
 logger = logging.getLogger('embuilder')

@@ -13,6 +13,7 @@ headers, for the libc implementation in JS).
 import fnmatch
 import glob
 import hashlib
+import itertools
 import json
 import logging
 import os
@@ -888,7 +889,7 @@ def create_sending(metadata, library_symbols):
             continue
           send_items_map[demangled] = f
     else:
-      for f in settings.EXPORTED_FUNCTIONS + settings.SIDE_MODULE_IMPORTS:
+      for f in itertools.chain(settings.EXPORTED_FUNCTIONS, settings.SIDE_MODULE_IMPORTS):
         if f in library_symbols and shared.is_c_symbol(f):
           demangled = shared.demangle_c_symbol_name(f)
           if demangled in wasm_exports:

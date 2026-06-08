@@ -7,6 +7,7 @@ import contextlib
 import difflib
 import hashlib
 import io
+import itertools
 import json
 import logging
 import os
@@ -243,7 +244,7 @@ def make_dir_writeable(dirname):
   os.chmod(dirname, 0o777)
 
   for directory, subdirs, files in os.walk(dirname):
-    for item in files + subdirs:
+    for item in itertools.chain(files, subdirs):
       i = os.path.join(directory, item)
       if not os.path.islink(i):
         os.chmod(i, 0o777)
