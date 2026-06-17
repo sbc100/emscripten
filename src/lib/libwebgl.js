@@ -745,8 +745,8 @@ for (/**@suppress{duplicate}*/var i = 0; i <= {{{ GL_POOL_TEMP_BUFFERS_SIZE }}};
       // main page precompiles shaders for the application, in which case the
       // WebGL context is created already before any Emscripten compiled code
       // has been downloaded.
-      if (Module['preinitializedWebGLContext']) {
-        var ctx = Module['preinitializedWebGLContext'];
+      var ctx = Module['preinitializedWebGLContext'];
+      if (ctx) {
 #if MAX_WEBGL_VERSION >= 2
         // The ctx object may not be of a known class (e.g. it may be a debug
         // wrapper), so we ask it for its version rather than use instanceof.
