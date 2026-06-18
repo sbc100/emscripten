@@ -82,6 +82,10 @@ WasmFS::~WasmFS() {
   //       wasmfs_flush() and the comment on it in the header.)
   wasmfs_flush();
 
+  for (__wasi_fd_t fd = 0; fd < WASMFS_FD_MAX; fd++) {
+    (void)__wasi_fd_close(fd);
+  }
+
   // Break the reference cycle caused by the root directory being its own
   // parent.
   rootDirectory->locked().setParent(nullptr);
