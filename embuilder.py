@@ -87,6 +87,7 @@ MINIMAL_TASKS = [
     'libsockets',
     'libsockets-mt',
     'libsockets-ww',
+    'libstb_image',
     'libstubs',
     'libstubs-debug',
     'libstandalonewasm-nocatch',
