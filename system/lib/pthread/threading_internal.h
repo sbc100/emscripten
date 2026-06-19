@@ -142,5 +142,5 @@ intptr_t _emscripten_atomic_wait_promise(volatile void *addr,
                                          double maxWaitMilliseconds);
 
 // Internal function used in wasm worker builds (included here solely for
-// gen_sig_info.py).
+// gen_js_sigs.py).
 void __do_set_thread_state(void);

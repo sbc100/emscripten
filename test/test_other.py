@@ -12796,16 +12796,16 @@ exec "$@"
     self.assertFilesMatch(path_from_root('src/struct_info_generated_wasm64.json'), 'out.json')
 
   @crossplatform
-  def test_gen_sig_info(self):
+  def test_gen_js_sigs(self):
     # This tests is fragile and will need updating any time a JS library
     # function is added or its signature changed.  However it's easy to
     # rebaseline with --rebaseline.
-    self.run_process([PYTHON, path_from_root('tools/maint/gen_sig_info.py'), '-o', 'out.js'])
+    self.run_process([PYTHON, path_from_root('tools/maint/gen_js_sigs.py'), '-o', 'out.js'])
     self.assertFilesMatch(path_from_root('src/lib/libsigs.js'), 'out.js')
 
   @crossplatform
-  def test_gen_native_sig_info(self):
-    self.run_process([PYTHON, path_from_root('tools/maint/gen_native_sig_info.py'), '-o', 'out.py'])
+  def test_gen_native_sigs(self):
+    self.run_process([PYTHON, path_from_root('tools/maint/gen_native_sigs.py'), '-o', 'out.py'])
     self.assertFilesMatch(path_from_root('tools/native_sigs.py'), 'out.py')
 
   def test_gen_struct_info_env(self):

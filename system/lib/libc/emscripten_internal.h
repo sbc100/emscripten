@@ -7,7 +7,7 @@
  * Declarations for internal-only JS library functions.
  *
  * All JS library functions must be declares in one header or anther in order
- * for `tools/maint/gen_sig_info.py` to work.   This file contains declarations for
+ * for `tools/maint/gen_js_sigs.py` to work.   This file contains declarations for
  * functions that are not declared in any other public or private header.
  */
 #ifndef __EMSCRIPTEN_INTERNAL_H__
@@ -70,7 +70,7 @@ bool _emscripten_get_now_is_monotonic(void);
 void _emscripten_get_progname(char*, int);
 
 // Not defined in musl, but defined in library.js.  Included here for
-// the benefit of gen_sig_info.py
+// the benefit of gen_js_sigs.py
 char* strptime_l(const char* __restrict __s,
                  const char* __restrict __fmt,
                  struct tm* __tp,
