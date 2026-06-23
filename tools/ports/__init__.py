@@ -293,11 +293,11 @@ class Ports:
   def fetch_port_artifact(name, url, sha512hash=None):
     """Fetch the port and return True when the port is up to date, False otherwise."""
     # To compute the sha512 hash, run `curl URL | sha512sum`.
-    fullname = Ports.get_dir(name)
+    port_dir = Ports.get_dir(name)
 
     if name not in Ports.name_cache: # only mention each port once in log
       logger.debug(f'including port: {name}')
-      logger.debug(f'    (at {fullname})')
+      logger.debug(f'    (at {port_dir})')
       Ports.name_cache.add(name)
 
     # EMCC_LOCAL_PORTS: A hacky way to use a local directory for a port. This
@@ -325,9 +325,9 @@ class Ports:
           if not hasattr(port, 'SUBDIR'):
             utils.exit_with_error(f'port {name} lacks .SUBDIR attribute, which we need in order to override it locally, please update it')
           subdir = port.SUBDIR
-          target = os.path.join(fullname, subdir)
+          target = os.path.join(port_dir, subdir)
 
-          uptodate_message = f'not grabbing local port: {name} from {path} to {fullname} (subdir: {subdir}) as the destination {target} is newer (run emcc --clear-ports if that is incorrect)'
+          uptodate_message = f'not grabbing local port: {name} from {path} to {port_dir} (subdir: {subdir}) as the destination {target} is newer (run emcc --clear-ports if that is incorrect)'
           # before acquiring the lock we have an early out if the port already exists
           if os.path.exists(target) and dir_is_newer(path, target):
             logger.warning(uptodate_message)
@@ -338,14 +338,14 @@ class Ports:
             if os.path.exists(target) and not dir_is_newer(path, target):
               logger.warning(uptodate_message)
               return True
-            logger.warning(f'grabbing local port: {name} from {path} to {fullname} (subdir: {subdir})')
-            utils.delete_dir(fullname)
+            logger.warning(f'grabbing local port: {name} from {path} to {port_dir} (subdir: {subdir})')
+            utils.delete_dir(port_dir)
             shutil.copytree(path, target)
             return False
 
     url_filename = url.rsplit('/')[-1]
     ext = url_filename.split('.', 1)[1]
-    fullpath = fullname + '.' + ext
+    port_archive = port_dir + '.' + ext
 
     def retrieve():
       # retrieve from remote server
@@ -367,13 +367,13 @@ class Ports:
         if actual_hash != sha512hash:
           utils.exit_with_error(f'Unexpected hash: {actual_hash}\n'
                                 'If you are updating the port, please update the hash.')
-      utils.write_binary(fullpath, data)
+      utils.write_binary(port_archive, data)
 
-    marker = os.path.join(fullname, '.emscripten_url')
+    marker = os.path.join(port_dir, '.emscripten_url')
 
     def unpack():
       logger.info(f'unpacking port: {name}')
-      unpack_dir = fullname + '.tmp'
+      unpack_dir = port_dir + '.tmp'
       # We unpack to a temporary directory and then atomically rename it to the
       # final destination. This ensures that the destination directory either
       # does not exist or is 100% complete, avoiding races where other processes
@@ -382,13 +382,13 @@ class Ports:
       utils.delete_dir(unpack_dir)
       utils.safe_ensure_dirs(unpack_dir)
 
-      shutil.unpack_archive(filename=fullpath, extract_dir=unpack_dir)
+      shutil.unpack_archive(filename=port_archive, extract_dir=unpack_dir)
       tmp_marker = os.path.join(unpack_dir, '.emscripten_url')
       utils.write_file(tmp_marker, url + '\n')
 
       # Atomically replace the target directory
-      utils.delete_dir(fullname)
-      os.replace(unpack_dir, fullname)
+      utils.delete_dir(port_dir)
+      os.replace(unpack_dir, port_dir)
 
     def up_to_date():
       return os.path.exists(marker) and utils.read_file(marker).strip() == url
@@ -401,15 +401,15 @@ class Ports:
     # retrieve the same port at once
     cache.ensure() # TODO: find a better place for this (necessary at the moment)
     with cache.lock('unpack port'):
-      if os.path.exists(fullpath):
+      if os.path.exists(port_archive):
         # Another early out in case another process unpackage the library while we were
         # waiting for the lock
         if up_to_date():
           return True
         # file exists but tag is bad
         logger.warning('local copy of port is not correct, retrieving from remote server')
-        utils.delete_dir(fullname)
-        utils.delete_file(fullpath)
+        utils.delete_dir(port_dir)
+        utils.delete_file(port_archive)
 
       retrieve()
       unpack()
