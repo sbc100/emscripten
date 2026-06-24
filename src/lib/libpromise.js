@@ -11,13 +11,9 @@ addToLibrary({
   $getPromise__deps: ['$promiseMap'],
   $getPromise: (id) => promiseMap.get(id).promise,
 
-  $makePromise__deps: ['$promiseMap'],
+  $makePromise__deps: ['$promiseMap', '$promiseWithResolvers'],
   $makePromise: () => {
-    var promiseInfo = {};
-    promiseInfo.promise = new Promise((resolve, reject) => {
-      promiseInfo.reject = reject;
-      promiseInfo.resolve = resolve;
-    });
+    var promiseInfo = promiseWithResolvers();
     promiseInfo.id = promiseMap.allocate(promiseInfo);
 #if RUNTIME_DEBUG
     dbg(`makePromise: ${promiseInfo.id}`);

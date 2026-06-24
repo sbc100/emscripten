@@ -2259,6 +2259,16 @@ addToLibrary({
   $noExitRuntime__postset: () => addAtModule(makeModuleReceive('noExitRuntime')),
   $noExitRuntime: {{{ !EXIT_RUNTIME }}},
 
+  $promiseWithResolvers__internal: true,
+#if 0
+  $promiseWithResolvers: () => {
+    var resolve, reject, promise = new Promise((res, rej) => { resolve = res; reject = rej });
+    return {promise, resolve, reject};
+  },
+#else
+  $promiseWithResolvers: 'Promise.withResolvers',
+#endif
+
 #if !MINIMAL_RUNTIME
   // A counter of dependencies for calling run(). If we need to
   // do asynchronous work before running, increment this and
@@ -2285,6 +2295,7 @@ addToLibrary({
 #endif
 
   $addRunDependency__deps: ['$runDependencies', '$removeRunDependency', '$dependenciesPromise', '$dependenciesPromiseResolve',
+    '$promiseWithResolvers',
 #if ASSERTIONS
     '$runDependencyTracking',
     '$runDependencyWatcher',
@@ -2292,7 +2303,7 @@ addToLibrary({
   ],
   $addRunDependency: (id) => {
     if (!runDependencies) {
-      dependenciesPromise = new Promise((resolve) => dependenciesPromiseResolve = resolve);
+      let { promise: dependenciesPromise, resolve: dependenciesPromiseResolve } = promiseWithResolvers();
     }
     runDependencies++;
 
