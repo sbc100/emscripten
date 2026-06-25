@@ -104,6 +104,10 @@ var runtimeExited = false;
     return shouldExport;
   };
   const maybeExportHeap = (x) => {
+    const isUsed = ('$' + x) in addedLibraryItems || shouldExportHeap(x);
+    if (!isUsed) {
+      return '// ';
+    }
     if (shouldExportHeap(x) && MODULARIZE != 'instance') {
       return `Module['${x}'] = `;
     }
@@ -186,7 +190,7 @@ function updateMemoryViews() {
   {{{ updateHeap('HEAPU64', 'BigUint64Array') }}}
 #endif
 #if SUPPORT_BIG_ENDIAN
-  {{{ maybeExportHeap('HEAP_DATA_VIEW') }}} HEAP_DATA_VIEW = new DataView(b);
+  {{{ maybeExportHeap('HEAP_DATA_VIEW') }}}HEAP_DATA_VIEW = new DataView(b);
   LE_HEAP_UPDATE();
 #endif
 }

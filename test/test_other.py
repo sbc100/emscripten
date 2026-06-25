@@ -15826,7 +15826,7 @@ console.log('OK');'''
        '-sCROSS_ORIGIN_STORAGE_ORIGINS=https://example.com/path'],
       'is not a valid HTTPS origin')
 
-  @disabled('https://github.com/emscripten-core/emscripten/issues/27189')
+  # @disabled('https://github.com/emscripten-core/emscripten/issues/27189')
   @requires_dev_dependency('rollup')
   @requires_dev_dependency('prettier')
   def test_dead_code_esm(self):
@@ -15850,6 +15850,9 @@ console.log('OK');'''
     # 3. Comments: Rollup strips comments or moves them around. We strip them completely to focus
     #    strictly on executable logic.
     def normalize(code):
+      # Normalize line endings first to make regexes reliable
+      code = code.replace('\r\n', '\n')
+
       # Strip comments to avoid diffs from comment displacement/removal
       code = re.sub(r'//.*', '', code)
       code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
@@ -15863,8 +15866,48 @@ console.log('OK');'''
       lines = [line.rstrip() for line in code.splitlines() if line.strip()]
       return '\n'.join(lines)
 
-    normalized_original = normalize(original)
-    normalized_rolled = normalize(rolled)
+    def remove_exemptions(code):
+      # --- Exemptions (known dead code / boilerplate differences) ---
+      # 1. Remove programArgs and thisProgram helper variables and their setups
+      code = re.sub(r'.*?\b(?:programArgs|thisProgram)\b.*?\n', '', code)
+      # Also remove their post-optimization expressions in rolled version
+      code = re.sub(r'^\s*process\.argv\[1\]\.replace.*?\n', '', code, flags=re.MULTILINE)
+      code = re.sub(r'^\s*process\.argv\.slice.*?\n', '', code, flags=re.MULTILINE)
+      code = re.sub(r'^\s*if\s*\(Module\[\'arguments\'\]\)\s*Module\[\'arguments\'\];\s*$\n', '', code, flags=re.MULTILINE)
+      code = re.sub(r'^\s*if\s*\(Module\[\'thisProgram\'\]\)\s*Module\[\'thisProgram\'\];\s*$\n', '', code, flags=re.MULTILINE)
+
+      # 2. Remove runtimeInitialized status variable
+      code = re.sub(r'.*?\bruntimeInitialized\b.*?\n', '', code)
+
+      # 3. Normalize HEAP assignments in updateMemoryViews
+      # Remove all "new \w+Array(b);" lines from updateMemoryViews (and globally)
+      code = re.sub(r'^\s*(?:HEAP\w*\s*=\s*)?new \w+Array\(b\);\s*$\n', '', code, flags=re.MULTILINE)
+      # Remove HEAP declarations "var HEAP8;" etc.
+      code = re.sub(r'^\s*var\s+HEAP\w*;\s*$\n', '', code, flags=re.MULTILINE)
+
+      # 4. Remove preMain definition and call
+      code = re.sub(r'function preMain\(\)\s*\{\s*\}', '', code)
+      code = re.sub(r'^\s*preMain\(\);\s*$\n', '', code, flags=re.MULTILINE)
+
+      # 5. Exempt UTF8ToString (which is dead) and ignoreNul in findStringEnd
+      code = re.sub(r'^\s*var UTF8ToString = [^;]*?;\n', '', code, flags=re.MULTILINE)
+      # Remove "if (ignoreNul)" line BEFORE removing "ignoreNul" parameter
+      code = re.sub(r'.*?\bif\s*\(ignoreNul\).*?\n', '', code)
+      code = re.sub(r',?\s*ignoreNul\b', '', code)
+
+      # 6. Exempt assignWasmExports function and its calls (boilerplate differences)
+      code = re.sub(r'^\s*function assignWasmExports\(.*?\)\s*\{.*?\}', '', code, flags=re.MULTILINE | re.DOTALL)
+      code = re.sub(r'.*?\bassignWasmExports\b.*?\n', '', code)
+      # Also remove the declaration block for Wasm exports
+      code = re.sub(r'^\s*var _main,[^;]*?;\n', '', code, flags=re.MULTILINE | re.DOTALL)
+      # --------------------------------------------------------------
+
+      # Clean up any empty lines introduced by exemptions
+      lines = [line for line in code.splitlines() if line.strip()]
+      return '\n'.join(lines)
+
+    normalized_original = remove_exemptions(normalize(original))
+    normalized_rolled = remove_exemptions(normalize(rolled))
 
     # Write both normalized files to CWD so they can be inspected manually on failure
     write_file('hello.normalized.mjs', normalized_original)

@@ -104,6 +104,13 @@ def align_memory(addr):
 def update_settings_glue(wasm_file, metadata, base_metadata):
   maybe_disable_filesystem(metadata.imports)
 
+  # If JS-based longjmp support is enabled, but the Wasm module doesn't
+  # import any invoke_* functions (and we are not building a main/side module
+  # which might load them dynamically), we can safely disable it.
+  # This avoids generating unused SjLj boilerplate/exception classes in the JS.
+  if settings.SUPPORT_LONGJMP == 'emscripten' and not metadata.invoke_funcs and not settings.MAIN_MODULE and not settings.SIDE_MODULE:
+    settings.SUPPORT_LONGJMP = 0
+
   # Integrate info from backend
   if settings.SIDE_MODULE:
     # we don't need any JS library contents in side modules

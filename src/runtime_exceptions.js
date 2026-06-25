@@ -6,6 +6,14 @@
 
 #if !WASM_EXCEPTIONS
 
+// These exception classes are only needed if we support exception catching,
+// or if we use Emscripten-style longjmp (which uses JavaScript exceptions),
+// or if we are building a main/side module where they might be needed by
+// dynamically loaded code.
+// Guarding this avoids emitting dead code (like EmscriptenEH) in builds that
+// do not need them.
+#if !DISABLE_EXCEPTION_CATCHING || SUPPORT_LONGJMP == 'emscripten' || MAIN_MODULE || SIDE_MODULE
+
 // Base Emscripten EH error class
 #if EXCEPTION_STACK_TRACES
 class EmscriptenEH extends Error {}
@@ -34,5 +42,7 @@ class CppException extends EmscriptenEH {
   }
 }
 #endif
+
+#endif // !DISABLE_EXCEPTION_CATCHING || SUPPORT_LONGJMP == 'emscripten' || MAIN_MODULE || SIDE_MODULE
 
 #endif // !WASM_EXCEPTIONS
