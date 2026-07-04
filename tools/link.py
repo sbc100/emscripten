@@ -1782,6 +1782,8 @@ def phase_linker_setup(options, linker_args):  # noqa: C901, PLR0912, PLR0915
       diagnostics.warning('experimental', '-sJSPI (ASYNCIFY=2) is still experimental')
 
   if settings.WASM2JS:
+    if settings.ALLOW_MEMORY_GROWTH:
+      diagnostics.warning('emcc', 'WASM2JS + ALLOW_MEMORY_GROWTH can be slow due to array resizeing')
     if settings.GENERATE_SOURCE_MAP:
       exit_with_error('wasm2js does not support source maps yet (debug in wasm for now)')
     if settings.MEMORY64:

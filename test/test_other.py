@@ -1782,7 +1782,6 @@ Module['stdin'] = () => data.shift() || null;
 
   @crossplatform
   def test_module_stdout_stderr(self):
-    self.set_setting('FORCE_FILESYSTEM')
     create_file('pre.js', '''
 let stdout = [];
 let stderr = [];
@@ -1796,8 +1795,7 @@ Module['postRun'] = () => {
         'stdout: \\n' + stdout);
 }
 ''')
-    self.cflags += ['--pre-js', 'pre.js']
-    self.do_runf('hello_world.c')
+    self.do_runf('hello_world.c', clfags=['--pre-js', 'pre.js', '-sFORCE_FILESYSTEM'])
 
   @crossplatform
   def test_module_print_printerr(self):
@@ -2269,14 +2267,11 @@ Module['postRun'] = () => {
 
   @requires_pthreads
   def test_dylink_pthread_em_asm(self):
-    self.set_setting('MAIN_MODULE', 2)
-    self.do_runf('hello_world_em_asm.c', 'Hello, world!\n', cflags=['-Wno-experimental', '-pthread'])
+    self.do_runf('hello_world_em_asm.c', 'Hello, world!\n', cflags=['-Wno-experimental', '-pthread', '-sMAIN_MODULE=2'])
 
   @requires_pthreads
   def test_dylink_pthread_em_js(self):
-    self.set_setting('MAIN_MODULE', 2)
-    self.set_setting('EXPORTED_FUNCTIONS', '_malloc,_main')
-    self.do_runf('core/test_em_js.cpp', cflags=['-Wno-experimental', '-pthread'])
+    self.do_runf('core/test_em_js.cpp', cflags=['-Wno-experimental', '-pthread', '-sMAIN_MODULE=2', '-sEXPORTED_FUNCTIONS=_malloc,_main'])
 
   @requires_pthreads
   @parameterized({
@@ -2724,8 +2719,7 @@ F1 -> ''
 
   @requires_network
   def test_icu(self):
-    self.set_setting('USE_ICU')
-    self.do_runf('other/test_icu.cpp')
+    self.do_runf('other/test_icu.cpp', cflags=['-sUSE_ICU'])
 
   @requires_network
   def test_sdl2_ttf(self):
@@ -5544,10 +5538,7 @@ int main() {
     # Test main module with 4GB of memory. we need to emit a "maximum"
     # clause then, even though 4GB is the maximum; see
     # https://github.com/emscripten-core/emscripten/issues/14130
-    self.set_setting('MAIN_MODULE', '1')
-    self.set_setting('ALLOW_MEMORY_GROWTH', '1')
-    self.set_setting('MAXIMUM_MEMORY', '4GB')
-    self.do_runf_out_file('hello_world.c')
+    self.do_runf_out_file('hello_world.c', cflags=['-sMAIN_MODULE', '-sALLOW_MEMORY_GROWTH', '-sMAXIMUM_MEMORY=4gb'])
 
   def test_dashS(self):
     self.run_process([EMCC, test_file('hello_world.c'), '-S'])
@@ -7274,14 +7265,12 @@ Module.preRun = () => {
 };
 ''')
     self.run_process([EMCC, 'side.c', '-o', 'tmp.so', '-sSIDE_MODULE'])
-    self.set_setting('MAIN_MODULE', 2)
-    self.do_other_test('test_dlopen_async.c', ['--pre-js=pre.js', '--embed-file', 'tmp.so@/usr/lib/libside.so'])
+    self.do_other_test('test_dlopen_async.c', cflags=['-sMAIN_MODULE=2', '--pre-js=pre.js', '--embed-file', 'tmp.so@/usr/lib/libside.so'])
 
   def test_dlopen_promise(self):
     create_file('side.c', 'int foo = 42;\n')
     self.run_process([EMCC, 'side.c', '-o', 'libside.so', '-sSIDE_MODULE'])
-    self.set_setting('MAIN_MODULE', 2)
-    self.do_other_test('test_dlopen_promise.c')
+    self.do_other_test('test_dlopen_promise.c', cflags=['-sMAIN_MODULE=2'])
 
   @parameterized({
     # Under node this should work even without ASYNCIFY because we can do
@@ -7292,15 +7281,13 @@ Module.preRun = () => {
   })
   def test_dlopen_blocking(self, asyncify):
     self.run_process([EMCC, test_file('other/test_dlopen_blocking_side.c'), '-o', 'libside.so', '-sSIDE_MODULE'])
-    self.set_setting('MAIN_MODULE', 2)
-    self.set_setting('NO_AUTOLOAD_DYLIBS')
     if asyncify:
       self.set_setting('ASYNCIFY', asyncify)
       if asyncify == 1:
         self.set_setting('EXIT_RUNTIME')
       if asyncify == 2:
         self.require_jspi()
-    self.do_other_test('test_dlopen_blocking.c', cflags=['libside.so'])
+    self.do_other_test('test_dlopen_blocking.c', cflags=['-sMAIN_MODULE=2', '-sNO_AUTOLOAD_DYLIBS', 'libside.so'])
 
   def test_dlsym_rtld_default(self):
     create_file('side.c', r'''
@@ -7910,8 +7897,7 @@ int main() {
     self.do_other_test('test_em_asm_i64.cpp', force_c=True)
 
   def test_EM_ASM_i64_nobigint(self):
-    self.set_setting('WASM_BIGINT', 0)
-    self.do_runf('other/test_em_asm_i64.cpp', 'Invalid character 106("j") in readEmAsmArgs!', assert_returncode=NON_ZERO)
+    self.do_runf('other/test_em_asm_i64.cpp', 'Invalid character 106("j") in readEmAsmArgs!', cflags=['-sWASM_BIGINT=0'], assert_returncode=NON_ZERO)
 
   def test_eval_ctor_ordering(self):
     # ensure order of execution remains correct, even with a bad ctor
@@ -13515,7 +13501,6 @@ void foo() {}
   @no_mac("test is Linux-specific")
   @requires_node
   def test_unistd_close_noderawfs(self):
-    self.set_setting('NODERAWFS')
     create_file('pre.js', f'''
 const {{ execSync }} = require('child_process');
 
@@ -13532,7 +13517,7 @@ Module.postRun = () => {{
     'Post: \\n' + openFilesPost);
 }}
 ''')
-    self.do_runf_out_file('unistd/close.c', cflags=['--pre-js', 'pre.js'])
+    self.do_runf_out_file('unistd/close.c', cflags=['--pre-js', 'pre.js', '-sNODERAWFS'])
 
   @also_with_wasmfs
   def test_unistd_dup(self):
@@ -13552,13 +13537,11 @@ Module.postRun = () => {{
 
   @also_with_wasmfs
   def test_unistd_create(self):
-    self.set_setting('WASMFS')
     self.do_runf_out_file('wasmfs/wasmfs_create.c')
 
   def test_unistd_fdatasync(self):
     # TODO: Remove this test in favor of unistd/misc.c
-    self.set_setting('WASMFS')
-    self.do_runf_out_file('wasmfs/wasmfs_fdatasync.c')
+    self.do_runf_out_file('wasmfs/wasmfs_fdatasync.c', cflags=['-sWASMFS'])
 
   @also_with_wasmfs
   def test_unistd_seek(self):
@@ -13572,9 +13555,9 @@ Module.postRun = () => {{
   def test_unistd_cwd(self):
     self.do_runf_out_file('wasmfs/wasmfs_chdir.c')
 
+  @also_with_wasmfs
   def test_unistd_chown(self):
     # TODO: Remove this test in favor of unistd/misc.c
-    self.set_setting('WASMFS')
     self.do_runf_out_file('wasmfs/wasmfs_chown.c')
 
   @wasmfs_all_backends
@@ -13586,14 +13569,12 @@ Module.postRun = () => {{
     self.do_runf_out_file('wasmfs/wasmfs_getdents.c')
 
   def test_wasmfs_jsfile(self):
-    self.set_setting('WASMFS')
-    self.do_runf_out_file('wasmfs/wasmfs_jsfile.c')
+    self.do_runf_out_file('wasmfs/wasmfs_jsfile.c', cflags=['-sWASMFS'])
 
   def test_wasmfs_before_preload(self):
-    self.set_setting('WASMFS')
     os.mkdir('js_backend_files')
     create_file('js_backend_files/file.dat', 'data')
-    self.do_runf_out_file('wasmfs/wasmfs_before_preload.c', cflags=['--preload-file', 'js_backend_files/file.dat'])
+    self.do_runf_out_file('wasmfs/wasmfs_before_preload.c', cflags=['-sWASMFS', '--preload-file', 'js_backend_files/file.dat'])
 
   def test_hello_world_above_2gb(self):
     self.do_runf_out_file('hello_world.c', cflags=['-sGLOBAL_BASE=2GB', '-sINITIAL_MEMORY=3GB'])
@@ -13719,8 +13700,7 @@ int main() {
     self.do_runf('hello_world.c', '`Module.fetchSettings` was supplied but `fetchSettings` not included in INCOMING_MODULE_JS_API', assert_returncode=NON_ZERO)
 
     # Try again with INCOMING_MODULE_JS_API set
-    self.set_setting('INCOMING_MODULE_JS_API', 'fetchSettings')
-    self.do_runf_out_file('hello_world.c')
+    self.do_runf_out_file('hello_world.c', cflags=['-sINCOMING_MODULE_JS_API=fetchSettings'])
     src = read_file('hello_world.js')
     self.assertContained("fetch(binaryFile, Module['fetchSettings'] || ", src)
 
@@ -14100,10 +14080,9 @@ int main() {
   @no_mac('https://github.com/emscripten-core/emscripten/issues/18175')
   @crossplatform
   def test_stack_overflow(self):
-    self.set_setting('STACK_OVERFLOW_CHECK', 1)
     self.do_runf('core/stack_overflow.c',
                  'Stack overflow detected.  You can try increasing -sSTACK_SIZE',
-                 cflags=['-O1', '--profiling-funcs'],
+                 cflags=['-sSTACK_OVERFLOW_CHECK', '-O1', '--profiling-funcs'],
                  assert_returncode=NON_ZERO)
 
   @also_with_wasm64
@@ -14197,9 +14176,7 @@ out.js
   @requires_pthreads
   @flaky('https://github.com/emscripten-core/emscripten/issues/20125')
   def test_itimer_proxy_to_pthread(self):
-    self.set_setting('PROXY_TO_PTHREAD')
-    self.set_setting('EXIT_RUNTIME')
-    self.do_other_test('test_itimer.c')
+    self.do_other_test('test_itimer.c', cflags=['-sPROXY_TO_PTHREAD', '-sEXIT_RUNTIME'])
 
   @requires_pthreads
   def test_dbg(self):
@@ -14287,9 +14264,8 @@ w:0,t:0x[0-9a-fA-F]+: formatted: 42
       self.skipTest('requires nodejs')
     node_version = shared.get_node_version(get_nodejs())
     node_version = '.'.join(str(x) for x in node_version)
-    self.set_setting('MIN_NODE_VERSION', 300000)
     expected = 'This emscripten-generated code requires node v30.0.0 (detected v%s' % node_version
-    self.do_runf('hello_world.c', expected, assert_returncode=NON_ZERO)
+    self.do_runf('hello_world.c', expected, cflags=['-sMIN_NODE_VERSION=300000'], assert_returncode=NON_ZERO)
 
   def test_deprecated_macros(self):
     create_file('main.c', '''
@@ -14427,8 +14403,7 @@ w:0,t:0x[0-9a-fA-F]+: formatted: 42
     # When using Wasm exception, SUPPORT_LONGJMP defaults to 'wasm', which does
     # not use the JS-based support. This should succeed.
     # -fwasm-exceptions exports __cpp_exception, so this is necessary
-    self.set_setting('DEFAULT_TO_CXX')
-    self.do_runf('core/test_longjmp.c', cflags=['-fwasm-exceptions'])
+    self.do_runf('core/test_longjmp.c', cflags=['-sDEFAULT_TO_CXX', '-fwasm-exceptions'])
 
   def test_memory_init_file_unsupported(self):
     self.assert_fail([EMCC, test_file('hello_world.c'), '-Werror', '--memory-init-file=1'], 'error: --memory-init-file is no longer supported')
@@ -15090,8 +15065,7 @@ addToLibrary({
 
   @also_with_wasmfs
   def test_fs_writev_partial_write(self):
-    self.set_setting('FORCE_FILESYSTEM')
-    self.do_runf_out_file('fs/test_writev_partial_write.c')
+    self.do_runf_out_file('fs/test_writev_partial_write.c', cflags=['-sFORCE_FILESYSTEM'])
 
   def test_fs_lzfs(self):
     # generate data

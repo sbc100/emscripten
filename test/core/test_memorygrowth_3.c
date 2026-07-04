@@ -16,17 +16,19 @@ int get_memory_size() {
   return emscripten_get_heap_size();
 }
 
-typedef void* voidStar;
+#define CHUNK_SIZE (1024*1024)
+
+void* alloc;
 
 int main(int argc, char *argv[]) {
   int totalMemory = get_memory_size();
-  int chunk = 1024*1024;
-  volatile voidStar alloc;
-  for (int i = 0; i < (totalMemory/chunk)+2; i++) {
+  printf("totalMemory: %d\n", totalMemory);
+  printf("chunks: %d\n", (totalMemory/CHUNK_SIZE)+2);
+  for (int i = 0; i < (totalMemory/CHUNK_SIZE)+2; i++) {
     // make sure state remains the same if malloc fails
     void* sbrk_before = sbrk(0);
-    alloc = malloc(chunk);
-    printf("%d : %d\n", i, !!alloc);
+    alloc = malloc(CHUNK_SIZE);
+    printf("%d : malloc success=%d\n", i, !!alloc);
     if (alloc == NULL) {
       assert(sbrk(0) == sbrk_before);
       assert(totalMemory == get_memory_size());
@@ -34,6 +36,6 @@ int main(int argc, char *argv[]) {
     }
   }
   assert(alloc == NULL);
-  puts("ok.");
+  puts("done");
   return 0;
 }

@@ -1170,26 +1170,28 @@ int main()
         self.set_setting('SUPPORT_LONGJMP', support_longjmp)
         self.do_core_test('test_exceptions.cpp', out_suffix='_caught')
 
-  def test_exceptions_off(self):
-    self.set_setting('DISABLE_EXCEPTION_CATCHING')
-    for support_longjmp in (0, 1):
-      self.set_setting('SUPPORT_LONGJMP', support_longjmp)
-      self.do_runf('core/test_exceptions.cpp', assert_returncode=NON_ZERO)
+  @parameterized({
+    '': (['-sSUPPORT_LONGJMP=0'],),
+    'with_longjmp': (['-sSUPPORT_LONGJMP'],),
+  })
+  def test_exceptions_off(self, args):
+    self.do_runf('core/test_exceptions.cpp', assert_returncode=NON_ZERO, cflags=['-sDISABLE_EXCEPTION_CATCHING'] + args)
 
   @no_modularize_instance('MODULARIZE=instance is not compatible with MINIMAL_RUNTIME')
-  def test_exceptions_minimal_runtime(self):
+  @parameterized({
+    '': (['-sSUPPORT_LONGJMP=0'],),
+    'with_longjmp': (['-sSUPPORT_LONGJMP'],),
+  })
+  def test_exceptions_minimal_runtime(self, args):
     self.maybe_closure()
     self.set_setting('MINIMAL_RUNTIME')
     self.cflags += ['--pre-js', test_file('minimal_runtime_exit_handling.js')]
-    for support_longjmp in (0, 1):
-      self.set_setting('SUPPORT_LONGJMP', support_longjmp)
+    self.set_setting('DISABLE_EXCEPTION_CATCHING', 0)
+    self.do_core_test('test_exceptions.cpp', out_suffix='_caught', cflags=args)
 
-      self.set_setting('DISABLE_EXCEPTION_CATCHING', 0)
-      self.do_core_test('test_exceptions.cpp', out_suffix='_caught')
-
-      self.set_setting('EXCEPTION_DEBUG')
-      self.set_setting('DISABLE_EXCEPTION_CATCHING')
-      self.do_core_test('test_exceptions.cpp', out_suffix='_uncaught', assert_returncode=NON_ZERO)
+    self.set_setting('EXCEPTION_DEBUG')
+    self.set_setting('DISABLE_EXCEPTION_CATCHING')
+    self.do_core_test('test_exceptions.cpp', out_suffix='_uncaught', cflags=args, assert_returncode=NON_ZERO)
 
   @with_all_eh_sjlj
   def test_exceptions_custom(self):
@@ -2055,11 +2057,10 @@ int main(int argc, char **argv) {
   def test_em_js(self, args, force_c):
     if '-sMAIN_MODULE=2' in args:
       self.check_dylink()
-    self.cflags += ['-sEXPORTED_FUNCTIONS=_main,_malloc'] + args
     if '-pthread' in args:
       self.require_pthreads()
 
-    self.do_core_test('test_em_js.cpp', force_c=force_c)
+    self.do_core_test('test_em_js.cpp', force_c=force_c, cflags=['-sEXPORTED_FUNCTIONS=_main,_malloc'] + args)
     if self.get_setting('WASM_ESM_INTEGRATION'):
       js_out = 'test_em_js.support.mjs'
     else:
@@ -2135,8 +2136,7 @@ int main(int argc, char **argv) {
     # Tracing of memory growths should work
     # (SAFE_HEAP would instrument the tracing code itself, leading to recursion)
     if not self.get_setting('SAFE_HEAP'):
-      self.cflags += ['--tracing']
-      output = self.do_runf(src)
+      output = self.do_runf(src, cflags=['--tracing'])
       output = self.remove_growth_warning(output)
       self.assertContained('*pre: hello,4.955*\n*hello,4.955*\n*hello,4.955*', output)
 
@@ -2166,77 +2166,58 @@ int main(int argc, char **argv) {
 
   def test_memorygrowth_3(self):
     if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
-      self.skipTest('test needs to modify memory growth')
+      self.skipTest('test depends on memory growth being disabled')
 
     # checks handling of malloc failure properly
-    self.set_setting('ABORTING_MALLOC', 0)
-    self.set_setting('SAFE_HEAP')
-    self.do_core_test('test_memorygrowth_3.c')
+    self.do_core_test('test_memorygrowth_3.c', cflags=['-sABORTING_MALLOC=0'])
 
-  @also_with_standalone_wasm()
-  @no_highmem('depends on INITIAL_MEMORY')
-  def test_memorygrowth_MAXIMUM_MEMORY(self):
-    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
-      self.skipTest('test needs to modify memory growth')
-    if self.is_wasm2js():
-      self.skipTest('wasm memory specific test')
-
-    # check that memory growth does not exceed the wasm mem max limit
-    self.cflags += ['-sALLOW_MEMORY_GROWTH', '-sINITIAL_MEMORY=64Mb', '-sMAXIMUM_MEMORY=100Mb']
-    self.do_core_test('test_memorygrowth_wasm_mem_max.c')
-
-  @no_highmem('depends on INITIAL_MEMORY')
-  def test_memorygrowth_linear_step(self):
-    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
-      self.skipTest('test needs to modify memory growth')
-    if self.is_wasm2js():
-      self.skipTest('wasm memory specific test')
-
-    # check that memory growth does not exceed the wasm mem max limit and is exactly or one step below the wasm mem max
-    self.cflags += ['-sALLOW_MEMORY_GROWTH', '-sSTACK_SIZE=1Mb', '-sINITIAL_MEMORY=32Mb', '-sMAXIMUM_MEMORY=64Mb', '-sMEMORY_GROWTH_LINEAR_STEP=1Mb']
-    self.do_core_test('test_memorygrowth_linear_step.c')
-
-  @no_ubsan('UBSan seems to affect the precise memory usage')
-  @no_highmem('depends on specific memory layout')
-  def test_memorygrowth_geometric_step(self):
-    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
-      self.skipTest('test needs to modify memory growth')
-    if self.is_wasm2js():
-      self.skipTest('wasm memory specific test')
-
-    self.cflags += ['-sINITIAL_MEMORY=16MB', '-sALLOW_MEMORY_GROWTH', '-sMEMORY_GROWTH_GEOMETRIC_STEP=8.5', '-sMEMORY_GROWTH_GEOMETRIC_CAP=32MB']
-    self.do_core_test('test_memorygrowth_geometric_step.c')
-
+  @no_asan('asan traps on memory growth failure')
+  @no_lsan('lsan traps on memory growth failure')
   def test_memorygrowth_3_force_fail_reallocBuffer(self):
-    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
-      self.skipTest('test needs to modify memory growth')
-
-    self.set_setting('ALLOW_MEMORY_GROWTH')
     # Force memory growth to fail at runtime
     self.add_pre_run('growMemory = (size) => false;')
-    self.do_core_test('test_memorygrowth_3.c')
+    self.do_core_test('test_memorygrowth_3.c', cflags=['-sALLOW_MEMORY_GROWTH'])
+
+  @also_with_standalone_wasm()
+  @no_sanitize('depends on specific memory layout')
+  @no_highmem('depends on INITIAL_MEMORY')
+  #@no_wasm2js('wasm memory specific test')
+  def test_memorygrowth_max_mem(self):
+    # check that memory growth does not exceed the wasm mem max limit
+    self.do_core_test('test_memorygrowth_mem_max.c', cflags=['-sALLOW_MEMORY_GROWTH', '-sINITIAL_MEMORY=64Mb', '-sMAXIMUM_MEMORY=100Mb'])
+
+  @no_sanitize('depends on specific memory layout')
+  @no_highmem('depends on INITIAL_MEMORY')
+  def test_memorygrowth_linear_step(self):
+    # check that memory growth does not exceed the wasm mem max limit and is exactly or one step below the wasm mem max
+    self.do_core_test('test_memorygrowth_linear_step.c', cflags=['-sALLOW_MEMORY_GROWTH', '-sSTACK_SIZE=1Mb', '-sINITIAL_MEMORY=32Mb', '-sMAXIMUM_MEMORY=64Mb', '-sMEMORY_GROWTH_LINEAR_STEP=1Mb'])
+
+  @no_sanitize('depends on specific memory layout')
+  @no_highmem('depends on specific memory layout')
+  def test_memorygrowth_geometric_step(self):
+    self.do_core_test('test_memorygrowth_geometric_step.c', cflags=['-sINITIAL_MEMORY=16MB', '-sALLOW_MEMORY_GROWTH', '-sMEMORY_GROWTH_GEOMETRIC_STEP=8.5', '-sMEMORY_GROWTH_GEOMETRIC_CAP=32MB'])
 
   @parameterized({
-    'nogrow': ([],),
+    '': ([],),
     'grow': (['-sALLOW_MEMORY_GROWTH', '-sMAXIMUM_MEMORY=18MB'],),
   })
-  @no_asan('requires more memory when growing')
-  @no_lsan('requires more memory when growing')
   @no_highmem('depends on MAXIMUM_MEMORY')
   def test_aborting_new(self, args):
+    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
+      self.skipTest('test depends on memory growth being disabled')
     # test that C++ new properly errors if we fail to malloc when growth is
     # enabled, with or without growth
     self.do_core_test('test_aborting_new.cpp', cflags=args)
 
   @parameterized({
-    'nogrow': (['-sABORTING_MALLOC=0'],),
-    'grow': (['-sABORTING_MALLOC=0', '-sALLOW_MEMORY_GROWTH', '-sMAXIMUM_MEMORY=18MB'],),
+    '': ([],),
+    'grow': (['-sALLOW_MEMORY_GROWTH', '-sMAXIMUM_MEMORY=18MB'],),
   })
-  @no_asan('requires more memory when growing')
-  @no_lsan('requires more memory when growing')
   @no_highmem('depends on MAXIMUM_MEMORY')
   def test_nothrow_new(self, args):
-    self.do_core_test('test_nothrow_new.cpp', cflags=args)
+    if self.has_changed_setting('ALLOW_MEMORY_GROWTH'):
+      self.skipTest('test depends on memory growth being disabled')
+    self.do_core_test('test_nothrow_new.cpp', cflags=['-sABORTING_MALLOC=0'] + args)
 
   @no_wasm2js('no WebAssembly.Memory()')
   @no_asan('ASan alters the memory size')
