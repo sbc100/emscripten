@@ -599,7 +599,7 @@ var LibraryHTML5 = {
 
   $registerWheelEventCallback__noleakcheck: true,
   $registerWheelEventCallback__deps: ['$JSEvents', '$fillMouseEventData', 'malloc'],
-  $registerWheelEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerWheelEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -626,7 +626,7 @@ var LibraryHTML5 = {
 #if HTML5_SUPPORT_DEFERRING_USER_SENSITIVE_REQUESTS
       allowsDeferredCalls: true,
 #endif
-      eventTypeString,
+      eventTypeString: "wheel",
       eventTypeId,
       userData,
       callbackfunc,
@@ -642,7 +642,7 @@ var LibraryHTML5 = {
     target = findEventTarget(target);
     if (!target) return {{{ cDefs.EMSCRIPTEN_RESULT_UNKNOWN_TARGET }}};
     if (typeof target.onwheel != 'undefined') {
-      return registerWheelEventCallback(target, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_WHEEL }}}, 'wheel', targetThread);
+      return registerWheelEventCallback(target, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_WHEEL }}}, targetThread);
     } else {
       return {{{ cDefs.EMSCRIPTEN_RESULT_NOT_SUPPORTED }}};
     }
@@ -785,7 +785,7 @@ var LibraryHTML5 = {
 
   $registerDeviceOrientationEventCallback__noleakcheck: true,
   $registerDeviceOrientationEventCallback__deps: ['$JSEvents', '$fillDeviceOrientationEventData', '$findEventTarget'],
-  $registerDeviceOrientationEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerDeviceOrientationEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -805,7 +805,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target: findEventTarget(target),
-      eventTypeString,
+      eventTypeString: "deviceorientation",
       eventTypeId,
       userData,
       callbackfunc,
@@ -818,7 +818,7 @@ var LibraryHTML5 = {
   emscripten_set_deviceorientation_callback_on_thread__proxy: 'sync',
   emscripten_set_deviceorientation_callback_on_thread__deps: ['$registerDeviceOrientationEventCallback'],
   emscripten_set_deviceorientation_callback_on_thread: (userData, useCapture, callbackfunc, targetThread) => {
-    return registerDeviceOrientationEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_DEVICEORIENTATION }}}, 'deviceorientation', targetThread);
+    return registerDeviceOrientationEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_DEVICEORIENTATION }}}, targetThread);
   },
 
   // HTML5 does not really have a polling API for device orientation events, so
@@ -852,7 +852,7 @@ var LibraryHTML5 = {
 
   $registerDeviceMotionEventCallback__noleakcheck: true,
   $registerDeviceMotionEventCallback__deps: ['$JSEvents', '$fillDeviceMotionEventData', '$findEventTarget', 'malloc'],
-  $registerDeviceMotionEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerDeviceMotionEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -872,7 +872,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target: findEventTarget(target),
-      eventTypeString,
+      eventTypeString: "devicemotion",
       eventTypeId,
       userData,
       callbackfunc,
@@ -885,7 +885,7 @@ var LibraryHTML5 = {
   emscripten_set_devicemotion_callback_on_thread__proxy: 'sync',
   emscripten_set_devicemotion_callback_on_thread__deps: ['$registerDeviceMotionEventCallback'],
   emscripten_set_devicemotion_callback_on_thread: (userData, useCapture, callbackfunc, targetThread) =>
-    registerDeviceMotionEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_DEVICEMOTION }}}, 'devicemotion', targetThread),
+    registerDeviceMotionEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_DEVICEMOTION }}}, targetThread),
 
   // HTML5 does not really have a polling API for device motion events, so
   // implement one manually by returning the data from the most recently
@@ -931,7 +931,7 @@ var LibraryHTML5 = {
 
   $registerOrientationChangeEventCallback__noleakcheck: true,
   $registerOrientationChangeEventCallback__deps: ['$JSEvents', '$fillOrientationChangeEventData', 'malloc'],
-  $registerOrientationChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerOrientationChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -951,7 +951,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target,
-      eventTypeString,
+      eventTypeString: 'change',
       eventTypeId,
       userData,
       callbackfunc,
@@ -965,7 +965,7 @@ var LibraryHTML5 = {
   emscripten_set_orientationchange_callback_on_thread__deps: ['$registerOrientationChangeEventCallback'],
   emscripten_set_orientationchange_callback_on_thread: (userData, useCapture, callbackfunc, targetThread) => {
     if (!window.screen || !screen.orientation) return {{{ cDefs.EMSCRIPTEN_RESULT_NOT_SUPPORTED }}};
-    return registerOrientationChangeEventCallback(screen.orientation, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_ORIENTATIONCHANGE }}}, 'change', targetThread);
+    return registerOrientationChangeEventCallback(screen.orientation, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_ORIENTATIONCHANGE }}}, targetThread);
   },
 
   emscripten_get_orientation_status__proxy: 'sync',
@@ -1517,7 +1517,7 @@ var LibraryHTML5 = {
 
   $registerPointerlockChangeEventCallback__noleakcheck: true,
   $registerPointerlockChangeEventCallback__deps: ['$JSEvents', '$fillPointerlockChangeEventData', 'malloc'],
-  $registerPointerlockChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerPointerlockChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -1537,7 +1537,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target,
-      eventTypeString,
+      eventTypeString: "pointerlockchange",
       eventTypeId,
       userData,
       callbackfunc,
@@ -1564,11 +1564,11 @@ var LibraryHTML5 = {
     target = target ? findEventTarget(target) : specialHTMLTargets[{{{ cDefs.EMSCRIPTEN_EVENT_TARGET_DOCUMENT }}}]; // Pointer lock change events need to be captured from 'document' by default instead of 'window'
 #endif
     if (!target) return {{{ cDefs.EMSCRIPTEN_RESULT_UNKNOWN_TARGET }}};
-    return registerPointerlockChangeEventCallback(target, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_POINTERLOCKCHANGE }}}, 'pointerlockchange', targetThread);
+    return registerPointerlockChangeEventCallback(target, userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_POINTERLOCKCHANGE }}}, targetThread);
   },
 
   $registerPointerlockErrorEventCallback__deps: ['$JSEvents'],
-  $registerPointerlockErrorEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerPointerlockErrorEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -1583,7 +1583,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target,
-      eventTypeString,
+      eventTypeString: "pointerlockerror",
       eventTypeId,
       userData,
       callbackfunc,
@@ -1715,7 +1715,7 @@ var LibraryHTML5 = {
 
   $registerVisibilityChangeEventCallback__noleakcheck: true,
   $registerVisibilityChangeEventCallback__deps: ['$JSEvents', '$fillVisibilityChangeEventData', 'malloc'],
-  $registerVisibilityChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
+  $registerVisibilityChangeEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, targetThread) => {
 #if PTHREADS
     targetThread = JSEvents.getTargetThreadForEventCallback(targetThread);
 #endif
@@ -1735,7 +1735,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target,
-      eventTypeString,
+      eventTypeString: "visibilitychange",
       eventTypeId,
       userData,
       callbackfunc,
@@ -1749,9 +1749,9 @@ var LibraryHTML5 = {
   emscripten_set_visibilitychange_callback_on_thread__deps: ['$registerVisibilityChangeEventCallback', '$specialHTMLTargets'],
   emscripten_set_visibilitychange_callback_on_thread: (userData, useCapture, callbackfunc, targetThread) => {
 #if ENVIRONMENT_MAY_BE_WORKER || ENVIRONMENT_MAY_BE_NODE || ENVIRONMENT_MAY_BE_SHELL
-  if (!specialHTMLTargets[{{{ cDefs.EMSCRIPTEN_EVENT_TARGET_DOCUMENT }}}]) {
-    return {{{ cDefs.EMSCRIPTEN_RESULT_UNKNOWN_TARGET }}};
-  }
+    if (!specialHTMLTargets[{{{ cDefs.EMSCRIPTEN_EVENT_TARGET_DOCUMENT }}}]) {
+      return {{{ cDefs.EMSCRIPTEN_RESULT_UNKNOWN_TARGET }}};
+    }
 #endif
     return registerVisibilityChangeEventCallback(specialHTMLTargets[{{{ cDefs.EMSCRIPTEN_EVENT_TARGET_DOCUMENT }}}], userData, useCapture, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_VISIBILITYCHANGE }}}, 'visibilitychange', targetThread);
   },
@@ -1996,7 +1996,7 @@ var LibraryHTML5 = {
   },
 
   $registerBeforeUnloadEventCallback__deps: ['$JSEvents', '$findEventTarget'],
-  $registerBeforeUnloadEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString) => {
+  $registerBeforeUnloadEventCallback: (target, userData, useCapture, callbackfunc, eventTypeId) => {
     var beforeUnloadEventHandlerFunc = (e) => {
       // Note: This is always called on the main browser thread, since it needs synchronously return a value!
       var confirmationMessage = {{{ makeDynCall('pipp', 'callbackfunc') }}}(eventTypeId, 0, userData);
@@ -2013,7 +2013,7 @@ var LibraryHTML5 = {
 
     var eventHandler = {
       target: findEventTarget(target),
-      eventTypeString,
+      eventTypeString: "beforeunload",
       eventTypeId,
       userData,
       callbackfunc,
@@ -2030,7 +2030,7 @@ var LibraryHTML5 = {
     // beforeunload callback can only be registered on the main browser thread, because the page will go away immediately after returning from the handler,
     // and there is no time to start proxying it anywhere.
     if (targetThread !== {{{ cDefs.EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD }}}) return {{{ cDefs.EMSCRIPTEN_RESULT_INVALID_PARAM }}};
-    return registerBeforeUnloadEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, true, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_BEFOREUNLOAD }}}, 'beforeunload');
+    return registerBeforeUnloadEventCallback({{{ cDefs.EMSCRIPTEN_EVENT_TARGET_WINDOW }}}, userData, true, callbackfunc, {{{ cDefs.EMSCRIPTEN_EVENT_BEFOREUNLOAD }}});
   },
 
   $fillBatteryEventData: (eventStruct, battery) => {
