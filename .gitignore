@@ -1,6 +1,9 @@
-# Config file
+# Old-style config file
 .emscripten
 .emscripten_backup
+# New-style config file
+emscripten.conf
+emscripten.conf.backup
 
 # Test config file
 test/config.py

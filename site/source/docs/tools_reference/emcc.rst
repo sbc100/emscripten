@@ -543,9 +543,9 @@ Options that are modified or new in *emcc* are listed below:
 
 ``--em-config <path>``
   [general]
-  Specifies the location of the **.emscripten** configuration file.  If not
-  specified emscripten will search for ``.emscripten`` first in the emscripten
-  directory itself, and then in the user's home directory (``~/.emscripten``).
+  Specifies the location of the **emscripten.conf** (or legacy **.emscripten**) configuration file.  If not
+  specified emscripten will search for ``emscripten.conf`` or ``.emscripten`` first in the emscripten
+  directory itself, and then in the user's config directory (``~/.config/emscripten.conf`` or ``~/.emscripten``).
   This can be overridden using the ``EM_CONFIG`` environment variable.
 
 ``--valid-abspath <path>``

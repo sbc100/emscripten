@@ -195,7 +195,7 @@ class sanity(RunnerCore):
     env = os.environ.copy()
     env['PATH'] = path_without_tool(env['PATH'], 'clang')
 
-    default_config = path_from_root('.emscripten')
+    default_config = path_from_root('emscripten.conf')
     output = self.do([EMCC, '-v'], env=env)
     self.assertContained('emcc: warning: config file not found: %s.  You can create one by hand or run `emcc --generate-config`' % default_config, output)
 
@@ -227,7 +227,7 @@ class sanity(RunnerCore):
         possible_nodes.append('/usr/bin/nodejs')
       self.assertIdentical(possible_nodes, re.search("^ *NODE_JS *= (.*)$", output, re.M).group(1))
 
-    template_data = utils.read_file(path_from_root('tools/config_template.py'))
+    template_data = utils.read_file(path_from_root('tools/config_template.conf'))
     self.assertNotContained('{{{', config_data)
     self.assertNotContained('}}}', config_data)
     self.assertContained('{{{', template_data)
@@ -242,13 +242,13 @@ class sanity(RunnerCore):
     # self.assertContained('Hello, world!', self.run_js('a.out.js'), output)
 
     # Second run, with bad EM_CONFIG
-    for settings in ('blah', 'LLVM_ROOT="blarg"; NODE_JS=[]'):
+    for settings in ('blah', 'LLVM_ROOT = blarg\nNODE_JS ='):
       try:
         utils.write_file(default_config, settings)
         output = self.do(EMCC)
 
         if 'blah' in settings:
-          self.assertContained('error: error in evaluating config file (%s)' % default_config, output)
+          self.assertContained('error: error parsing config file (%s)' % default_config, output)
         else:
           self.assertContained('error: NODE_JS is set to empty value', output) # sanity check should fail
       finally:
@@ -571,18 +571,18 @@ fi
 FROZEN_CACHE = True
 LLVM_ROOT = '$TEST_CUSTOM_ENV_VAR/llvm'
 NODE_JS = ['$CFGDIR/node', '$CFGDIR/node2']
-WASMER = '~/wasmer'
+BINARYEN_ROOT = '~/binaryen'
 '''
     create_file(cfg_file, get_basic_config() + extra_config, absolute=True)
 
-    with env_modify({'EM_CONFIG': cfg_file, 'TEST_CUSTOM_ENV_VAR': custom_var_dir, 'EM_LLVM_ROOT': None, 'EM_NODE_JS': None}):
+    with env_modify({'EM_CONFIG': cfg_file, 'TEST_CUSTOM_ENV_VAR': custom_var_dir, 'EM_LLVM_ROOT': None, 'EM_NODE_JS': None, 'EM_BINARYEN_ROOT': None}):
       def get_em_config(var_name):
         out = self.run_process([EMCONFIG, var_name], stdout=PIPE).stdout.strip()
         return out
 
       self.assertEqual(get_em_config('LLVM_ROOT'), os.path.join(custom_var_dir, 'llvm'))
       self.assertEqual(get_em_config('NODE_JS'), f"['{os.path.join(config_dir, 'node')}', '{os.path.join(config_dir, 'node2')}']")
-      self.assertEqual(get_em_config('WASMER'), os.path.expanduser('~/wasmer'))
+      self.assertEqual(get_em_config('BINARYEN_ROOT'), os.path.expanduser('~/binaryen'))
       self.assertEqual(get_em_config('FROZEN_CACHE'), 'True')
 
   def test_emcc_ports(self):

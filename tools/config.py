@@ -3,6 +3,7 @@
 # University of Illinois/NCSA Open Source License.  Both these licenses can be
 # found in the LICENSE file.
 
+import configparser
 import logging
 import os
 import shutil
@@ -85,20 +86,43 @@ def expandvars(value):
   return value
 
 
-def parse_config_file():
+def parse_legacy_config_file(filename):
+  config = {'__file__': filename}
+  config_text = utils.read_file(filename)
+  # Add $CFGDIR expansion similar to that used in llvm config files:
+  # https://clang.llvm.org/docs/UsersManual.html#configuration-files
+  os.environ['CFGDIR'] = os.path.dirname(filename)
+  try:
+    exec(config_text, config)
+  except Exception as e:
+    exit_with_error('error in evaluating config file (%s): %s, text: %s', filename, e, config_text)
+  return config
+
+
+def parse_new_config_file(filename):
+  config = configparser.ConfigParser(allow_unnamed_section=True)
+  try:
+    config.read(filename)
+  except configparser.Error as e:
+    exit_with_error('error parsing config file (%s): %s', filename, e)
+  config_data = config[configparser.UNNAMED_SECTION]
+  # Add $CFGDIR expansion similar to that used in llvm config files:
+  # https://clang.llvm.org/docs/UsersManual.html#configuration-files
+  os.environ['CFGDIR'] = os.path.dirname(os.path.abspath(filename))
+  for key, value in config_data.items():
+    config_data[key] = os.path.expanduser(os.path.expandvars(value))
+  return config_data
+
+
+def parse_config_file(filename):
   """Parse the emscripten config file using python's exec.
 
   Also check EM_<KEY> environment variables to override specific config keys.
   """
-  config = {'__file__': EM_CONFIG}
-  config_text = utils.read_file(EM_CONFIG)
-  # Add $CFGDIR expansion similar to that used in llvm config files:
-  # https://clang.llvm.org/docs/UsersManual.html#configuration-files
-  os.environ['CFGDIR'] = os.path.dirname(EM_CONFIG)
-  try:
-    exec(config_text, config)
-  except Exception as e:
-    exit_with_error('error in evaluating config file (%s): %s, text: %s', EM_CONFIG, e, config_text)
+  if not utils.suffix(filename):
+    config = parse_legacy_config_file(filename)
+  else:
+    config = parse_new_config_file(filename)
 
   TEST_KEYS = (
     'NODE_JS_TEST',
@@ -143,7 +167,7 @@ def parse_config_file():
 
 def read_config():
   if os.path.isfile(EM_CONFIG):
-    parse_config_file()
+    parse_config_file(EM_CONFIG)
 
   set_config_from_tool_location('LLVM_ROOT', 'clang', os.path.dirname)
   set_config_from_tool_location('NODE_JS', 'node', lambda x: x)
@@ -157,21 +181,18 @@ def generate_config(path):
   if os.path.exists(path):
     exit_with_error(f'config file already exists: `{path}`')
 
-  # Note: repr is used to ensure the paths are escaped correctly on Windows.
-  # The full string is replaced so that the template stays valid Python.
-
-  config_data = utils.read_file(path_from_root('tools/config_template.py'))
+  config_data = utils.read_file(path_from_root('tools/config_template.conf'))
   config_data = config_data.splitlines()[3:] # remove the initial comment
   config_data = '\n'.join(config_data) + '\n'
   # autodetect some default paths
   llvm_root = os.path.dirname(shutil.which('wasm-ld') or '/usr/bin/wasm-ld')
-  config_data = config_data.replace("'{{{ LLVM_ROOT }}}'", repr(llvm_root))
+  config_data = config_data.replace('{{{ LLVM_ROOT }}}', llvm_root)
 
   binaryen_root = os.path.dirname(os.path.dirname(shutil.which('wasm-opt') or '/usr/local/bin/wasm-opt'))
-  config_data = config_data.replace("'{{{ BINARYEN_ROOT }}}'", repr(binaryen_root))
+  config_data = config_data.replace('{{{ BINARYEN_ROOT }}}', binaryen_root)
 
   node = shutil.which('node') or shutil.which('nodejs') or 'node'
-  config_data = config_data.replace("'{{{ NODE }}}'", repr(node))
+  config_data = config_data.replace('{{{ NODE }}}', node)
 
   # write
   utils.write_file(path, config_data)
@@ -191,6 +212,27 @@ Please edit the file if any of those are incorrect.\
 ''' % (path, llvm_root, binaryen_root, node), file=sys.stderr)
 
 
+def config_in_dir(dirname):
+  """Looks for emscripten config in the given directory.
+
+  We look first for the new-style config and then the old-style.
+  """
+  for filename in ('emscripten.conf', '.emscripten'):
+    fullname = os.path.join(dirname, filename)
+    if os.path.isfile(fullname):
+      return fullname
+
+  return None
+
+
+def get_user_config_dir():
+  xdg_config_home = os.environ.get('XDG_CONFIG_HOME')
+  if xdg_config_home:
+    return xdg_config_home
+  else:
+    return os.path.expanduser('~/.config')
+
+
 def find_config_file():
   # Emscripten configuration is done through the --em-config command line option
   # or the EM_CONFIG environment variable. If the specified string value contains
@@ -203,7 +245,9 @@ def find_config_file():
   # 3. Local .emscripten file, if found
   # 4. Local .emscripten file, as used by `emsdk --embedded` (two levels above,
   #    see below)
-  # 5. User home directory config (~/.emscripten), if found.
+  # 5. Config file under $HOME directory
+  #    - New-style config file in XDG_CONFIG_HOME (~/.config)
+  #    - Old-style config directly in $HOME (~/.emscripten)
 
   if '--em-config' in sys.argv:
     i = sys.argv.index('--em-config')
@@ -216,8 +260,8 @@ def find_config_file():
   if 'EM_CONFIG' in os.environ:
     return os.environ['EM_CONFIG']
 
-  embedded_config = path_from_root('.emscripten')
-  if os.path.isfile(embedded_config):
+  embedded_config = config_in_dir(path_from_root())
+  if embedded_config:
     return embedded_config
 
   # For compatibility with `emsdk --embedded` mode also look two levels up.  The
@@ -233,16 +277,17 @@ def find_config_file():
   # file into the emscripten directory itself.
   # See: https://github.com/emscripten-core/emsdk/pull/367
   emsdk_root = os.path.dirname(os.path.dirname(path_from_root()))
-  emsdk_embedded_config = os.path.join(emsdk_root, '.emscripten')
-
-  if os.path.isfile(emsdk_embedded_config):
+  emsdk_embedded_config = config_in_dir(emsdk_root)
+  if emsdk_embedded_config:
     return emsdk_embedded_config
 
-  user_home_config = os.path.expanduser('~/.emscripten')
+  user_home_config = os.path.join(get_user_config_dir(), 'emscripten.conf')
+  if not os.path.isfile(user_home_config):
+    user_home_config = os.path.expanduser('~/.emscripten')
   if os.path.isfile(user_home_config):
     return user_home_config
 
-  return embedded_config
+  return path_from_root('emscripten.conf')
 
 
 def init():

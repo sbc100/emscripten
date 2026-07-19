@@ -30,6 +30,8 @@ See docs/process.md for more on how version tagging works.
   and `$allocate`. (#27378)
 - llvm-libc was updated to LLVM 22.1.8. (#27374)
 - Backport fix for musl's qsort (CVE-2026-40200) (#27029)
+- Added support for new INI-style config file format (`emscripten.conf`). Old-style
+  `.emscripten` files are still supported for now. (#27219)
 
 6.0.3 - 07/13/26
 ----------------
