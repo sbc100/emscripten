@@ -8,6 +8,13 @@
 // Async support via ASYNCIFY
 //
 
+{{{
+const ASYNCIFY_NORMAL = 0;
+const ASYNCIFY_UNWINDING = 1;
+const ASYNCIFY_REWINDING = 2;
+const ASYNCIFY_DISABLED = 3;
+}}}
+
 addToLibrary({
   // error handling
 
@@ -77,8 +84,8 @@ addToLibrary({
               // function) as that is what shutdown does (and we don't have an
               // explicit list of shutdown imports).
               var changedToDisabled =
-                    originalAsyncifyState === Asyncify.State.Normal &&
-                    Asyncify.state        === Asyncify.State.Disabled;
+                    originalAsyncifyState === {{{ ASYNCIFY_NORMAL }}} &&
+                    Asyncify.state        === {{{ ASYNCIFY_DISABLED }}};
               // invoke_* functions are allowed to change the state if we do
               // not ignore indirect calls.
               var ignoredInvoke = x.startsWith('invoke_') &&
@@ -187,13 +194,7 @@ addToLibrary({
     //
     // Original implementation of Asyncify.
     //
-    State: {
-      Normal: 0,
-      Unwinding: 1,
-      Rewinding: 2,
-      Disabled: 3,
-    },
-    state: 0,
+    state: {{{ ASYNCIFY_NORMAL }}},
     StackSize: {{{ ASYNCIFY_STACK_SIZE }}},
     currData: null,
     // The return value passed to wakeUp() in
@@ -231,14 +232,14 @@ addToLibrary({
       dbg('ASYNCIFY: maybe stop unwind', Asyncify.exportCallStack);
 #endif
       if (Asyncify.currData &&
-          Asyncify.state === Asyncify.State.Unwinding &&
+          Asyncify.state === {{{ ASYNCIFY_UNWINDING }}} &&
           Asyncify.exportCallStack.length === 0) {
         // We just finished unwinding.
         // Be sure to set the state before calling any other functions to avoid
         // possible infinite recursion here (For example in debug pthread builds
         // the dbg() function itself can call back into WebAssembly to get the
         // current pthread_self() pointer).
-        Asyncify.state = Asyncify.State.Normal;
+        Asyncify.state = {{{ ASYNCIFY_NORMAL }}};
 #if ASYNCIFY_DEBUG
         dbg('ASYNCIFY: stop unwind');
 #endif
@@ -330,13 +331,13 @@ addToLibrary({
     // and other async methods for simple examples of usage.
     handleSleep(startAsync) {
 #if ASSERTIONS
-      assert(Asyncify.state !== Asyncify.State.Disabled, 'handleSleep called after Asyncify was shut down');
+      assert(Asyncify.state !== {{{ ASYNCIFY_DISABLED }}}, 'handleSleep called after Asyncify was shut down');
 #endif
       if (ABORT) return;
 #if ASYNCIFY_DEBUG
       dbg(`ASYNCIFY: handleSleep ${Asyncify.state}`);
 #endif
-      if (Asyncify.state === Asyncify.State.Normal) {
+      if (Asyncify.state === {{{ ASYNCIFY_NORMAL }}}) {
         // Prepare to sleep. Call startAsync, and see what happens:
         // if the code decided to call our callback synchronously,
         // then no async operation was in fact begun, and we don't
@@ -366,7 +367,7 @@ addToLibrary({
 #if ASYNCIFY_DEBUG
           dbg(`ASYNCIFY: start rewind ${Asyncify.currData}`);
 #endif
-          Asyncify.state = Asyncify.State.Rewinding;
+          Asyncify.state = {{{ ASYNCIFY_REWINDING }}};
           runAndAbortIfError(() => _asyncify_start_rewind(Asyncify.currData));
           if (typeof MainLoop != 'undefined' && MainLoop.func) {
             MainLoop.resume();
@@ -410,7 +411,7 @@ addToLibrary({
         reachedAfterCallback = true;
         if (!reachedCallback) {
           // A true async operation was begun; start a sleep.
-          Asyncify.state = Asyncify.State.Unwinding;
+          Asyncify.state = {{{ ASYNCIFY_UNWINDING }}};
           // TODO: reuse, don't alloc/free every sleep
           Asyncify.currData = Asyncify.allocateData();
 #if ASYNCIFY_DEBUG
@@ -421,12 +422,12 @@ addToLibrary({
           }
           runAndAbortIfError(() => _asyncify_start_unwind(Asyncify.currData));
         }
-      } else if (Asyncify.state === Asyncify.State.Rewinding) {
+      } else if (Asyncify.state === {{{ ASYNCIFY_REWINDING }}}) {
         // Stop a resume.
 #if ASYNCIFY_DEBUG
         dbg('ASYNCIFY: stop rewind');
 #endif
-        Asyncify.state = Asyncify.State.Normal;
+        Asyncify.state = {{{ ASYNCIFY_NORMAL }}};
         runAndAbortIfError(_asyncify_stop_rewind);
         _free(Asyncify.currData);
         Asyncify.currData = null;
@@ -567,7 +568,7 @@ addToLibrary({
 #if ASYNCIFY_DEBUG
         dbg('ASYNCIFY/FIBER: start rewind', asyncifyData, '(resuming fiber', newFiber, ')');
 #endif
-        Asyncify.state = Asyncify.State.Rewinding;
+        Asyncify.state = {{{ ASYNCIFY_REWINDING }}};
         _asyncify_start_rewind(asyncifyData);
         Asyncify.doRewind(asyncifyData);
       }
@@ -581,8 +582,8 @@ addToLibrary({
 #if ASYNCIFY_DEBUG
     dbg('ASYNCIFY/FIBER: swap', oldFiber, '->', newFiber, 'state:', Asyncify.state);
 #endif
-    if (Asyncify.state === Asyncify.State.Normal) {
-      Asyncify.state = Asyncify.State.Unwinding;
+    if (Asyncify.state === {{{ ASYNCIFY_NORMAL }}}) {
+      Asyncify.state = {{{ ASYNCIFY_UNWINDING }}};
 
       var asyncifyData = oldFiber + {{{ C_STRUCTS.emscripten_fiber_s.asyncify_data }}};
       Asyncify.setDataRewindFunc(asyncifyData);
@@ -599,12 +600,12 @@ addToLibrary({
       Fibers.nextFiber = newFiber;
     } else {
 #if ASSERTIONS
-      assert(Asyncify.state === Asyncify.State.Rewinding);
+      assert(Asyncify.state === {{{ ASYNCIFY_REWINDING }}});
 #endif
 #if ASYNCIFY_DEBUG
       dbg('ASYNCIFY/FIBER: stop rewind');
 #endif
-      Asyncify.state = Asyncify.State.Normal;
+      Asyncify.state = {{{ ASYNCIFY_NORMAL }}};
       _asyncify_stop_rewind();
       Asyncify.currData = null;
     }

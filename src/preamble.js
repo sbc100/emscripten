@@ -206,7 +206,7 @@ function exitRuntime() {
 #endif
 #if ASYNCIFY == 1 && ASSERTIONS
   // ASYNCIFY cannot be used once the runtime starts shutting down.
-  Asyncify.state = Asyncify.State.Disabled;
+  Asyncify.state = {{{ ASYNCIFY_DISABLED }}};
 #endif
 #if STACK_OVERFLOW_CHECK
   checkStackCookie();
