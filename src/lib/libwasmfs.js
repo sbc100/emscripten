@@ -94,10 +94,10 @@ addToLibrary({
 
       return returnValue;
     },
-    createDataFile(parent, name, fileData, canRead, canWrite, canOwn) {
+    createDataFile(parent, name, fileData = undefined, canRead = undefined, canWrite = undefined, canOwn = undefined) {
       FS_createDataFile(parent, name, fileData, canRead, canWrite, canOwn);
     },
-    createPath(parent, path, canRead, canWrite) {
+    createPath(parent, path, canRead = undefined, canWrite = undefined) {
       // Cache file path directory names.
       var parts = path.split('/').reverse();
       while (parts.length) {
@@ -118,11 +118,11 @@ addToLibrary({
       return current;
     },
 
-    createPreloadedFile(parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn, preFinish) {
+    createPreloadedFile(parent, name, url, canRead = undefined, canWrite = undefined, onload = undefined, onerror = undefined, dontCreateFile = undefined, canOwn = undefined, preFinish = undefined) {
       return FS_createPreloadedFile(parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn, preFinish);
     },
 
-    async preloadFile(parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish) {
+    async preloadFile(parent, name, url, canRead = undefined, canWrite = undefined, dontCreateFile = undefined, canOwn = undefined, preFinish = undefined) {
       return FS_preloadFile(parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish);
     },
 
@@ -161,8 +161,8 @@ addToLibrary({
 #if FORCE_FILESYSTEM || INCLUDE_FULL_LIBRARY // see comment above
     // libc methods
 
-    mkdir: (path, mode) => FS_mkdir(path, mode),
-    mkdirTree: (path, mode) => FS_mkdirTree(path, mode),
+    mkdir: (path, mode = 0o777) => FS_mkdir(path, mode),
+    mkdirTree: (path, mode = 0o777) => FS_mkdirTree(path, mode),
     rmdir: (path) => FS.handleError(
       withStackSave(() => __wasmfs_rmdir(stringToUTF8OnStack(path)))
     ),
@@ -172,11 +172,11 @@ addToLibrary({
       var fd = FS.handleError(__wasmfs_open(buffer, flags, mode));
       return { fd : fd };
     }),
-    create: (path, mode) => FS_create(path, mode),
+    create: (path, mode = 0o666) => FS_create(path, mode),
     close: (stream) => FS.handleError(-__wasmfs_close(stream.fd)),
     unlink: (path) => FS_unlink(path),
     chdir: (path) => withStackSave(() => __wasmfs_chdir(stringToUTF8OnStack(path))),
-    read(stream, buffer, offset, length, position) {
+    read(stream, buffer, offset, length, position = undefined) {
       var seeking = typeof position != 'undefined';
 
       var dataBuffer = _malloc(length);
@@ -195,7 +195,7 @@ addToLibrary({
       return FS.handleError(bytesRead);
     },
     // Note that canOwn is an optimization that we ignore for now in WasmFS.
-    write(stream, buffer, offset, length, position, canOwn) {
+    write(stream, buffer, offset, length, position = undefined, canOwn = undefined) {
       var seeking = typeof position != 'undefined';
 
       var dataBuffer = _malloc(length);
@@ -369,7 +369,7 @@ addToLibrary({
       wasmFS$backends[backendPointer] = definedOps;
       wasmFSDevices[dev] = backendPointer;
     },
-    createDevice(parent, name, input, output) {
+    createDevice(parent, name, input = undefined, output = undefined) {
       if (typeof parent != 'string') {
         // The old API allowed parents to be objects, which do not exist in WasmFS.
         throw new Error('Only string paths are accepted');
@@ -413,7 +413,7 @@ addToLibrary({
       return FS.mkdev(path, mode, dev);
     },
     // mode is an optional argument, which will be set to 0666 if not passed in.
-    mkdev(path, mode, dev) {
+    mkdev(path, mode = undefined, dev = undefined) {
       if (typeof dev === 'undefined') {
         dev = mode;
         mode = 0o666;
@@ -460,7 +460,7 @@ addToLibrary({
     '$wasmFSPreloadingFlushed', '$wasmFSPreloadedFiles',
     '$FS_create', '$FS_writeFile',
   ],
-  $FS_createDataFile: (parent, name, fileData, canRead, canWrite, canOwn) => {
+  $FS_createDataFile: (parent, name, fileData = undefined, canRead = undefined, canWrite = undefined, canOwn = undefined) => {
     var pathName = name ? parent + '/' + name : parent;
     var mode = FS_getMode(canRead, canWrite);
 
@@ -519,7 +519,7 @@ addToLibrary({
    *                       default if not set.
    */`,
   $FS_mkdirTree__deps: ['$FS_mkdir'],
-  $FS_mkdirTree: (path, mode) => {
+  $FS_mkdirTree: (path, mode = 0o777) => {
     var dirs = path.split('/');
     var d = '';
     for (var dir of dirs) {

@@ -1273,7 +1273,7 @@ var LibraryGLFW = {
     },
 
     // Overrides Browser.updateCanvasDimensions to account for hi dpi scaling
-    updateCanvasDimensions(canvas, wNative, hNative) {
+    updateCanvasDimensions(canvas, wNative = undefined, hNative = undefined) {
       const scale = GLFW.getHiDPIScale();
 
       if (wNative && hNative) {

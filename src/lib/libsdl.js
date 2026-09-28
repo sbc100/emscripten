@@ -59,7 +59,8 @@ var LibrarySDL = {
     // The currently playing audio element.  There's only one music track.
     music: {
       audio: null,
-      volume: 1.0
+      volume: 1.0,
+      source: null,
     },
     mixerFrequency: 22050,
     mixerFormat: {{{ cDefs.AUDIO_S16LSB }}},
@@ -349,7 +350,7 @@ var LibrarySDL = {
 
     translateRGBAToColor: (r, g, b, a) => r | g << 8 | b << 16 | a << 24,
 
-    makeSurface(width, height, flags, usePageCanvas, source, rmask, gmask, bmask, amask) {
+    makeSurface(width, height, flags, usePageCanvas, source = undefined, rmask = undefined, gmask = undefined, bmask = undefined, amask = undefined) {
       var is_SDL_HWSURFACE = flags & {{{ cDefs.SDL_HWSURFACE }}};
       var is_SDL_HWPALETTE = flags & {{{ cDefs.SDL_HWPALETTE }}};
       var is_SDL_OPENGL = flags & {{{ cDefs.SDL_OPENGL }}};
@@ -440,7 +441,7 @@ var LibrarySDL = {
 
     // Copy data from the C++-accessible storage to the canvas backing
     // for surface with HWPALETTE flag(8bpp depth)
-    copyIndexedColorData(surfData, rX, rY, rW, rH) {
+    copyIndexedColorData(surfData, rX = undefined, rY = undefined, rW = undefined, rH = undefined) {
       // HWPALETTE works with palette
       // set by SDL_SetColors
       if (!surfData.colors) {

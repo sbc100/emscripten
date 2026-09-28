@@ -446,7 +446,7 @@ var LibraryBrowser = {
       Browser.resizeListeners.forEach((listener) => listener(canvas.width, canvas.height));
     },
 
-    setCanvasSize(width, height, noUpdates) {
+    setCanvasSize(width, height, noUpdates = false) {
       var canvas = Browser.getCanvas();
       Browser.updateCanvasDimensions(canvas, width, height);
       if (!noUpdates) Browser.updateResizeListeners();
@@ -476,7 +476,7 @@ var LibraryBrowser = {
       Browser.updateResizeListeners();
     },
 
-    updateCanvasDimensions(canvas, wNative, hNative) {
+    updateCanvasDimensions(canvas, wNative = undefined, hNative = undefined) {
       if (wNative && hNative) {
         canvas.widthNative = wNative;
         canvas.heightNative = hNative;
