@@ -14,12 +14,11 @@ want to keep them in sync with the versions implied by test/emsdk_version.txt.
 """
 
 import argparse
-import base64
 import os
 import re
 import subprocess
 import sys
-import urllib.request
+import tempfile
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(script_dir))
@@ -34,6 +33,7 @@ DRY_RUN = False
 # (e.g. origin vs upstream)
 LLVM_URL = 'https://github.com/llvm/llvm-project.git'
 BINARYEN_URL = 'https://github.com/WebAssembly/binaryen.git'
+EMSDK_RELEASES_URL = 'https://chromium.googlesource.com/emscripten-releases'
 
 
 def get_emsdk_version(emsdk_version_file=None):
@@ -43,14 +43,12 @@ def get_emsdk_version(emsdk_version_file=None):
 
 
 def fetch_deps(emsdk_hash):
-  url = (
-      'https://chromium.googlesource.com/emscripten-releases/+/'
-      f'{emsdk_hash}/DEPS?format=TEXT'
-  )
   if VERBOSE:
-    print(f'Fetching DEPS file from {url}...')
-  with urllib.request.urlopen(url) as response:
-    return base64.b64decode(response.read()).decode('utf-8')
+    print(f'Fetching DEPS file from {EMSDK_RELEASES_URL} at {emsdk_hash}...')
+  with tempfile.TemporaryDirectory() as tmpdir:
+    subprocess.check_call(['git', 'init', '-q', tmpdir])
+    subprocess.check_call(['git', '-C', tmpdir, 'fetch', '-q', '--depth=1', EMSDK_RELEASES_URL, emsdk_hash])
+    return subprocess.check_output(['git', '-C', tmpdir, 'show', 'FETCH_HEAD:DEPS'], text=True)
 
 
 def parse_deps(content):

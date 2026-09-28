@@ -17,7 +17,7 @@ import re
 import statistics
 import subprocess
 import sys
-import urllib.request
+import tempfile
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(script_dir))
@@ -59,26 +59,34 @@ def format_emsdk_version_update(old_sha, new_sha, limit=30):
   assert old_sha != 'none'
   assert old_sha != new_sha
   log_url = f'https://chromium.googlesource.com/emscripten-releases/+log/{old_sha}..{new_sha}'
-  url = f'{log_url}?format=JSON&n={limit + 1}'
-  data = urllib.request.urlopen(url, timeout=5).read().decode('utf-8')
-  if data.startswith(")]}'"):
-    data = data[4:]
-  j = json.loads(data)
-  entries = j.get('log', [])
+  remote_url = 'https://chromium.googlesource.com/emscripten-releases'
+
+  with tempfile.TemporaryDirectory() as tmpdir:
+    subprocess.check_call(['git', 'init', '-q', tmpdir])
+    subprocess.check_call(['git', '-C', tmpdir, 'fetch', '-q', f'--depth={limit + 1}', remote_url, new_sha])
+    raw_log = subprocess.check_output(['git', '-C', tmpdir, 'log', '--pretty=format:%H %s', 'FETCH_HEAD'], text=True)
+
+  entries = []
+  reached_old = False
+  for line in raw_log.splitlines():
+    commit, subject = line.split(' ', 1)
+    if commit.startswith(old_sha):
+      reached_old = True
+      break
+    entries.append((commit, subject))
+
   lines = [f'emsdk version updated: {old_sha} => {new_sha}']
   lines.append('')
   lines.append('The following revisions were included in this update:')
   lines.append('')
   lines.append('```')
-  for entry in entries[:limit]:
-    short_sha = entry['commit'][:8]
-    subject = entry['message'].splitlines()[0]
-    lines.append(f'- {short_sha} {subject}')
-  if len(entries) > limit:
+  for commit, subject in entries[:limit]:
+    lines.append(f'- {commit[:8]} {subject}')
+  if len(entries) > limit or not reached_old:
     lines.append('  ... (and more, see full log)')
   lines.append('```')
-  lines.append("")
-  lines.append(f"Full log: {log_url}")
+  lines.append('')
+  lines.append(f'Full log: {log_url}')
 
   return '\n'.join(lines)
 
