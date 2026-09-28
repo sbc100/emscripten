@@ -129,6 +129,15 @@ void test() {
   times[1].tv_nsec = now.tv_nsec;
   check_times(fd, times, 1);
 
+  printf("check timestamp near second boundary...\n");
+  times[0].tv_sec = 1700000000; // Nov 2023
+  times[0].tv_nsec = 999999900;
+  times[1].tv_sec = 1700000000;
+  times[1].tv_nsec = 999999900;
+  err = futimens(fd, times);
+  assert(!err);
+  check_times(fd, times, 0);
+
   printf("check setting time to 0...\n");
   struct utimbuf tb = {0};
   utime("folder/file", &tb);
