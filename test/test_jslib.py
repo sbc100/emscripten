@@ -855,3 +855,32 @@ console.error('JSLIB: none of the above');
   def test_export(self):
     create_file('post.js', 'Module.myFunc();')
     self.do_runf('hello_world.c', 'myFunc included\nmyFunc called\n', cflags=['--js-library', test_file('jslib/test_export.js'), '--extern-post-js=post.js'])
+
+  def test_jslib_const(self):
+    create_file('lib.js', r'''
+      addToLibrary({
+        $CONST_A__const: true,
+        $CONST_A: 10,
+        ...defineConsts({
+          $CONST_B: 32,
+          $UNUSED_CONST: 99,
+        }),
+        get_const_sum__deps: ['$CONST_A', '$CONST_B'],
+        get_const_sum: () => CONST_A + CONST_B,
+      });
+    ''')
+    create_file('src.c', r'''
+      #include <assert.h>
+      #include <stdio.h>
+      int get_const_sum(void);
+      int main() {
+        assert(get_const_sum() == 42);
+        printf("done\n");
+        return 0;
+      }
+    ''')
+    self.do_runf('src.c', 'done\n', cflags=['--js-library', 'lib.js'])
+    js = read_file('src.js')
+    self.assertContained('const CONST_A = 10;', js)
+    self.assertContained('const CONST_B = 32;', js)
+    self.assertNotContained('UNUSED_CONST', js)

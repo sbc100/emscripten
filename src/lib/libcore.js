@@ -2531,7 +2531,7 @@ addToLibrary({
 
 function autoAddDeps(lib, name) {
   for (const item of Object.keys(lib)) {
-    if (!isDecorator(item)) {
+    if (!isDecorator(item) && item != name && !lib[item + '__const']) {
       lib[item + '__deps'] ??= [];
       lib[item + '__deps'].push(name);
     }

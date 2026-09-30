@@ -706,7 +706,7 @@ function(${args}) {
       const isUserSymbol = LibraryManager.library[symbol + '__user'];
       // Check for dependencies on `__internal` symbols from user libraries.
       for (const dep of deps) {
-        if (isUserSymbol && LibraryManager.library[dep + '__internal']) {
+        if (isUserSymbol && LibraryManager.library[dep + '__internal'] && !LibraryManager.library[dep + '__user']) {
           warn(`user library symbol '${symbol}' depends on internal symbol '${dep}'`);
         }
       }
@@ -834,7 +834,8 @@ function(${args}) {
         if (typeof snippet == 'string' && snippet[0] == '=') {
           snippet = snippet.slice(1);
         }
-        contentText = `var ${mangled} = ${snippet};`;
+        const declType = LibraryManager.library[symbol + '__const'] ? 'const' : 'var';
+        contentText = `${declType} ${mangled} = ${snippet};`;
       }
 
       if (contentText && MODULARIZE == 'instance' && (EXPORT_ALL || EXPORTED_FUNCTIONS.has(mangled) || extraExports.has(mangled)) && !isStub) {
