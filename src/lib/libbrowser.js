@@ -101,7 +101,7 @@ var LibraryBrowser = {
             err(`warning: browser could not fully decode audio ${name}, trying slower base64 approach`);
             function encode64(data) {
               var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-              var PAD = '=';
+              const PAD = '=';
               var ret = '';
               var leftchar = 0;
               var leftbits = 0;
@@ -444,8 +444,9 @@ var LibraryBrowser = {
     setFullscreenCanvasSize() {
       // check if SDL is available
       if (typeof SDL != 'undefined') {
+        const SDL_FULLSCREEN = 0x00800000;
         var flags = {{{ makeGetValue('SDL.screen', '0', 'u32') }}};
-        flags = flags | {{{ cDefs.SDL_FULLSCREEN }}};
+        flags = flags | SDL_FULLSCREEN;
         {{{ makeSetValue('SDL.screen', '0', 'flags', 'i32') }}};
       }
       Browser.updateCanvasDimensions(Browser.getCanvas());
@@ -455,6 +456,7 @@ var LibraryBrowser = {
     setWindowedCanvasSize() {
       // check if SDL is available
       if (typeof SDL != 'undefined') {
+        const SDL_FULLSCREEN = 0x00800000;
         var flags = {{{ makeGetValue('SDL.screen', '0', 'u32') }}};
         flags = flags & ~{{{ cDefs.SDL_FULLSCREEN }}};
         {{{ makeSetValue('SDL.screen', '0', 'flags', 'i32') }}};

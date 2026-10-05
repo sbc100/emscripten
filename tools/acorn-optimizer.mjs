@@ -429,6 +429,111 @@ function stripDefaultUndefined(ast) {
   });
 }
 
+// Inlines immutable primitive constants (numbers, booleans, bigints, and short
+// strings) defined via `const` into their expression uses and removes the
+// inlined declarations.
+function inlineConstants(ast) {
+  function isInlinableConstant(node, name) {
+    if (!node) return false;
+    if (node.type === 'Literal') {
+      if (typeof node.value === 'string') {
+        return Boolean(name) && node.value.length + 2 <= name.length;
+      }
+      return ['number', 'boolean', 'bigint'].includes(typeof node.value);
+    }
+    if (node.type === 'UnaryExpression' && (node.operator === '-' || node.operator === '+')) {
+      return isInlinableConstant(node.argument);
+    }
+    if (node.type === 'BinaryExpression') {
+      return isInlinableConstant(node.left) && isInlinableConstant(node.right);
+    }
+    return false;
+  }
+
+  const exportedNames = new Set();
+  for (const stmt of ast.body) {
+    if (stmt.type === 'ExportNamedDeclaration') {
+      for (const decl of stmt.declaration?.declarations || []) {
+        exportedNames.add(decl.id.name);
+      }
+      for (const spec of stmt.specifiers || []) {
+        exportedNames.add(spec.local.name);
+      }
+    }
+  }
+
+  const rootScope = Object.create(null);
+  let scope = rootScope;
+
+  function handleFunction(node, c) {
+    if (node.id) {
+      scope[node.id.name] = null;
+    }
+    const savedScope = scope;
+    scope = Object.create(scope);
+    for (const param of node.params) {
+      walkPattern(param, c, (name) => {
+        scope[name] = null;
+      });
+    }
+    c(node.body);
+    scope = savedScope;
+  }
+
+  recursiveWalk(ast, {
+    VariableDeclaration(node, c) {
+      node.declarations = node.declarations.filter((decl) => {
+        if (decl.init) c(decl.init);
+        if (
+          node.kind === 'const' &&
+          decl.id.type === 'Identifier' &&
+          isInlinableConstant(decl.init, decl.id.name)
+        ) {
+          scope[decl.id.name] = decl.init;
+          return scope === rootScope && exportedNames.has(decl.id.name);
+        }
+        walkPattern(decl.id, c, (name) => {
+          scope[name] = null;
+        });
+        return true;
+      });
+      if (node.declarations.length === 0) {
+        emptyOut(node);
+      }
+    },
+    FunctionDeclaration: handleFunction,
+    FunctionExpression: handleFunction,
+    ArrowFunctionExpression: handleFunction,
+    CatchClause(node, c) {
+      if (node.param) {
+        walkPattern(node.param, c, (name) => {
+          scope[name] = null;
+        });
+      }
+      c(node.body);
+    },
+    ExportNamedDeclaration(node, c) {
+      if (node.declaration) c(node.declaration);
+    },
+    ImportDeclaration() {},
+    MemberExpression(node, c) {
+      c(node.object);
+      if (node.computed) c(node.property);
+    },
+    Property(node, c) {
+      if (node.computed) c(node.key);
+      c(node.value);
+    },
+    Identifier(node) {
+      const val = scope[node.name];
+      if (val) {
+        delete node.name;
+        Object.assign(node, structuredClone(val));
+      }
+    },
+  });
+}
+
 function isWasmImportsAssign(node) {
   // var wasmImports = ..
   //   or
@@ -1877,6 +1982,7 @@ const registry = {
   JSDCE,
   AJSDCE,
   stripDefaultUndefined,
+  inlineConstants,
   applyImportAndExportNameChanges,
   emitDCEGraph,
   applyDCEGraphRemovals,

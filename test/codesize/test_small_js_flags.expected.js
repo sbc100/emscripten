@@ -16,12 +16,6 @@
 // can continue to use Module afterwards as well.
 var Module = typeof Module != "undefined" ? Module : {};
 
-// Determine the runtime environment we are in. You can customize this by
-// setting the ENVIRONMENT setting at compile time (see settings.js).
-var ENVIRONMENT_IS_WEB = true;
-
-var ENVIRONMENT_IS_WORKER = false;
-
 var quit_ = (status, toThrow) => {
   throw toThrow;
 };
@@ -43,7 +37,7 @@ var readAsync, readBinary;
 // Note that this includes Node.js workers when relevant (pthreads is enabled).
 // Node.js workers are detected as a combination of ENVIRONMENT_IS_WORKER and
 // ENVIRONMENT_IS_NODE.
-if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+if (true || false) {
   try {
     scriptDirectory = new URL(".", _scriptName).href;
   } catch {}
@@ -405,10 +399,8 @@ var wasmImports = {
 // === Auto-generated postamble setup entry stuff ===
 function callMain() {
   var entryFunction = _main;
-  var argc = 0;
-  var argv = 0;
   try {
-    var ret = entryFunction(argc, argv);
+    var ret = entryFunction(0, 0);
     // if we're not running an evented main loop, it's time to exit
     exitJS(ret, /* implicit = */ true);
     return ret;
@@ -421,9 +413,7 @@ function run() {
   preRun();
   if (ABORT) return;
   initRuntime();
-  // No ATMAINS hooks
-  var noInitialRun = false;
-  if (!noInitialRun) callMain();
+  if (!false) callMain();
   postRun();
 }
 

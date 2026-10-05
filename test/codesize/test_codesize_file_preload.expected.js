@@ -781,12 +781,10 @@ var FS_stdin_getChar = () => {
   if (!FS_stdin_getChar_buffer.length) {
     var result = null;
     if (ENVIRONMENT_IS_NODE) {
-      // we will read data by chunks of BUFSIZE
-      var BUFSIZE = 256;
-      var buf = Buffer.alloc(BUFSIZE);
+      var buf = Buffer.alloc(256);
       var bytesRead = 0;
       try {
-        bytesRead = fs.readSync(process.stdin.fd, buf, 0, BUFSIZE);
+        bytesRead = fs.readSync(process.stdin.fd, buf, 0, 256);
       } catch (e) {
         // Cross-platform differences: on Windows, reading EOF throws an
         // exception, but on other OSes, reading EOF returns 0. Uniformize
@@ -1035,14 +1033,7 @@ var MEMFS = {
   expandFileStorage(node, newCapacity) {
     var prevCapacity = node.contents.length;
     if (prevCapacity >= newCapacity) return;
-    // No need to expand, the storage was already large enough.
-    // Don't expand strictly to the given requested limit if it's only a very
-    // small increase, but instead geometrically grow capacity.
-    // For small filesizes (<1MB), perform size*2 geometric increase, but for
-    // large sizes, do a much more conservative size*1.125 increase to avoid
-    // overshooting the allocation cap by a very large margin.
-    var CAPACITY_DOUBLING_MAX = 1024 * 1024;
-    newCapacity = Math.max(newCapacity, (prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2 : 1.125)) >>> 0);
+    newCapacity = Math.max(newCapacity, (prevCapacity * (prevCapacity < 1024 * 1024 ? 2 : 1.125)) >>> 0);
     if (prevCapacity) newCapacity = Math.max(newCapacity, 256);
     // At minimum allocate 256b for each file when expanding.
     var oldContents = MEMFS.getFileDataAsTypedArray(node);
@@ -3188,10 +3179,8 @@ var wasmImports = {
 // === Auto-generated postamble setup entry stuff ===
 function callMain() {
   var entryFunction = _main;
-  var argc = 0;
-  var argv = 0;
   try {
-    var ret = entryFunction(argc, argv);
+    var ret = entryFunction(0, 0);
     // if we're not running an evented main loop, it's time to exit
     exitJS(ret, /* implicit = */ true);
     return ret;
@@ -3207,9 +3196,7 @@ async function run() {
   }
   if (ABORT) return;
   initRuntime();
-  // No ATMAINS hooks
-  var noInitialRun = false;
-  if (!noInitialRun) callMain();
+  if (!false) callMain();
   postRun();
 }
 
