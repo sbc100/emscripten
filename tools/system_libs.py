@@ -1763,6 +1763,15 @@ class libcxx(ExceptionLibrary, MTLibrary, DebugLibrary):
     'tzdb_list.cpp',
   }
 
+  def get_cflags(self):
+    cflags = super().get_cflags()
+    if self.eh_mode == Exceptions.EMSCRIPTEN:
+      # With JS exceptions, -fmodule-local-hints causes a code size regression
+      # (inlining single-call-site helpers duplicates JS invoke wrappers), while
+      # noexcept and Wasm exceptions variants see a net size reduction with it.
+      cflags.append('-fno-module-local-hints')
+    return cflags
+
 
 class libunwind(ExceptionLibrary, MTLibrary):
   name = 'libunwind'
